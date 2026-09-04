@@ -1,0 +1,47 @@
+/**
+ * Game constants for Peg Marble Battle (Mobile Portrait 550x800)
+ */
+
+// ── BACKDOOR VARIABLE: Change team size here without affecting UI ──
+// Easily change to 1, 2, 3, 4, 5, etc. to test different team sizes
+export const TEAM_SIZE = 3;
+
+// ── Arena Dimensions (Portrait 90° CCW rotated) ──
+export const W = 550;
+export const H = 800;
+
+// ── Ball & Stat Settings ──
+export const INNER_R = 34;         // Radius of inner dark core (original ball size)
+export const RING_THICKNESS = 8;   // Edge thickness (x0.8)
+export const BALL_R = INNER_R + RING_THICKNESS; // 42 total outer collision radius
+export const BALL_MAX_HP = 100;
+export const DEFAULT_ATK = 10;
+export const DEFAULT_DEF = 2;
+
+// ── Slingshot & Physics (from game_v2.py) ──
+export const DRAG_MAX = 160;       // Max pull distance
+export const SPEED_SCALE = 0.22;   // Speed multiplier from pull
+export const DAMP = 0.988;         // Friction damping per physics step
+export const BOUNCE_DAMP = 0.82;   // Velocity restitution on walls/collisions
+export const MIN_SPD = 0.6;        // Stop threshold
+export const PHYSICS_HERTZ = 120;  // Substep physics loop (120Hz for zero tunneling)
+export const MAX_SIM_STEPS = 3000; // Cap for AI evaluation
+
+// ── NOXCAT Color Palette (Black + Neon Green + Crisp White) ──
+export const COLORS = {
+  BG1: '#05070a',         // Deep obsidian black
+  BG2: '#0b1118',         // Cyber tech charcoal
+  P_COL: '#00ff66',       // NOXCAT Electric Neon Green (Player)
+  P_COL_GLOW: 'rgba(0, 255, 102, 0.5)',
+  P_COL_DARK: '#008f39',  // Dark green shade for liquid depth
+  A_COL: '#ff2a55',       // Cyber Crimson (AI)
+  A_COL_GLOW: 'rgba(255, 42, 85, 0.5)',
+  A_COL_DARK: '#99112e',  // Dark crimson shade
+  WHITE: '#ffffff',       // Pure crisp white
+  GREY: '#8a9ba8',        // Metallic cool silver
+  GOLD: '#ffd000',        // Cyber gold
+  DARK: '#0d151f',        // Dark card background
+  DIVIDER: '#172331',     // Subtle grid/divider lines
+  BORDER: '#1f3144',      // Container rim
+};
+
