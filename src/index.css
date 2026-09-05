@@ -361,9 +361,15 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-bubble-tail--item { border-top-color: #35d9ff; }
 .sketch-bubble-tail--item::after { border-top-color: #081218; }
 
-/* Large Character/Weapon Art Display */
-.sketch-fs-character { position: absolute; right: -12px; bottom: 8px; z-index: 2; pointer-events: none; }
-.sketch-fs-character .nox-avatar { width: min(58vw, 250px); height: min(58vw, 250px); border: 2px solid var(--pet-accent, #00ff66); border-radius: 50%; box-shadow: 0 0 35px color-mix(in srgb, var(--pet-accent, #00ff66) 30%, transparent); }
+/* Large Character/Weapon Art Display in Detail Views (Borderless matching sketches) */
+.sketch-fs-character { position: absolute; right: -8px; bottom: 8px; z-index: 2; pointer-events: none; display: grid; place-items: center; }
+.sketch-fs-character .nox-avatar { width: min(60vw, 250px); height: min(60vw, 250px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.sketch-fs-character .nox-avatar svg { width: min(52vw, 210px); height: min(52vw, 210px); color: var(--pet-accent, #00ff66); filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 50%, transparent)); }
+.sketch-fs-character .nox-avatar .nox-avatar__scan { display: none; }
+.sketch-fs-character .nox-avatar .nox-avatar__placeholder { display: none; }
+.sketch-fs-character .nox-avatar .nox-avatar__code { position: absolute; bottom: 4px; right: 20px; font: 900 10px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); letter-spacing: .1em; opacity: 0.6; }
+.sketch-fs-weapon-art .cyber-item-art { width: min(60vw, 250px); height: min(60vw, 250px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.sketch-fs-weapon-art .cyber-item-art .item-img { width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(0 0 26px rgba(53, 217, 255, 0.5)); }
 
 /* Skill & Special Description at Bottom-Left */
 .sketch-fs-skill { position: relative; z-index: 5; margin-top: auto; width: 54%; display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--pet-accent, #00ff66); background: rgba(5,8,6,.88); }
