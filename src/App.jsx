@@ -7,6 +7,7 @@ import GameView from './components/GameView.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Toast from './components/Toast.jsx';
 import BattleTransitionOverlay from './components/BattleTransitionOverlay.jsx';
+import BrandLockup from './components/BrandLockup.jsx';
 import { demoApi } from './demo-backend/api.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
 import { getActiveTeam } from './utils/teamStorage.js';
@@ -96,7 +97,7 @@ export default function App() {
     transitionTimeoutsRef.current = [t];
   };
 
-  if (view === 'loading') return <div className="boot-screen"><span className="boot-logo">FM</span><span>LOADING LOCAL NODE</span><div className="boot-line"><i /></div></div>;
+  if (view === 'loading') return <div className="boot-screen"><BrandLockup context="INITIALIZING LOCAL NODE" /><div className="boot-line"><i /></div></div>;
   if (!currentUser || view === 'auth') return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   if (!data) return null;
 

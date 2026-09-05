@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { AlertTriangle, ArrowRight, Eye, EyeOff, Gamepad2, KeyRound, LogIn, Sparkles, UserPlus, UserRound, X, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Eye, EyeOff, KeyRound, LogIn, Sparkles, UserPlus, UserRound, X, Zap } from 'lucide-react';
+import BrandLockup from './BrandLockup.jsx';
 
 const sanitizeName = (val) => val.replace(/[^\p{Script=Han}a-zA-Z0-9]/gu, '').slice(0, 16);
 
@@ -52,8 +53,7 @@ export default function AuthModal({ onLoginSuccess }) {
       <div className="auth-grid" aria-hidden="true" />
       <section className="auth-card">
         <header className="auth-brand">
-          <div className="auth-mark"><Gamepad2 size={22} /></div>
-          <div><div className="eyebrow">NOXCAT NETWORK</div><h1>FUTUREMODE</h1></div>
+          <BrandLockup context="NOXCAT NETWORK" />
         </header>
 
         <div className="auth-visual" aria-hidden="true">

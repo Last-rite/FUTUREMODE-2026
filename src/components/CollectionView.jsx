@@ -12,6 +12,7 @@ import {
   Zap,
 } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import BrandLockup from './BrandLockup.jsx';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
@@ -398,6 +399,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
 
   return (
     <main className="screen-scroll feature-screen sketch-collection">
+      <header className="sketch-collection-brandbar">
+        <BrandLockup context={isPetMode ? '寵物與編隊' : '裝備與道具'} compact />
+      </header>
+
       {/* Loadout Bar: Big/Small Overlapping Circle Switcher + Angled Tabs (No border on inactive tabs!) */}
       <nav className="sketch-loadout-tabs" aria-label="編隊組合與介面切換">
         <button
@@ -710,7 +715,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
-            <h1 className="sketch-fs-title">NOXCAT 檔案庫</h1>
+            <BrandLockup className="sketch-fs-brand" context="NOXCAT 檔案庫" compact />
             <button
               className="sketch-fs-close-btn"
               onClick={() => setSelectedPet(null)}
@@ -792,7 +797,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
-            <h1 className="sketch-fs-title">裝備與道具檔案</h1>
+            <BrandLockup className="sketch-fs-brand" context="裝備與道具檔案" compact />
             <button
               className="sketch-fs-close-btn"
               onClick={() => setSelectedItem(null)}

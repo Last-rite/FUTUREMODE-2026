@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { BatteryCharging, ChevronLeft, ChevronRight, Coins, LogOut, RotateCcw, AlertTriangle } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import BrandLockup from './BrandLockup.jsx';
 import { getActiveTeam, getActiveLoadoutIndex } from '../utils/teamStorage.js';
 
 export default function LobbyView({ user, data, onStartGame, onSignOut, onReset }) {
@@ -33,7 +34,7 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
   return (
     <main className="screen-scroll sketch-home">
       <header className="sketch-brandbar">
-        <h1 className="sketch-main-title">戰役部署</h1>
+        <BrandLockup context="戰役部署" compact />
         <div className="sketch-brandbar__actions">
           <button className="sketch-icon-button" onClick={onReset} aria-label="重置測試資料"><RotateCcw size={18} /></button>
           <button className="sketch-icon-button" onClick={onSignOut} aria-label="登出"><LogOut size={18} /></button>

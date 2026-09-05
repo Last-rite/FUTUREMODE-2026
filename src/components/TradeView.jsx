@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeftRight, ArrowRight, Cat, Check, ChevronDown, Gem, LockKeyhole, Plus, Swords, UserRound, Waves, X } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import BrandLockup from './BrandLockup.jsx';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
@@ -51,9 +52,10 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
     <main className="screen-scroll feature-screen sketch-trade">
       {/* 1. Header: Clean centered Title matching sketch "標題" */}
       <header className="sketch-screen-topbar">
-        <h1 className="sketch-screen-title">
-          {tab === 'market' ? '資產交易所' : '悼念與走失池'}
-        </h1>
+        <BrandLockup
+          context={tab === 'market' ? '資產交易所' : '悼念與走失池'}
+          compact
+        />
       </header>
 
       {/* 2. Angled Tabs matching sketch: Active has angled border /  \, Inactive has NO border */}
