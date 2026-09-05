@@ -239,8 +239,24 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 
 /* Slots Container & Morphing Circles with Corner-Anchored Pivots */
 .sketch-loadout__slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; min-height: 145px; }
-.sketch-loadout__slot { position: relative; width: clamp(88px, 26vw, 110px); height: 110px; }
+.sketch-loadout__slot { position: relative; width: clamp(88px, 26vw, 110px); height: 110px; transition: transform .2s ease, outline-color .2s ease; border-radius: 12px; }
 .sketch-loadout__slot:nth-child(2) { transform: translateY(-8px); }
+.sketch-loadout__slot.is-drop-target { outline: 2px dashed rgba(0, 255, 102, 0.45); outline-offset: 4px; }
+.sketch-loadout--weapon-mode .sketch-loadout__slot.is-drop-target { outline: 2px dashed rgba(53, 217, 255, 0.45); }
+.sketch-loadout__slot.is-drag-over { outline: 2px solid var(--green) !important; outline-offset: 4px; transform: scale(1.06); filter: drop-shadow(0 0 12px rgba(0,255,102,.6)); }
+.sketch-loadout--weapon-mode .sketch-loadout__slot.is-drag-over { outline: 2px solid #35d9ff !important; filter: drop-shadow(0 0 12px rgba(53,217,255,.6)); }
+
+.sketch-slot-remove-btn { position: absolute; top: -4px; right: -2px; z-index: 12; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #3d4a41; background: #090e0b; color: #7d8f83; cursor: pointer; transition: all .15s; padding: 0; }
+.sketch-slot-remove-btn:hover { border-color: #ff4757; color: #ff4757; background: #1f0b0e; box-shadow: 0 0 8px rgba(255,71,87,.5); transform: scale(1.12); }
+
+.sketch-drag-hint { font: 800 10px/1 ui-monospace, monospace; color: #6b8072; text-align: center; margin-top: 2px; letter-spacing: .04em; }
+.sketch-vault-token[draggable="true"] { cursor: grab; user-select: none; -webkit-user-select: none; }
+.sketch-vault-token[draggable="true"]:active { cursor: grabbing; }
+.sketch-vault-token.is-dragging { opacity: .35; transform: scale(.92); }
+.sketch-vault-section.is-drop-target { outline: 2px dashed rgba(255,71,87,.6); outline-offset: 2px; border-radius: 8px; background: rgba(255,71,87,.04); }
+
+.sketch-touch-ghost { position: fixed; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); width: 62px; height: 62px; border-radius: 50%; border: 2px solid var(--green); box-shadow: 0 0 16px rgba(0,255,102,.7); background: #050a07; color: var(--green); font: 900 11px/1 ui-monospace, monospace; display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px; opacity: .95; }
+.sketch-touch-ghost--item { border-color: #35d9ff; color: #35d9ff; box-shadow: 0 0 16px rgba(53,217,255,.7); }
 
 .slot-morph-node { position: absolute; display: grid; place-items: center; border-radius: 50%; padding: 0; cursor: pointer; transition: width .36s cubic-bezier(0.34, 1.56, 0.64, 1), height .36s cubic-bezier(0.34, 1.56, 0.64, 1), bottom .36s cubic-bezier(0.34, 1.56, 0.64, 1), right .36s cubic-bezier(0.34, 1.56, 0.64, 1), left .36s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .25s, box-shadow .25s; }
 

@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Cat,
-  Check,
   ChevronDown,
   ChevronUp,
   Gem,
@@ -15,6 +14,7 @@ import {
 import NoxPlaceholder from './NoxPlaceholder.jsx';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
+import gemImg from '../assets/noxgem_128.png';
 
 const STAT_ICONS = { hp: Shield, atk: Swords, def: Shield, spd: Zap };
 
@@ -22,14 +22,14 @@ const STAT_ICONS = { hp: Shield, atk: Swords, def: Shield, spd: Zap };
 export function ItemIllustration({ item, size = 'lg' }) {
   const isBlade = item?.type === 'WEAPON' || item?.id?.includes('blade') || item?.name?.includes('劍');
   const isShield = item?.type === 'GEAR' || item?.id?.includes('shield') || item?.name?.includes('盾');
-  const isHome = item?.type === 'TREASURE' || item?.id?.includes('home');
+  const isHome = item?.type === 'TREASURE' || item?.id?.includes('home') || item?.name?.includes('寶石') || item?.name?.includes('水晶');
 
   if (size === 'sm') {
     return (
       <span className="sketch-mini-item-icon">
         {isBlade && <img src={swordImg} alt={item?.name || '劍'} className="w-3.5 h-3.5 object-contain pixelated" />}
         {isShield && <img src={shieldImg} alt={item?.name || '盾'} className="w-3.5 h-3.5 object-contain pixelated" />}
-        {isHome && <Gem size={12} />}
+        {isHome && <img src={gemImg} alt={item?.name || '寶石'} className="w-3.5 h-3.5 object-contain pixelated" />}
         {!isBlade && !isShield && !isHome && <Gem size={12} />}
       </span>
     );
@@ -52,26 +52,11 @@ export function ItemIllustration({ item, size = 'lg' }) {
         />
       )}
       {isHome && (
-        <svg viewBox="0 0 100 100" className="item-svg item-svg--home">
-          <defs>
-            <linearGradient id="homeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ff55ff" />
-              <stop offset="50%" stopColor="#8b5cf6" />
-              <stop offset="100%" stopColor="#35d9ff" />
-            </linearGradient>
-            <filter id="crystalGlow">
-              <feGaussianBlur stdDeviation="3.5" result="glow" />
-              <feMerge>
-                <feMergeNode in="glow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <polygon points="50,12 78,35 68,82 50,92 32,82 22,35" fill="rgba(139,92,246,0.18)" stroke="url(#homeGrad)" strokeWidth="4" filter="url(#crystalGlow)" />
-          <polygon points="50,22 68,38 60,74 50,80 40,74 32,38" fill="rgba(255,85,255,0.25)" stroke="#fff" strokeWidth="1.5" />
-          <circle cx="50" cy="50" r="4" fill="#35d9ff" />
-          <line x1="50" y1="12" x2="50" y2="92" stroke="rgba(255,255,255,0.6)" strokeWidth="1" strokeDasharray="4 4" />
-        </svg>
+        <img
+          src={gemImg}
+          alt={item?.name || '寶石'}
+          className="item-img"
+        />
       )}
       {!isBlade && !isShield && !isHome && (
         <div className="item-svg-fallback">
@@ -88,23 +73,41 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   const [tab, setTab] = useState('pets');
   const [selectedPet, setSelectedPet] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [equipTargetPetId, setEquipTargetPetId] = useState(null);
 
-  // Loadout management: 5 tabs storing distinct party line-ups
-  const LOADOUTS_KEY = 'futuremode_party_loadouts_v2';
+  // Drag & drop state for both mouse and touch interactions
+  const [draggingItem, setDraggingItem] = useState(null); // { type: 'pet'|'item', id: string, name?: string, sourceSlot?: number }
+  const [dragOverSlot, setDragOverSlot] = useState(null); // 0 | 1 | 2 | 'vault' | null
+  const [touchGhost, setTouchGhost] = useState(null); // { x, y, name, type }
+  const touchInfoRef = useRef(null);
+
+  // Loadout management: 5 tabs storing distinct 3-slot party line-ups
+  const LOADOUTS_KEY = 'futuremode_party_loadouts_v3';
   const [loadout, setLoadout] = useState(1);
   const [loadouts, setLoadouts] = useState(() => {
     try {
       const saved = localStorage.getItem(LOADOUTS_KEY);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
+    try {
+      const savedV2 = localStorage.getItem('futuremode_party_loadouts_v2');
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
+        const normalized = {};
+        for (const k of [1, 2, 3, 4, 5]) {
+          const arr = parsed[k] || [];
+          normalized[k] = [arr[0] || null, arr[1] || null, arr[2] || null];
+        }
+        return normalized;
+      }
+    } catch (e) {}
     const pIds = data.pets.map((p) => p.id);
+    const selectedIds = data.pets.filter((p) => p.selected).map((p) => p.id);
     return {
-      1: [pIds[0], pIds[1], pIds[2]].filter(Boolean),
-      2: [pIds[0], pIds[1]].filter(Boolean),
-      3: [pIds[0], pIds[2]].filter(Boolean),
-      4: [pIds[0], pIds[3]].filter(Boolean),
-      5: [pIds[0]].filter(Boolean),
+      1: [selectedIds[0] || pIds[0] || null, selectedIds[1] || pIds[1] || null, selectedIds[2] || pIds[2] || null],
+      2: [pIds[0] || null, pIds[1] || null, null],
+      3: [pIds[0] || null, null, pIds[2] || null],
+      4: [pIds[0] || null, pIds[3] || null, null],
+      5: [pIds[0] || null, null, null],
     };
   });
 
@@ -115,11 +118,17 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     } catch (e) {}
   };
 
-  // Get current active party for selected loadout
-  const activePartyIds = loadouts[loadout] || [];
+  // Fixed 3 slot array [slot0, slot1, slot2]
+  const currentSlots = useMemo(() => {
+    const raw = loadouts[loadout] || [];
+    return [raw[0] || null, raw[1] || null, raw[2] || null];
+  }, [loadouts, loadout]);
+
+  const activePartyIds = useMemo(() => currentSlots.filter(Boolean), [currentSlots]);
+
   const team = useMemo(() => {
-    return activePartyIds.map((id) => data.pets.find((p) => p.id === id)).filter(Boolean);
-  }, [activePartyIds, data.pets]);
+    return currentSlots.map((id) => (id ? data.pets.find((p) => p.id === id) || null : null));
+  }, [currentSlots, data.pets]);
 
   // Custom scrollbar state
   const scrollRef = useRef(null);
@@ -141,31 +150,78 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     }
   };
 
-  // Toggle pet in current active loadout
-  const handleToggle = async (pet) => {
-    const isCurrentlyInTeam = activePartyIds.includes(pet.id);
-    let nextIds;
-    if (isCurrentlyInTeam) {
-      nextIds = activePartyIds.filter((id) => id !== pet.id);
-      onMessage(`${pet.name} 已從編組 ${loadout} 移出`);
-    } else {
-      if (activePartyIds.length >= 3) {
-        onMessage(`編組 ${loadout} 已滿（最多 3 隻）`, 'error');
-        return;
+  // Sync loadout 1 to backend demo API
+  const syncBackendParty = async (slots) => {
+    if (!onToggleParty) return;
+    const targetSelectedIds = new Set(slots.filter(Boolean));
+    for (const p of data.pets) {
+      const isSelected = Boolean(p.selected);
+      const shouldSelect = targetSelectedIds.has(p.id);
+      if (isSelected !== shouldSelect) {
+        try {
+          await onToggleParty(p.id);
+        } catch (e) {}
       }
-      nextIds = [...activePartyIds, pet.id];
-      onMessage(`${pet.name} 已加入編組 ${loadout}`);
     }
-    const nextLoadouts = { ...loadouts, [loadout]: nextIds };
+  };
+
+  // Assign pet into specific slot (handles moving, swapping, and deploying)
+  const handleAssignPetToSlot = async (petId, targetIndex) => {
+    const pet = data.pets.find((p) => p.id === petId);
+    if (!pet) return;
+
+    const nextSlots = [...currentSlots];
+    const existingIndex = nextSlots.findIndex((id) => id === petId);
+
+    if (existingIndex !== -1 && existingIndex !== targetIndex) {
+      // Swapping positions
+      const prevTarget = nextSlots[targetIndex];
+      nextSlots[existingIndex] = prevTarget;
+      nextSlots[targetIndex] = petId;
+      onMessage(`已將 ${pet.name} 與第 ${existingIndex + 1} 位對調至第 ${targetIndex + 1} 位！`);
+    } else if (existingIndex === targetIndex) {
+      return;
+    } else {
+      nextSlots[targetIndex] = petId;
+      onMessage(`${pet.name} 已指派至出戰位置 ${targetIndex + 1}！`);
+    }
+
+    const nextLoadouts = { ...loadouts, [loadout]: nextSlots };
     saveLoadouts(nextLoadouts);
 
-    // Sync to backend if on loadout 1
     if (loadout === 1) {
-      try {
-        await onToggleParty(pet.id);
-      } catch (e) {}
+      syncBackendParty(nextSlots);
     }
-    setSelectedPet(null);
+  };
+
+  // Remove pet from a specific slot
+  const handleRemovePetFromSlot = async (slotIndex) => {
+    const petId = currentSlots[slotIndex];
+    if (!petId) return;
+    const pet = data.pets.find((p) => p.id === petId);
+    const nextSlots = [...currentSlots];
+    nextSlots[slotIndex] = null;
+    const nextLoadouts = { ...loadouts, [loadout]: nextSlots };
+    saveLoadouts(nextLoadouts);
+    if (pet) {
+      onMessage(`${pet.name} 已從出戰編組 ${loadout} 移出`);
+    }
+    if (loadout === 1) {
+      syncBackendParty(nextSlots);
+    }
+  };
+
+  // Equip item to the pet in target slot
+  const handleEquipToSlot = async (itemId, targetIndex) => {
+    const pet = team[targetIndex];
+    const item = data.items.find((i) => i.id === itemId);
+    if (!pet) {
+      onMessage(`第 ${targetIndex + 1} 號位尚無出戰寵物，無法裝備武器`, 'error');
+      return;
+    }
+    if (!item) return;
+
+    await handleEquip(pet.id, item.id);
   };
 
   const handleEquip = async (petId, itemId) => {
@@ -176,10 +232,139 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       const item = data.items.find((i) => i.id === itemId);
       onMessage(pet?.equipped === itemId ? `已卸下 ${item?.name}` : `已將 ${item?.name} 裝備給 ${pet?.name}`);
       setSelectedItem(null);
-      setEquipTargetPetId(null);
     } catch (error) {
       onMessage(error.message, 'error');
     }
+  };
+
+  // Desktop Drag & Drop Handlers
+  const handleDragStart = (e, info) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify(info));
+    e.dataTransfer.effectAllowed = 'copyMove';
+    setDraggingItem(info);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingItem(null);
+    setDragOverSlot(null);
+  };
+
+  const handleSlotDragOver = (e, slotIndex) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    if (dragOverSlot !== slotIndex) {
+      setDragOverSlot(slotIndex);
+    }
+  };
+
+  const handleSlotDrop = (e, slotIndex) => {
+    e.preventDefault();
+    let info = draggingItem;
+    try {
+      const raw = e.dataTransfer.getData('text/plain');
+      if (raw) info = JSON.parse(raw);
+    } catch (err) {}
+
+    if (!info) return;
+
+    if (info.type === 'pet') {
+      handleAssignPetToSlot(info.id, slotIndex);
+    } else if (info.type === 'item') {
+      handleEquipToSlot(info.id, slotIndex);
+    }
+
+    setDraggingItem(null);
+    setDragOverSlot(null);
+  };
+
+  const handleVaultDragOver = (e) => {
+    if (draggingItem?.sourceSlot !== undefined) {
+      e.preventDefault();
+      setDragOverSlot('vault');
+    }
+  };
+
+  const handleVaultDrop = (e) => {
+    e.preventDefault();
+    if (draggingItem?.sourceSlot !== undefined) {
+      if (draggingItem.type === 'pet') {
+        handleRemovePetFromSlot(draggingItem.sourceSlot);
+      } else if (draggingItem.type === 'item') {
+        const pet = team[draggingItem.sourceSlot];
+        if (pet && pet.equipped === draggingItem.id) {
+          handleEquip(pet.id, draggingItem.id);
+        }
+      }
+    }
+    setDraggingItem(null);
+    setDragOverSlot(null);
+  };
+
+  // Mobile / Touch Drag Handlers
+  const handleTouchStart = (e, info) => {
+    const touch = e.touches[0];
+    touchInfoRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      info,
+      isDragging: false,
+    };
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchInfoRef.current) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchInfoRef.current.startX;
+    const dy = touch.clientY - touchInfoRef.current.startY;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 14) {
+      touchInfoRef.current.isDragging = true;
+      setDraggingItem(touchInfoRef.current.info);
+      setTouchGhost({
+        x: touch.clientX,
+        y: touch.clientY,
+        name: touchInfoRef.current.info.name || '',
+        type: touchInfoRef.current.info.type,
+      });
+
+      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+      const slotElem = elem?.closest('[data-slot-idx]');
+      if (slotElem) {
+        const sIdx = parseInt(slotElem.getAttribute('data-slot-idx'), 10);
+        setDragOverSlot(sIdx);
+      } else if (elem?.closest('[data-vault-zone]')) {
+        setDragOverSlot('vault');
+      } else {
+        setDragOverSlot(null);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchInfoRef.current?.isDragging) {
+      const { info } = touchInfoRef.current;
+      if (typeof dragOverSlot === 'number') {
+        if (info.type === 'pet') {
+          handleAssignPetToSlot(info.id, dragOverSlot);
+        } else if (info.type === 'item') {
+          handleEquipToSlot(info.id, dragOverSlot);
+        }
+      } else if (dragOverSlot === 'vault' && info.sourceSlot !== undefined) {
+        if (info.type === 'pet') {
+          handleRemovePetFromSlot(info.sourceSlot);
+        } else if (info.type === 'item') {
+          const pet = team[info.sourceSlot];
+          if (pet && pet.equipped === info.id) {
+            handleEquip(pet.id, info.id);
+          }
+        }
+      }
+    }
+    touchInfoRef.current = null;
+    setTouchGhost(null);
+    setDraggingItem(null);
+    setDragOverSlot(null);
   };
 
   // Helper to extract clean numerical bonus for any stat key
@@ -259,26 +444,84 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             動化切換 ⇄
           </button>
         </div>
+        <div className="sketch-drag-hint">
+          {isPetMode ? '💡 拖曳下方寵物至上方位置出戰（拖回下方即可移出）' : '💡 拖曳下方武器至出戰隊員進行裝備'}
+        </div>
 
         <div className="sketch-loadout__slots-grid">
           {[0, 1, 2].map((slot) => {
             const pet = team[slot];
             const item = data.items.find((entry) => entry.id === pet?.equipped);
+            const isSlotDragOver = dragOverSlot === slot;
 
             return (
-              <div className="sketch-loadout__slot" key={`slot-${slot}`}>
+              <div
+                className={`sketch-loadout__slot ${draggingItem ? 'is-drop-target' : ''} ${isSlotDragOver ? 'is-drag-over' : ''}`}
+                key={`slot-${slot}`}
+                data-slot-idx={slot}
+                onDragOver={(e) => handleSlotDragOver(e, slot)}
+                onDragLeave={() => {
+                  if (dragOverSlot === slot) setDragOverSlot(null);
+                }}
+                onDrop={(e) => handleSlotDrop(e, slot)}
+              >
+                {/* Subtle remove button for pet in pet mode */}
+                {isPetMode && pet && (
+                  <button
+                    type="button"
+                    className="sketch-slot-remove-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemovePetFromSlot(slot);
+                    }}
+                    title={`將 ${pet.name} 移出出戰位置`}
+                    aria-label={`將 ${pet.name} 移出出戰位置`}
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+
+                {/* Subtle unequip button for weapon in weapon mode */}
+                {!isPetMode && item && (
+                  <button
+                    type="button"
+                    className="sketch-slot-remove-btn"
+                    style={{ borderColor: '#35d9ff', color: '#35d9ff' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (pet) handleEquip(pet.id, item.id);
+                    }}
+                    title={`卸下 ${item.name}`}
+                    aria-label={`卸下 ${item.name}`}
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+
                 {/* Pet Circle Node (morphs between primary large circle & secondary small badge) */}
                 <button
+                  type="button"
                   className={`slot-morph-node slot-morph-node--pet ${isPetMode ? 'is-primary' : 'is-secondary'} ${pet ? 'is-filled' : 'is-empty'}`}
                   style={{ '--pet-accent': pet?.accent || '#38433c' }}
+                  draggable={Boolean(pet)}
+                  onDragStart={(e) => pet && handleDragStart(e, { type: 'pet', id: pet.id, name: pet.name, sourceSlot: slot })}
+                  onDragEnd={handleDragEnd}
+                  onTouchStart={(e) => pet && handleTouchStart(e, { type: 'pet', id: pet.id, name: pet.name, sourceSlot: slot })}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                   onClick={() => {
                     if (pet) setSelectedPet(pet);
+                    else onMessage('請從下方拖曳 NOXCAT 至此放置出戰！');
                   }}
-                  aria-label={pet ? `查看 ${pet.name}` : `出戰位置 ${slot + 1} 空白`}
+                  aria-label={pet ? `查看 ${pet.name}（可拖曳對調）` : `出戰位置 ${slot + 1} 空白`}
                 >
                   {isPetMode ? (
                     <>
-                      {pet ? <NoxPlaceholder pet={pet} size="md" /> : <div className="sketch-slot-empty-plus">+</div>}
+                      {pet ? (
+                        <NoxPlaceholder pet={pet} size="md" />
+                      ) : (
+                        <div className="sketch-slot-empty-plus">+</div>
+                      )}
                       <span className="sketch-slot-idx">{slot + 1}</span>
                     </>
                   ) : (
@@ -288,10 +531,18 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
 
                 {/* Weapon Circle Node (morphs between secondary small badge & primary large circle) */}
                 <button
+                  type="button"
                   className={`slot-morph-node slot-morph-node--weapon ${!isPetMode ? 'is-primary' : 'is-secondary'} ${item ? 'is-filled' : 'is-empty'}`}
+                  draggable={Boolean(item)}
+                  onDragStart={(e) => item && handleDragStart(e, { type: 'item', id: item.id, name: item.name, sourceSlot: slot })}
+                  onDragEnd={handleDragEnd}
+                  onTouchStart={(e) => item && handleTouchStart(e, { type: 'item', id: item.id, name: item.name, sourceSlot: slot })}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                   onClick={() => {
                     if (item) setSelectedItem(item);
                     else if (isPetMode) setTab('items');
+                    else onMessage(pet ? `請從下方拖曳裝備至此為 ${pet.name} 裝備！` : '請先配置出戰寵物再裝備武器');
                   }}
                   aria-label={item ? `查看裝備 ${item.name}` : `第 ${slot + 1} 號位未裝備`}
                 >
@@ -305,7 +556,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       ) : (
                         <div className="sketch-slot-empty-weapon">
                           <Plus size={18} />
-                          <small>未裝備</small>
+                          <small>{pet ? '拖曳裝備' : '未裝備'}</small>
                         </div>
                       )}
                       <span className="sketch-slot-idx">{slot + 1}</span>
@@ -321,7 +572,15 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       </section>
 
       {/* Vault Grid Area with Custom Cyberpunk Scrollbar (No default scrollbar!) */}
-      <section className="sketch-vault-section">
+      <section
+        className={`sketch-vault-section ${draggingItem?.sourceSlot !== undefined ? 'is-drop-target' : ''}`}
+        data-vault-zone="true"
+        onDragOver={handleVaultDragOver}
+        onDragLeave={() => {
+          if (dragOverSlot === 'vault') setDragOverSlot(null);
+        }}
+        onDrop={handleVaultDrop}
+      >
         <div className="sketch-vault-header">
           <span className="sketch-vault-title">
             {isPetMode ? 'NOXCAT 收藏庫' : '裝備與道具庫'}
@@ -342,16 +601,25 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               <div className="sketch-vault-grid" aria-label="寵物收藏列表">
                 {data.pets.map((pet) => {
                   const isInCurrentTeam = activePartyIds.includes(pet.id);
+                  const isDragging = draggingItem?.id === pet.id;
                   return (
                     <button
-                      className={`sketch-vault-token ${isInCurrentTeam ? 'is-selected' : ''}`}
+                      type="button"
+                      className={`sketch-vault-token ${isInCurrentTeam ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
                       key={pet.id}
                       style={{ '--pet-accent': pet.accent }}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, { type: 'pet', id: pet.id, name: pet.name })}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, { type: 'pet', id: pet.id, name: pet.name })}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       onClick={() => setSelectedPet(pet)}
+                      title="點擊查看檔案，或直接拖曳至上方配置出戰"
                     >
                       <NoxPlaceholder pet={pet} size="md" />
                       <strong>{pet.name}</strong>
-                      <span>LV.{pet.level}</span>
+                      <span>{isInCurrentTeam ? '出戰中' : `LV.${pet.level}`}</span>
                     </button>
                   );
                 })}
@@ -364,17 +632,29 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               </div>
             ) : (
               <div className="sketch-vault-grid" aria-label="裝備收藏列表">
-                {data.items.map((item) => (
-                  <button
-                    className="sketch-vault-token sketch-vault-token--item"
-                    key={item.id}
-                    onClick={() => setSelectedItem(item)}
-                  >
-                    <ItemIllustration item={item} size="md" />
-                    <strong>{item.name}</strong>
-                    <span className="item-bonus-pill">{item.bonus}</span>
-                  </button>
-                ))}
+                {data.items.map((item) => {
+                  const isEquippedAnywhere = data.pets.some((p) => p.equipped === item.id);
+                  const isDragging = draggingItem?.id === item.id;
+                  return (
+                    <button
+                      type="button"
+                      className={`sketch-vault-token sketch-vault-token--item ${isEquippedAnywhere ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
+                      key={item.id}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, { type: 'item', id: item.id, name: item.name })}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, { type: 'item', id: item.id, name: item.name })}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onClick={() => setSelectedItem(item)}
+                      title="點擊查看檔案，或直接拖曳至上方隊員進行裝備"
+                    >
+                      <ItemIllustration item={item} size="md" />
+                      <strong>{item.name}</strong>
+                      <span className="item-bonus-pill">{item.bonus}</span>
+                    </button>
+                  );
+                })}
                 {Array.from({ length: Math.max(4, 8 - data.items.length) }, (_, index) => (
                   <span className="sketch-vault-token is-empty" key={`item-empty-${index}`}>
                     <i>+</i>
@@ -407,7 +687,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         </div>
       </section>
 
-      {/* Pet Detail View: FULL-SCREEN matching pet_detail_example.jpg (No nested modal frames!) */}
+      {/* Pet Detail View: FULL-SCREEN matching pet_detail_example.jpg (Clean without bottom buttons!) */}
       {selectedPet && (
         <section
           className="sketch-fullscreen-detail sketch-fullscreen-detail--pet"
@@ -480,21 +760,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               <p className="sketch-fs-skill-desc">{selectedPet.skill}</p>
             </div>
           </div>
-
-          {/* Bottom Action: Add to / Remove from active loadout */}
-          <footer className="sketch-fs-footer">
-            <button
-              className={`sketch-fs-action-btn ${activePartyIds.includes(selectedPet.id) ? 'is-remove' : ''}`}
-              onClick={() => handleToggle(selectedPet)}
-            >
-              {activePartyIds.includes(selectedPet.id) ? <X size={18} /> : <Check size={18} />}
-              {activePartyIds.includes(selectedPet.id) ? `從編組 ${loadout} 移出` : `加入編組 ${loadout}`}
-            </button>
-          </footer>
         </section>
       )}
 
-      {/* Weapon Detail View: FULL-SCREEN matching weapon_detail_example.jpg */}
+      {/* Weapon Detail View: FULL-SCREEN matching weapon_detail_example.jpg (Clean without bottom buttons!) */}
       {selectedItem && (
         <section
           className="sketch-fullscreen-detail sketch-fullscreen-detail--weapon"
@@ -507,10 +776,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             <h1 className="sketch-fs-title">裝備與道具檔案</h1>
             <button
               className="sketch-fs-close-btn"
-              onClick={() => {
-                setSelectedItem(null);
-                setEquipTargetPetId(null);
-              }}
+              onClick={() => setSelectedItem(null)}
               aria-label="關閉"
             >
               <X size={22} />
@@ -583,44 +849,17 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               </p>
             </div>
           </div>
-
-          {/* Bottom Action: Equip to Party Members */}
-          <footer className="sketch-fs-footer sketch-fs-footer--weapon">
-            <div className="sketch-equip-picker-line">
-              <small>裝備給出戰隊友：</small>
-              <div className="sketch-target-pets">
-                {team.map((pet) => {
-                  const isEquippedHere = pet.equipped === selectedItem.id;
-                  const isSelected = equipTargetPetId === pet.id || (isEquippedHere && !equipTargetPetId);
-                  return (
-                    <button
-                      key={pet.id}
-                      className={`sketch-target-btn ${isSelected ? 'is-selected' : ''} ${isEquippedHere ? 'is-current' : ''}`}
-                      onClick={() => setEquipTargetPetId(pet.id)}
-                    >
-                      <NoxPlaceholder pet={pet} size="sm" />
-                      <span>{pet.name}</span>
-                      {isEquippedHere && <small className="text-[#00ff66]">已裝備</small>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {team.length > 0 && (
-              <button
-                className="sketch-fs-action-btn sketch-fs-action-btn--weapon"
-                onClick={() => {
-                  const targetId = equipTargetPetId || team[0]?.id;
-                  if (targetId) handleEquip(targetId, selectedItem.id);
-                }}
-              >
-                <Sparkles size={16} />
-                裝備 / 卸下切換
-              </button>
-            )}
-          </footer>
         </section>
+      )}
+
+      {/* Floating touch drag avatar */}
+      {touchGhost && (
+        <div
+          className={`sketch-touch-ghost ${touchGhost.type === 'item' ? 'sketch-touch-ghost--item' : ''}`}
+          style={{ left: `${touchGhost.x}px`, top: `${touchGhost.y}px` }}
+        >
+          {touchGhost.name || (touchGhost.type === 'item' ? '裝備' : 'NOX')}
+        </div>
       )}
     </main>
   );
