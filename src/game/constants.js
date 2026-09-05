@@ -6,17 +6,26 @@
 // Easily change to 1, 2, 3, 4, 5, etc. to test different team sizes
 export const TEAM_SIZE = 3;
 
+// ── BACKDOOR VARIABLE: Toggle Boss HP Bar on / off (defaults to true) ──
+export const SHOW_BOSS_BAR = true;
+
 // ── Arena Dimensions (Portrait 90° CCW rotated) ──
 export const W = 550;
 export const H = 800;
 
-// ── Ball & Stat Settings ──
+// ── Ball & Stat Settings (5 combat attributes: hp/maxHp, atk, def, spd) ──
 export const INNER_R = 34;         // Radius of inner dark core (original ball size)
 export const RING_THICKNESS = 8;   // Edge thickness (x0.8)
 export const BALL_R = INNER_R + RING_THICKNESS; // 42 total outer collision radius
 export const BALL_MAX_HP = 100;
+export const DEFAULT_HP = 100;
 export const DEFAULT_ATK = 10;
 export const DEFAULT_DEF = 2;
+export const DEFAULT_SPD = 1.0;    // Speed multiplier on ball release
+
+// ── Spawn Y Coordinates (both exactly 140px indent from their edges) ──
+export const ENEMY_START_Y = 140;  // 140px from top edge (0 + 140)
+export const PLAYER_START_Y = 660; // 140px from bottom edge (800 - 140)
 
 // ── Slingshot & Physics (from game_v2.py) ──
 export const DRAG_MAX = 160;       // Max pull distance

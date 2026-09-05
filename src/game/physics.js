@@ -1,6 +1,6 @@
 import {
   W, H, BALL_R, SPEED_SCALE, DAMP, BOUNCE_DAMP, MIN_SPD,
-  MAX_SIM_STEPS, DEFAULT_ATK, DEFAULT_DEF
+  MAX_SIM_STEPS, DEFAULT_HP, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_SPD
 } from './constants.js';
 
 export function dist(ax, ay, bx, by) {
@@ -31,23 +31,25 @@ export function lerpColor(c1, c2, t) {
  * Headless simulation ball for AI trajectory evaluation
  */
 export class SimBall {
-  constructor(label, owner, x, y, hp, atk = DEFAULT_ATK, def = DEFAULT_DEF) {
+  constructor(label, owner, x, y, hp = DEFAULT_HP, atk = DEFAULT_ATK, def = DEFAULT_DEF, maxHp = DEFAULT_HP, spd = DEFAULT_SPD) {
     this.label = label;
     this.owner = owner; // 1 = player, 2 = AI
     this.x = Number(x);
     this.y = Number(y);
     this.vx = 0;
     this.vy = 0;
-    this.hp = Number(hp);
+    this.maxHp = Number(maxHp) || DEFAULT_HP;
+    this.hp = Number(hp !== undefined ? hp : this.maxHp);
     this.atk = Number(atk);
     this.def = Number(def);
+    this.spd = Number(spd) || DEFAULT_SPD;
     this.moving = false;
     this.alive = this.hp > 0;
   }
 
   launch(vx, vy) {
-    this.vx = vx;
-    this.vy = vy;
+    this.vx = vx * this.spd;
+    this.vy = vy * this.spd;
     this.moving = true;
   }
 
@@ -127,7 +129,7 @@ export class SimBall {
  */
 export function simulateBoard(snapshot, shooterLabel, power, theta) {
   const simBalls = snapshot.balls.map(
-    b => new SimBall(b.label, b.owner, b.x, b.y, b.hp, b.atk, b.def)
+    b => new SimBall(b.label, b.owner, b.x, b.y, b.hp, b.atk, b.def, b.maxHp, b.spd)
   );
 
   const shooter = simBalls.find(b => b.label === shooterLabel);
