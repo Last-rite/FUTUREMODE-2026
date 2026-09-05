@@ -97,7 +97,7 @@ export default function App() {
     transitionTimeoutsRef.current = [t];
   };
 
-  if (view === 'loading') return <div className="boot-screen"><BrandLockup context="INITIALIZING LOCAL NODE" /><div className="boot-line"><i /></div></div>;
+  if (view === 'loading') return <div className="boot-screen"><BrandLockup /><div className="boot-line"><i /></div></div>;
   if (!currentUser || view === 'auth') return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   if (!data) return null;
 

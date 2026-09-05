@@ -400,7 +400,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   return (
     <main className="screen-scroll feature-screen sketch-collection">
       <header className="sketch-collection-brandbar">
-        <BrandLockup context={isPetMode ? '寵物與編隊' : '裝備與道具'} compact />
+        <BrandLockup compact />
       </header>
 
       {/* Loadout Bar: Big/Small Overlapping Circle Switcher + Angled Tabs (No border on inactive tabs!) */}
@@ -715,7 +715,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
-            <BrandLockup className="sketch-fs-brand" context="NOXCAT 檔案庫" compact />
+            <BrandLockup className="sketch-fs-brand" compact />
             <button
               className="sketch-fs-close-btn"
               onClick={() => setSelectedPet(null)}
@@ -797,7 +797,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
-            <BrandLockup className="sketch-fs-brand" context="裝備與道具檔案" compact />
+            <BrandLockup className="sketch-fs-brand" compact />
             <button
               className="sketch-fs-close-btn"
               onClick={() => setSelectedItem(null)}

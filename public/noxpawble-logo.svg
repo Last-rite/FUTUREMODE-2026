@@ -1,10 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 88" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 64" role="img" aria-labelledby="title desc">
   <title id="title">NoxPawble</title>
-  <desc id="desc">NoxPawble neon green paw and ricochet wordmark on a black angular plaque.</desc>
-  <path fill="#020403" d="M10 1h340l9 9v68l-9 9H10l-9-9V10z"/>
-  <path fill="none" stroke="#00ff66" stroke-width="2" d="M10 2h340l8 8v68l-8 8H10l-8-8V10z"/>
-  <g transform="translate(11 10)">
-    <path fill="none" stroke="#00ff66" stroke-linecap="square" stroke-width="2" opacity=".58" d="M2 18V3h15M47 3h8v15M56 46v9h-9M17 55H2v-9"/>
+  <desc id="desc">NoxPawble neon green paw and ricochet wordmark.</desc>
+  <g transform="translate(2 2)">
     <circle cx="16" cy="24" r="5" fill="#00ff66"/>
     <circle cx="29" cy="18" r="5" fill="#00ff66"/>
     <circle cx="42" cy="24" r="5" fill="#00ff66"/>
@@ -12,7 +9,5 @@
     <circle cx="29" cy="39" r="5.5" fill="#020403"/>
     <path fill="none" stroke="#00ff66" stroke-linecap="square" stroke-width="2" d="M0 39c3.5-1.3 6-4.2 7-8M46 14c4.8 2.4 8.3 6.5 10 11"/>
   </g>
-  <path fill="#00ff66" opacity=".24" d="M82 16h2v56h-2z"/>
-  <text x="96" y="57" fill="#00ff66" font-family="Arial Black, Arial, sans-serif" font-size="38" font-style="italic" font-weight="900" letter-spacing="-1.2">NoxPawble</text>
-  <path fill="#00ff66" d="M98 68h224v2H98zM329 68h17v2h-17z"/>
+  <text x="68" y="46" fill="#00ff66" font-family="Arial Black, Arial, sans-serif" font-size="36" font-style="italic" font-weight="900" letter-spacing="-1.2">NoxPawble</text>
 </svg>

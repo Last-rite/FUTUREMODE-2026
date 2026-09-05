@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function BrandLockup({ context, compact = false, className = '' }) {
+export default function BrandLockup({ compact = false, className = '' }) {
   return (
     <div className={`brand-lockup ${compact ? 'brand-lockup--compact' : ''} ${className}`.trim()}>
       <h1 className="brand-lockup__title">
@@ -10,7 +10,6 @@ export default function BrandLockup({ context, compact = false, className = '' }
           alt="NoxPawble"
         />
       </h1>
-      {context && <span className="brand-lockup__context">{context}</span>}
     </div>
   );
 }

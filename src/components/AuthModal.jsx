@@ -53,7 +53,7 @@ export default function AuthModal({ onLoginSuccess }) {
       <div className="auth-grid" aria-hidden="true" />
       <section className="auth-card">
         <header className="auth-brand">
-          <BrandLockup context="NOXCAT NETWORK" />
+          <BrandLockup />
         </header>
 
         <div className="auth-visual" aria-hidden="true">

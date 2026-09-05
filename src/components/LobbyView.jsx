@@ -34,7 +34,7 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
   return (
     <main className="screen-scroll sketch-home">
       <header className="sketch-brandbar">
-        <BrandLockup context="戰役部署" compact />
+        <BrandLockup compact />
         <div className="sketch-brandbar__actions">
           <button className="sketch-icon-button" onClick={onReset} aria-label="重置測試資料"><RotateCcw size={18} /></button>
           <button className="sketch-icon-button" onClick={onSignOut} aria-label="登出"><LogOut size={18} /></button>
