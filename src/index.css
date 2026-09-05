@@ -179,8 +179,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-party { position: absolute; z-index: 4; left: 8%; right: 8%; bottom: 5%; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; justify-items: center; }
 .sketch-party__member { position: relative; display: grid; place-items: center; }
 .sketch-party__member:nth-child(2) { transform: translateY(-18px); }
-.sketch-party__member .nox-avatar { width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); border-width: 2px; border-radius: 50%; background: #080c09; box-shadow: 0 0 16px color-mix(in srgb, var(--pet-accent) 30%, transparent); }
-.sketch-party__member > span { position: absolute; right: -5px; bottom: -3px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 11px; }
+.sketch-party__member .nox-avatar { width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); aspect-ratio: 1 / 1; flex-shrink: 0; border-width: 2px; border-radius: 50%; background: #080c09; box-shadow: 0 0 16px color-mix(in srgb, var(--pet-accent) 30%, transparent); }
+.sketch-party__member > span { position: absolute; right: -5px; bottom: -3px; display: grid; place-items: center; width: 22px; height: 22px; aspect-ratio: 1 / 1; flex-shrink: 0; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 11px; }
 .sketch-start { justify-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: min(84%, 320px); min-height: 56px; padding: 0 18px; border: none; border-radius: 999px; background: var(--green); color: #001407; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 21px; letter-spacing: .06em; cursor: pointer; box-shadow: 0 0 24px rgba(0,255,102,.32); transition: transform .15s ease, filter .15s ease; }
 .sketch-start:active { transform: scale(.95); filter: brightness(.88); }
 .sketch-start-chevron { font-size: 22px; font-weight: 900; opacity: .85; }
@@ -205,7 +205,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 /* The Big Circle + Small Overlapping Circle Mode Switcher */
 .sketch-circle-switcher { position: relative; width: 48px; height: 44px; padding: 0 !important; border: none !important; background: transparent !important; overflow: visible; cursor: pointer; flex-shrink: 0; }
 .sketch-circle-switcher:active { transform: scale(.94); }
-.sketch-circle-switcher .circle-node { position: absolute; display: grid; place-items: center; border-radius: 50%; transition: width .32s cubic-bezier(0.34, 1.56, 0.64, 1), height .32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.sketch-circle-switcher .circle-node { position: absolute; display: grid; place-items: center; border-radius: 50%; aspect-ratio: 1 / 1; flex-shrink: 0; transition: width .32s cubic-bezier(0.34, 1.56, 0.64, 1), height .32s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .sketch-circle-switcher .circle-node--pet { border: 2px solid var(--green); background: #08150d; color: var(--green); bottom: 4px; left: 4px; transform-origin: bottom left; }
 .sketch-circle-switcher .circle-node--item { border: 2px solid #35d9ff; background: #081720; color: #35d9ff; bottom: 6px; right: 6px; transform-origin: bottom right; }
 
@@ -258,7 +258,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-touch-ghost { position: fixed; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); width: 62px; height: 62px; border-radius: 50%; border: 2px solid var(--green); box-shadow: 0 0 16px rgba(0,255,102,.7); background: #050a07; color: var(--green); font: 900 11px/1 ui-monospace, monospace; display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px; opacity: .95; }
 .sketch-touch-ghost--item { border-color: #35d9ff; color: #35d9ff; box-shadow: 0 0 16px rgba(53,217,255,.7); }
 
-.slot-morph-node { position: absolute; display: grid; place-items: center; border-radius: 50%; padding: 0; cursor: pointer; transition: width .36s cubic-bezier(0.34, 1.56, 0.64, 1), height .36s cubic-bezier(0.34, 1.56, 0.64, 1), bottom .36s cubic-bezier(0.34, 1.56, 0.64, 1), right .36s cubic-bezier(0.34, 1.56, 0.64, 1), left .36s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .25s, box-shadow .25s; }
+.slot-morph-node { position: absolute; display: grid; place-items: center; border-radius: 50%; aspect-ratio: 1 / 1; flex-shrink: 0; padding: 0; cursor: pointer; transition: width .36s cubic-bezier(0.34, 1.56, 0.64, 1), height .36s cubic-bezier(0.34, 1.56, 0.64, 1), bottom .36s cubic-bezier(0.34, 1.56, 0.64, 1), right .36s cubic-bezier(0.34, 1.56, 0.64, 1), left .36s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .25s, box-shadow .25s; }
 
 /* Pet Circle: Pivots from bottom-left corner */
 .slot-morph-node--pet { bottom: 8px; left: 6px; transform-origin: bottom left; }
@@ -269,11 +269,11 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .slot-morph-node--weapon.is-secondary { bottom: 0px; right: -2px; }
 
 /* Primary Large Circle State */
-.slot-morph-node.is-primary { width: clamp(80px, 24vw, 96px); height: clamp(80px, 24vw, 96px); z-index: 2; border: 2px solid #344039; background: #070a08; }
+.slot-morph-node.is-primary { width: clamp(80px, 24vw, 96px); height: clamp(80px, 24vw, 96px); aspect-ratio: 1 / 1; flex-shrink: 0; z-index: 2; border: 2px solid #344039; background: #070a08; }
 .slot-morph-node--pet.is-primary.is-filled { border-color: var(--pet-accent, #00ff66); box-shadow: 0 0 0 4px #050705, 0 0 0 6px color-mix(in srgb, var(--pet-accent, #00ff66) 35%, transparent); }
 .slot-morph-node--weapon.is-primary.is-filled { border-color: #35d9ff; box-shadow: 0 0 0 4px #050705, 0 0 0 6px rgba(53,217,255,.35); background: radial-gradient(circle, #091c28 40%, #05090e 92%); }
 .slot-morph-node.is-primary:active { filter: brightness(1.1); }
-.slot-morph-node .nox-avatar { width: 100%; height: 100%; border: 0; border-radius: 50%; }
+.slot-morph-node .nox-avatar { width: 100%; height: 100%; aspect-ratio: 1 / 1; border: 0; border-radius: 50%; }
 
 /* Solid textured number without circular frame */
 .sketch-slot-idx {
@@ -325,6 +325,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
 }
 .sketch-slot-weapon-full-img {
@@ -351,7 +352,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-slot-empty-weapon small { font: 750 7px/1 ui-monospace, monospace; }
 
 /* Secondary Small Circle Badge State */
-.slot-morph-node.is-secondary { width: 34px; height: 34px; z-index: 4; border: 2px solid #344039; background: #080d0a; }
+.slot-morph-node.is-secondary { width: 34px; height: 34px; aspect-ratio: 1 / 1; flex-shrink: 0; z-index: 4; border: 2px solid #344039; background: #080d0a; }
 .slot-morph-node.is-secondary:active { transform: scale(.92); }
 
 .slot-morph-node--weapon.is-secondary { box-shadow: 0 0 0 3px #050705; }
@@ -360,24 +361,27 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .slot-morph-node--pet.is-secondary { box-shadow: 0 0 0 3px #050705; border-color: var(--pet-accent, #00ff66); color: var(--pet-accent, #00ff66); background: #08150e; }
 
 /* Vault Grid Section & Custom Cyberpunk Scrollbar */
-.sketch-vault-section { margin-top: 10px; display: grid; gap: 8px; }
-.sketch-vault-header { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.sketch-vault-section { margin-top: 14px; display: grid; gap: 8px; }
+.sketch-vault-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 6px; }
 .sketch-vault-title { font: 950 12px/1 ui-monospace, monospace; color: #cfd8d2; letter-spacing: .06em; }
 .sketch-vault-count { font: 800 9px/1 ui-monospace, monospace; color: var(--green); }
-.sketch-vault-wrapper { display: flex; gap: 6px; position: relative; height: 280px; }
-.sketch-vault-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px; scrollbar-width: none; -ms-overflow-style: none; }
+.sketch-vault-wrapper { display: flex; gap: 6px; position: relative; height: clamp(285px, 40vh, 340px); }
+.sketch-vault-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 6px 14px 4px; scrollbar-width: none; -ms-overflow-style: none; }
 .sketch-vault-scroll::-webkit-scrollbar { display: none; }
-.sketch-vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 7px; }
+.sketch-vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 7px; padding-top: 2px; }
 .sketch-vault-token { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #e8ede9; text-align: center; cursor: pointer; }
 .sketch-vault-token:active .nox-avatar, .sketch-vault-token:active .cyber-item-art { transform: scale(.91); }
-.sketch-vault-token .nox-avatar { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); border-width: 2px; border-radius: 50%; transition: transform .12s; }
+.sketch-vault-token .nox-avatar { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); aspect-ratio: 1 / 1; flex-shrink: 0; border-width: 2px; border-radius: 50%; transition: transform .12s; }
 .sketch-vault-token.is-selected .nox-avatar { box-shadow: 0 0 0 3px #050705, 0 0 0 5px var(--pet-accent, #00ff66), 0 0 17px color-mix(in srgb, var(--pet-accent, #00ff66) 30%, transparent); }
 .sketch-vault-token strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 850 8px/1 ui-monospace, monospace; }
 .sketch-vault-token > span { color: #718078; font: 750 7px/1 ui-monospace, monospace; }
 .sketch-vault-token .nox-avatar__placeholder { display: none; }
-.sketch-vault-token.is-empty { min-height: 84px; align-content: center; border: 1px dashed #263029; border-radius: 50%; color: #354139; }
-.sketch-vault-token.is-empty i { font: 300 22px/1 sans-serif; font-style: normal; }
-.sketch-vault-token.is-empty small { font: 700 6px/1 ui-monospace, monospace; }
+
+.sketch-vault-token.is-empty { min-height: auto; border: none; background: transparent; display: grid; justify-items: center; align-items: center; }
+.sketch-vault-empty-circle { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); aspect-ratio: 1 / 1; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #263029; border-radius: 50%; color: #354139; }
+.sketch-vault-empty-circle i { font: 300 22px/1 sans-serif; font-style: normal; }
+.sketch-vault-empty-circle small { font: 700 6px/1 ui-monospace, monospace; }
+.item-bonus-pill { display: inline-block; padding: 1px 4px; border: 1px solid #1a382c; border-radius: 4px; color: #35d9ff; font: 850 7px/1 ui-monospace, monospace; background: #061513; }
 .item-bonus-pill { display: inline-block; padding: 1px 4px; border: 1px solid #1a382c; border-radius: 4px; color: #35d9ff; font: 850 7px/1 ui-monospace, monospace; background: #061513; }
 
 /* Custom Hand-Drawn Styled Cyberpunk Scrollbar */
@@ -643,6 +647,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   width: 38px;
   height: 38px;
   border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   overflow: hidden;
   border: none;
   background: transparent;
@@ -650,6 +656,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-trade-pet-avatar .nox-avatar {
   width: 100%;
   height: 100%;
+  aspect-ratio: 1 / 1;
 }
 .sketch-trade-pet-avatar .nox-avatar__placeholder {
   display: none;
@@ -658,6 +665,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   color: #35d9ff;
   display: grid;
   place-items: center;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   filter: drop-shadow(0 0 5px rgba(53,217,255,0.6));
 }
 
@@ -850,6 +859,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-mourn-disc {
   width: 44px;
   height: 44px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
 }
@@ -857,15 +868,20 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   border: none;
   background: transparent;
   overflow: hidden;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
 }
 .sketch-mourn-disc--dest {
   border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   border: 2px solid #334438;
   background: #050806;
 }
 .sketch-mourn-disc--asset .nox-avatar {
   width: 100%;
   height: 100%;
+  aspect-ratio: 1 / 1;
 }
 .sketch-mourn-disc--asset .nox-avatar__placeholder {
   display: none;

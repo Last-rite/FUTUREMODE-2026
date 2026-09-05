@@ -634,10 +634,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                   );
                 })}
                 {Array.from({ length: Math.max(4, 12 - data.pets.length) }, (_, index) => (
-                  <span className="sketch-vault-token is-empty" key={`empty-${index}`}>
-                    <i>+</i>
-                    <small>EMPTY</small>
-                  </span>
+                  <div className="sketch-vault-token is-empty" key={`empty-${index}`}>
+                    <div className="sketch-vault-empty-circle">
+                      <i>+</i>
+                      <small>EMPTY</small>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -666,10 +668,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                   );
                 })}
                 {Array.from({ length: Math.max(4, 8 - data.items.length) }, (_, index) => (
-                  <span className="sketch-vault-token is-empty" key={`item-empty-${index}`}>
-                    <i>+</i>
-                    <small>EMPTY</small>
-                  </span>
+                  <div className="sketch-vault-token is-empty" key={`item-empty-${index}`}>
+                    <div className="sketch-vault-empty-circle">
+                      <i>+</i>
+                      <small>EMPTY</small>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
