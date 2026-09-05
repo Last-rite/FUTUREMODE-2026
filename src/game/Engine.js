@@ -292,6 +292,35 @@ export class GameEngine {
     }
   }
 
+  // ── DEBUG BACKDOORS: Instant kill methods for reward / settlement screen testing ──
+  debugKillOpponents() {
+    if (this.aiTimer) clearTimeout(this.aiTimer);
+    for (const b of this.balls) {
+      if (b.owner === 2) {
+        b.hp = 0;
+        b.alive = false;
+        b.vx = 0;
+        b.vy = 0;
+      }
+    }
+    this.checkWinCondition();
+    this.sendSnapshot();
+  }
+
+  debugKillPlayer() {
+    if (this.aiTimer) clearTimeout(this.aiTimer);
+    for (const b of this.balls) {
+      if (b.owner === 1) {
+        b.hp = 0;
+        b.alive = false;
+        b.vx = 0;
+        b.vy = 0;
+      }
+    }
+    this.checkWinCondition();
+    this.sendSnapshot();
+  }
+
   getSnapshot() {
     return {
       balls: this.balls.map(b => ({

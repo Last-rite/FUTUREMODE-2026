@@ -18,6 +18,10 @@ export const FLEET_DISPLAY_NAME = 'ENEMY FLEET'; // Custom fleet title text
 // Default 10: rolls ±deg on aim direction, and (100% - inacc% + rand(-inacc, inacc)%) of max power
 export const ENEMY_AGENT_INACCURACY = 10;
 
+// ── BACKDOOR VARIABLE: Settlement Reward Count ──
+// Change here to test 1, 2, 3, 4, 5, 6, 7, 8, etc. rewards in victory/defeat settlement
+export const SETTLEMENT_REWARD_COUNT = 6;
+
 // ── Arena Dimensions (Portrait 90° CCW rotated) ──
 export const W = 550;
 export const H = 800;

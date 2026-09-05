@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../game/Engine.js';
 import { sound } from '../game/audio.js';
-import { TEAM_SIZE, W, H, SHOW_TOP_BAR } from '../game/constants.js';
+import { TEAM_SIZE, W, H, SHOW_TOP_BAR, SETTLEMENT_REWARD_COUNT } from '../game/constants.js';
 import {
   Volume2, VolumeX, HelpCircle,
   Skull, X, Shield, Swords, Coins, Gift, MapPin,
@@ -208,25 +208,81 @@ function SettlementRail({ type = 'top', color = '#00ff66' }) {
   const isTop = type === 'top';
   return (
     <div className={`settlement-rail settlement-rail--${type}`}>
-      <svg viewBox="0 0 320 18" className="settlement-rail-svg" preserveAspectRatio="none">
+      <svg viewBox="0 0 360 16" className="settlement-rail-svg" preserveAspectRatio="none">
         {isTop ? (
           <>
-            <line x1="0" y1="4" x2="210" y2="4" stroke={color} strokeWidth="2" />
-            <polygon points="216,1 234,1 228,7 210,7" fill="none" stroke={color} strokeWidth="1.8" />
-            <line x1="238" y1="4" x2="320" y2="4" stroke={color} strokeWidth="2" />
-            <line x1="0" y1="12" x2="320" y2="12" stroke={color} strokeWidth="2" />
+            {/* Top rail: Left-anchored very long parallelograms, stops before crossing the board */}
+            <polygon points="0,2 216,2 210,5.5 0,5.5" fill={color} />
+            {/* 3 Solid filled parallelograms matching exact height (y=2 to 5.5) with uniform 6px spacing */}
+            <path
+              d="M 222 2 L 240 2 L 234 5.5 L 216 5.5 Z M 246 2 L 264 2 L 258 5.5 L 240 5.5 Z M 270 2 L 288 2 L 282 5.5 L 264 5.5 Z"
+              fill={color}
+            />
+            <polygon points="0,9.5 194,9.5 188,13 0,13" fill={color} />
           </>
         ) : (
           <>
-            <line x1="0" y1="6" x2="320" y2="6" stroke={color} strokeWidth="2" />
-            <line x1="0" y1="14" x2="88" y2="14" stroke={color} strokeWidth="2" />
-            <polygon points="94,11 112,11 106,17 88,17" fill="none" stroke={color} strokeWidth="1.8" />
-            <line x1="116" y1="14" x2="320" y2="14" stroke={color} strokeWidth="2" />
+            {/* Bottom rail: Right-anchored very long parallelograms, starts before crossing the board */}
+            {/* 3 Solid filled parallelograms matching exact height (y=9.5 to 13) with uniform 6px spacing */}
+            <path
+              d="M 120 9.5 L 138 9.5 L 132 13 L 114 13 Z M 96 9.5 L 114 9.5 L 108 13 L 90 13 Z M 72 9.5 L 90 9.5 L 84 13 L 66 13 Z"
+              fill={color}
+            />
+            <polygon points="166,2 360,2 360,5.5 160,5.5" fill={color} />
+            <polygon points="144,9.5 360,9.5 360,13 138,13" fill={color} />
           </>
         )}
       </svg>
     </div>
   );
+}
+
+const BASE_REWARD_TEMPLATES = [
+  { type: 'cat', variant: 'gain', label: 'NOXCAT' },
+  { type: 'sword', variant: 'gain', label: '武器' },
+  { type: 'shield', variant: 'gain', label: '道具' },
+  { type: 'lost-cat', variant: 'lost', label: '走失' },
+  { type: 'cat', variant: 'gain', label: 'NOXCAT' },
+  { type: 'sword', variant: 'gain', label: '武器' },
+  { type: 'shield', variant: 'gain', label: '道具' },
+  { type: 'cat', variant: 'gain', label: 'NOXCAT' },
+];
+
+function getSettlementRewards(count = SETTLEMENT_REWARD_COUNT, isVictory = true) {
+  const list = [];
+  for (let i = 0; i < count; i++) {
+    const template = BASE_REWARD_TEMPLATES[i % BASE_REWARD_TEMPLATES.length];
+    const variant = !isVictory && i === 3 ? 'lost' : (isVictory && template.variant === 'lost' ? 'gain' : template.variant);
+    list.push({
+      id: `reward-${i + 1}`,
+      type: template.type === 'lost-cat' && isVictory ? 'cat' : template.type,
+      variant,
+      label: template.label,
+    });
+  }
+  return list;
+}
+
+/**
+ * Distributes rewards into 4 columns:
+ * - Row 1 (first 1~4 rewards): left to right (columns 1, 2, 3, 4)
+ * - Row 2 and onward: 1, 3, 2, 4 pattern to minimize height gain
+ */
+function distributeRewardsToColumns(rewards) {
+  const columns = [[], [], [], []];
+  const colOrderRow2 = [0, 2, 1, 3]; // 1, 3, 2, 4 in 0-based column indices
+
+  rewards.forEach((reward, index) => {
+    if (index < 4) {
+      columns[index].push(reward);
+    } else {
+      const offset = index - 4;
+      const targetCol = colOrderRow2[offset % 4];
+      columns[targetCol].push(reward);
+    }
+  });
+
+  return columns;
 }
 
 function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
@@ -236,12 +292,13 @@ function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
   return (
     <div className={`settlement-hex-item is-${variant}`}>
       <div className="settlement-hex-shape">
-        <svg viewBox="0 0 66 76" className="settlement-hex-svg">
+        <svg viewBox="0 0 70 62" className="settlement-hex-svg">
           <polygon
-            points="33,3 63,19 63,57 33,73 3,57 3,19"
-            fill="rgba(4, 9, 6, 0.9)"
+            points="18,2 52,2 68,31 52,60 18,60 2,31"
+            fill="rgba(4, 9, 6, 0.92)"
             stroke={color}
             strokeWidth="2.4"
+            vectorEffect="non-scaling-stroke"
           />
         </svg>
         <div className="settlement-hex-icon" style={{ color }}>
@@ -317,6 +374,14 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
   const handleToggleMute = () => {
     const muted = sound.toggleMute();
     setIsMuted(muted);
+  };
+
+  const handleDebugKillOpponents = () => {
+    engineRef.current?.debugKillOpponents();
+  };
+
+  const handleDebugKillPlayer = () => {
+    engineRef.current?.debugKillPlayer();
   };
 
   const topBar = snapshot.topBarInfo || snapshot.boss;
@@ -491,6 +556,24 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1.5">
+              {/* DEBUG: Ugly yellow insta-kill buttons for testing rewards/settlement screen */}
+              <button
+                onClick={handleDebugKillOpponents}
+                aria-label="Debug: Insta Kill Opponent"
+                title="[DEBUG] Insta-kill all opponents"
+                className="px-1.5 py-1 text-[10px] font-black font-mono tracking-tight bg-[#ffff00] hover:bg-[#ffe600] active:scale-95 text-black border-2 border-[#b8860b] rounded shadow-[0_0_8px_rgba(255,255,0,0.85)] cursor-pointer select-none leading-none"
+              >
+                KILL OPP
+              </button>
+              <button
+                onClick={handleDebugKillPlayer}
+                aria-label="Debug: Insta Kill My Pieces"
+                title="[DEBUG] Insta-kill all my pieces"
+                className="px-1.5 py-1 text-[10px] font-black font-mono tracking-tight bg-[#ffff00] hover:bg-[#ffe600] active:scale-95 text-black border-2 border-[#b8860b] rounded shadow-[0_0_8px_rgba(255,255,0,0.85)] cursor-pointer select-none leading-none"
+              >
+                KILL ME
+              </button>
+
               <button
                 onClick={handleToggleMute}
                 aria-label="Mute / Unmute"
@@ -527,17 +610,18 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
                 color={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
               />
 
-              {/* Title Banner with Background Watermark Polygon */}
+              {/* Title Banner with Background Watermark Hexagon */}
               <div className="settlement-banner">
                 <div className="settlement-watermark" aria-hidden="true">
-                  <svg viewBox="0 0 280 100" className="settlement-watermark-svg">
+                  <svg viewBox="0 0 340 110" className="settlement-watermark-svg">
                     <polygon
-                      points="140,2 276,50 200,98 80,98 4,50"
+                      points="75,4 265,4 335,55 265,106 75,106 5,55"
                       fill="none"
                       stroke={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
-                      strokeWidth="1.2"
-                      strokeDasharray="6 4"
-                      opacity="0.32"
+                      strokeWidth="1.6"
+                      strokeDasharray="8 5"
+                      opacity="0.38"
+                      vectorEffect="non-scaling-stroke"
                     />
                   </svg>
                 </div>
@@ -552,18 +636,21 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
                 color={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
               />
 
-              {/* Hexagon Asset Tokens: 3 Green (Gain), 1 Red (Lost) matching sketch */}
-              <div className="settlement-hex-cluster">
-                <SettlementHexToken type="cat" variant="gain" label="NOXCAT" />
-                <SettlementHexToken type="sword" variant="gain" label="武器" />
-                <SettlementHexToken type="shield" variant="gain" label="道具" />
-                <SettlementHexToken type="lost-cat" variant="lost" label="走失" />
+              {/* Hexagon Asset Tokens (4 Columns with Snake Up/Down Wave & 1,3,2,4 row distribution) */}
+              <div className="settlement-hex-grid">
+                {distributeRewardsToColumns(getSettlementRewards(SETTLEMENT_REWARD_COUNT, gameOver.winner === 'PLAYER')).map((colItems, colIdx) => (
+                  <div key={`col-${colIdx}`} className={`settlement-hex-col col-${colIdx + 1}`}>
+                    {colItems.map((item) => (
+                      <SettlementHexToken
+                        key={item.id}
+                        type={item.type}
+                        variant={item.variant}
+                        label={item.label}
+                      />
+                    ))}
+                  </div>
+                ))}
               </div>
-
-              {/* Bottom prompt: ' Tap to leave ' */}
-              <p className="settlement-tap-prompt">
-                &apos; Tap to leave &apos;
-              </p>
             </div>
           </div>
         )}
