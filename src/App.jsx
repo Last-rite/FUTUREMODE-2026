@@ -76,13 +76,7 @@ export default function App() {
   const handleResolveTrade = async (tradeId, status) => {
     const nextData = await demoApi.resolveTrade(tradeId, status, currentUser?.id);
     setData(nextData);
-    showMessage(status === 'accepted' ? '已接受測試交易' : '已拒絕測試交易');
-  };
-
-  const handleReset = async () => {
-    const nextData = await demoApi.reset(currentUser?.id);
-    setData(nextData);
-    showMessage('測試資料已重置');
+    showMessage(status === 'accepted' ? '已接受交易' : '已拒絕交易');
   };
 
   const handleStartGame = (dungeon) => {
@@ -109,6 +103,11 @@ export default function App() {
     transitionTimeoutsRef.current = [t];
   };
 
+  const handleBattleComplete = async (result) => {
+    const nextData = await demoApi.recordBattleResult(result, activeDungeon?.id, currentUser?.id);
+    setData(nextData);
+  };
+
   if (view === 'loading') return <div className="boot-screen"><BrandLockup /><div className="boot-line"><i /></div></div>;
   if (!currentUser || view === 'auth') return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   if (!data) return null;
@@ -121,7 +120,7 @@ export default function App() {
           dungeon={activeDungeon}
           playerTeam={getActiveTeam(data)}
           onExitToLobby={() => setView('home')}
-          onBattleComplete={(result) => demoApi.recordBattleResult(result, activeDungeon?.id)}
+          onBattleComplete={handleBattleComplete}
         />
       ) : (
         <div className="app-viewport">
@@ -133,7 +132,6 @@ export default function App() {
                   data={data}
                   onStartGame={handleStartGame}
                   onSignOut={handleSignOut}
-                  onReset={handleReset}
                 />
               )}
               {view === 'collection' && (

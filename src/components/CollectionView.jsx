@@ -1,8 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   Cat,
-  ChevronDown,
-  ChevronUp,
   Gem,
   Plus,
   Shield,
@@ -145,7 +143,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   const scrollRef = useRef(null);
   const vaultWrapperRef = useRef(null);
   const trackRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [thumbMetrics, setThumbMetrics] = useState({ heightPercent: 25, topPercent: 0 });
   const [isDraggingThumb, setIsDraggingThumb] = useState(false);
   const dragStartYRef = useRef(0);
@@ -156,8 +153,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const maxScroll = scrollHeight - clientHeight;
     const progress = maxScroll > 0 ? scrollTop / maxScroll : 0;
-    setScrollProgress(progress);
-
     const heightPercent = scrollHeight > clientHeight
       ? Math.max(14, Math.min(75, (clientHeight / scrollHeight) * 100))
       : 100;
@@ -276,12 +271,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     const maxScroll = scrollHeight - clientHeight;
     if (maxScroll > 0) {
       scrollRef.current.scrollTo({ top: ratio * maxScroll, behavior: 'smooth' });
-    }
-  };
-
-  const handleScrollStep = (direction) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ top: direction * 120, behavior: 'smooth' });
     }
   };
 
@@ -565,9 +554,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       <section className={`sketch-loadout ${!isPetMode ? 'sketch-loadout--weapon-mode' : 'sketch-loadout--pet-mode'}`} aria-label={`出戰隊伍 編組 ${loadout}`}>
         <div className="sketch-loadout__indicator">
           <span>{isPetMode ? `編組 ${loadout} · 出戰寵物` : `編組 ${loadout} · 攜帶裝備`}</span>
-          <span className="sketch-drag-hint">
-            {isPetMode ? '💡 拖曳至此出戰（拖回移出）' : '💡 拖曳武器至隊員裝備'}
-          </span>
         </div>
 
         <div className="sketch-loadout__slots-grid">
@@ -682,7 +668,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       ) : (
                         <div className="sketch-slot-empty-weapon">
                           <Plus size={22} />
-                          <small>{pet ? '拖曳裝備' : '未裝備'}</small>
                         </div>
                       )}
                     </>
@@ -714,17 +699,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         }}
         onDrop={handleVaultDrop}
       >
-        <div className="sketch-vault-header">
-          <span className="sketch-vault-title">
-            {isPetMode ? 'NOXCAT 收藏庫' : '裝備與道具庫'}
-          </span>
-          <span className="sketch-vault-count">
-            {isPetMode
-              ? `${(data.pets || []).length} 隻持有中 · 容量無上限`
-              : `${(data.items || []).length} 件持有中 · 容量無上限`}
-          </span>
-        </div>
-
         <div className="sketch-vault-wrapper" ref={vaultWrapperRef}>
           {/* Scrollable Container (Default scrollbar hidden via CSS, wheel isolated) */}
           <div
@@ -750,7 +724,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       onClick={() => setSelectedPet(pet)}
-                      title="點擊查看檔案，或直接拖曳至上方配置出戰"
+                      title="查看詳情"
                     >
                       <NoxPlaceholder pet={pet} size="md" />
                       <strong>{pet.name}</strong>
@@ -791,7 +765,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       onClick={() => setSelectedItem(item)}
-                      title="點擊查看檔案，或直接拖曳至上方隊員進行裝備"
+                      title="查看詳情"
                     >
                       <ItemIllustration item={item} size="md" />
                       <strong>{item.name}</strong>
@@ -818,14 +792,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             )}
           </div>
 
-          {/* Custom Stylized Cyberpunk Scrollbar Rail (Interactive: Draggable + Click-to-jump) */}
+          {/* Hand-drawn rail: draggable thumb and tap-to-jump track. */}
           <div className="sketch-custom-scrollbar" aria-hidden="true">
-            <button className="sketch-scroll-arrow" onClick={() => handleScrollStep(-1)} tabIndex={-1}>
-              <ChevronUp size={12} />
-            </button>
             <div className="sketch-scroll-track" ref={trackRef} onClick={handleTrackClick}>
               <div
-                className={`sketch-scroll-thumb ${isDraggingThumb ? 'is-dragging' : ''}`}
+                className={`sketch-scroll-thumb ${isDraggingThumb ? 'is-dragging' : ''} ${thumbMetrics.heightPercent >= 99 ? 'is-static' : ''}`}
                 style={{
                   height: `${thumbMetrics.heightPercent}%`,
                   top: `${thumbMetrics.topPercent}%`,
@@ -836,9 +807,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                 <div className="sketch-thumb-grip" />
               </div>
             </div>
-            <button className="sketch-scroll-arrow" onClick={() => handleScrollStep(1)} tabIndex={-1}>
-              <ChevronDown size={12} />
-            </button>
           </div>
         </div>
       </section>

@@ -119,6 +119,7 @@ export const demoApi = {
     return {
       ...db,
       activePlayerId,
+      solvedDungeonIds: db.dungeonProgress?.[activePlayerId] || [],
       pets: userPets,
       items: userItems,
       allPets: db.pets,
@@ -227,22 +228,26 @@ export const demoApi = {
     return this.getGameData(activePlayerId);
   },
 
-  async createTrade({ playerId, offeredPetId, requestedItemId }) {
+  async createTrade({ playerId, to_player_id: toPlayerId, unit_id: unitId, treasure_id: treasureId }) {
     await wait(260);
     const db = readDb();
-    const pet = db.pets.find((entry) => entry.id === offeredPetId);
-    const item = db.items.find((entry) => entry.id === requestedItemId);
+    const suppliedAssetCount = Number(Boolean(unitId)) + Number(Boolean(treasureId));
+    const pet = unitId ? db.pets.find((entry) => entry.id === unitId) : null;
+    const item = treasureId ? db.items.find((entry) => entry.id === treasureId) : null;
+    if (!toPlayerId || suppliedAssetCount !== 1 || (!pet && !item)) throw new Error('交易資料不完整');
     const equippedItem = pet?.equipped ? db.items.find((entry) => entry.id === pet.equipped) : null;
     db.trades.unshift({
       id: `trade-${Date.now()}`,
       from: (playerId || 'PLAYER').trim().toUpperCase(),
+      to: toPlayerId.trim(),
+      assetType: pet ? 'unit' : 'treasure',
       offeredPetId: pet?.id || null,
-      offeredItemId: equippedItem?.id || null,
-      offer: pet?.name || 'NOXCAT',
-      offerPetCode: pet?.code || '01',
-      offerWeapon: equippedItem?.name || '像素短劍',
-      request: item?.name || '道具',
-      requestQty: 2,
+      offeredItemId: item?.id || null,
+      offer: pet?.name || item?.name,
+      offerPetCode: pet?.code || null,
+      offerWeapon: pet ? (equippedItem?.name || '未裝備') : item?.name,
+      request: toPlayerId.trim(),
+      requestQty: null,
       status: 'pending',
       time: '剛剛',
     });
@@ -272,12 +277,19 @@ export const demoApi = {
     return this.getGameData(activePlayerId);
   },
 
-  async recordBattleResult(result, dungeonId) {
+  async recordBattleResult(result, dungeonId, playerId) {
     await wait(140);
     const db = readDb();
+    const activePlayerId = playerId || getAuthCookie()?.id || null;
     db.lastBattle = { ...result, dungeonId, settledAt: Date.now(), testOnly: true };
+    if (activePlayerId && dungeonId && result?.winner === 'PLAYER') {
+      db.dungeonProgress ||= {};
+      const solved = new Set(db.dungeonProgress[activePlayerId] || []);
+      solved.add(dungeonId);
+      db.dungeonProgress[activePlayerId] = [...solved];
+    }
     writeDb(db);
-    return this.getGameData();
+    return this.getGameData(activePlayerId);
   },
 
   async reset(playerId) {

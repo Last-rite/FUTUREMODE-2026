@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { AlertTriangle, ArrowRight, Eye, EyeOff, KeyRound, LogIn, Sparkles, UserPlus, UserRound, X, Zap } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, LogIn, UserPlus, UserRound } from 'lucide-react';
 import BrandLockup from './BrandLockup.jsx';
 
 const sanitizeName = (val) => val.replace(/[^\p{Script=Han}a-zA-Z0-9]/gu, '').slice(0, 16);
@@ -50,21 +50,13 @@ export default function AuthModal({ onLoginSuccess }) {
 
   return (
     <main className="auth-screen">
-      <div className="auth-grid" aria-hidden="true" />
       <section className="auth-card">
         <header className="auth-brand">
           <BrandLockup />
         </header>
 
-        <div className="auth-visual" aria-hidden="true">
-          <div className="auth-orbit auth-orbit--one" /><div className="auth-orbit auth-orbit--two" />
-          <div className="auth-core"><Zap size={36} fill="currentColor" /></div>
-          <span className="auth-coordinate auth-coordinate--left">AUTH // LOCAL</span><span className="auth-coordinate auth-coordinate--right">NODE 0X-27</span>
-        </div>
-
         <div className="auth-copy">
-          <div className="eyebrow eyebrow--green"><Sparkles size={12} /> CAT DROP PROTOCOL</div>
-          <h2>{mode === 'login' ? '登入駕駛艙' : '創建新帳號'}</h2>
+          <h2>{mode === 'login' ? '登入' : '建立帳號'}</h2>
         </div>
 
         <div className="auth-mode-switch" role="tablist">
@@ -92,7 +84,7 @@ export default function AuthModal({ onLoginSuccess }) {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>USERNAME</span>
+            <span>帳號</span>
             <div className="credential-input">
               <UserRound size={17} />
               <input
@@ -106,7 +98,7 @@ export default function AuthModal({ onLoginSuccess }) {
           </label>
 
           <label>
-            <span>PASSWORD</span>
+            <span>密碼</span>
             <div className="credential-input">
               <KeyRound size={17} />
               <input
@@ -129,9 +121,9 @@ export default function AuthModal({ onLoginSuccess }) {
 
           {mode === 'register' && (
             <label>
-              <span>PLAYER DISPLAY NAME</span>
+              <span>玩家名稱</span>
               <div className="credential-input">
-                <Sparkles size={17} />
+                <UserRound size={17} />
                 <input
                   value={displayName}
                   onChange={(event) => {
@@ -160,6 +152,8 @@ export default function AuthModal({ onLoginSuccess }) {
             </label>
           )}
 
+          {popupError && <p className="login-error" role="alert">{popupError}</p>}
+
           <button
             className="primary-action"
             type="submit"
@@ -170,46 +164,9 @@ export default function AuthModal({ onLoginSuccess }) {
                 ? (mode === 'login' ? '登入中…' : '創建帳號中…')
                 : (mode === 'login' ? '登入帳號' : '創建新帳號')}
             </span>
-            <ArrowRight size={19} />
           </button>
         </form>
       </section>
-
-      {popupError && (
-        <div className="auth-popup-backdrop" onClick={() => setPopupError('')}>
-          <div
-            className="auth-popup-card"
-            role="alertdialog"
-            aria-modal="true"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="auth-popup-header">
-              <div className="auth-popup-icon"><AlertTriangle size={18} /></div>
-              <div className="auth-popup-title">認證錯誤 // AUTH ERROR</div>
-              <button
-                type="button"
-                className="auth-popup-close"
-                onClick={() => setPopupError('')}
-                aria-label="關閉"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="auth-popup-body">
-              <p>{popupError}</p>
-            </div>
-            <div className="auth-popup-actions">
-              <button
-                type="button"
-                className="auth-popup-btn"
-                onClick={() => setPopupError('')}
-              >
-                確認
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

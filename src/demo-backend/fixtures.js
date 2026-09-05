@@ -214,6 +214,7 @@ export function createDemoDatabase() {
     pets: [],
     items: [],
     dungeons: DEMO_DUNGEONS.map((entry) => ({ ...entry })),
+    dungeonProgress: {},
     trades: DEMO_TRADES.map((entry) => ({ ...entry })),
     lostAssets: DEMO_LOST_ASSETS.map((entry) => ({ ...entry })),
   };
