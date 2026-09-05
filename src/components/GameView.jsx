@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
+import gemImg from '../assets/noxgem_128.png';
 
 /**
  * Dynamic HP bar gradient:
@@ -200,14 +201,24 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
         height={58}
         className="w-[58px] h-[58px] block rounded-2xl bg-[#060a0f]"
       />
-      {char.equipment && (
-        <span
-          title={`Equipped: ${char.equipment.name} (${char.equipment.type})`}
-          className="absolute -bottom-1 -right-1 z-10 px-1 py-0.5 bg-[#0a121c] border border-[#00ff66]/70 rounded text-[8px] font-mono font-bold text-[#00ff66] shadow-[0_0_6px_rgba(0,255,102,0.6)] leading-none"
-        >
-          {char.equipment.type === 'WEAPON' ? 'ATK' : 'DEF'}
-        </span>
-      )}
+      {char.equipment && (() => {
+        const eq = char.equipment;
+        const isBlade = eq.type === 'WEAPON' || eq.idString?.includes('blade') || eq.name?.includes('劍');
+        const isShield = eq.type === 'GEAR' || eq.idString?.includes('shield') || eq.name?.includes('盾');
+        const isHome = eq.type === 'TREASURE' || eq.idString?.includes('stone') || eq.idString?.includes('home') || eq.name?.includes('石') || eq.name?.includes('晶');
+
+        return (
+          <div
+            title={`裝備: ${eq.name}`}
+            className="absolute -bottom-[10px] -right-[10px] z-10 w-[32px] h-[32px] rounded-lg bg-black border border-[#2a3a4d] shadow-[0_2px_8px_rgba(0,0,0,0.9)] flex items-center justify-center pointer-events-auto"
+          >
+            {isBlade && <img src={swordImg} alt={eq.name} className="w-full h-full object-contain pixelated" />}
+            {isShield && <img src={shieldImg} alt={eq.name} className="w-full h-full object-contain pixelated" />}
+            {isHome && <img src={gemImg} alt={eq.name} className="w-full h-full object-contain pixelated" />}
+            {!isBlade && !isShield && !isHome && <span className="w-2.5 h-2.5 rounded-full bg-[#00ff66]" />}
+          </div>
+        );
+      })()}
     </div>
   );
 }
