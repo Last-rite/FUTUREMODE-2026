@@ -305,7 +305,7 @@ export class Ball {
     ctx.beginPath();
     ctx.arc(this.x, this.y, R, 0, Math.PI * 2);
     ctx.strokeStyle = isActive ? COLORS.WHITE : this.color;
-    ctx.lineWidth = isActive ? 3.5 : 2.0;
+    ctx.lineWidth = isActive ? 4.0 : 3.0;
     ctx.stroke();
 
     ctx.beginPath();
@@ -363,7 +363,7 @@ export class Ball {
       hpColor = `rgb(255, ${g}, ${b})`;
     }
 
-    const hpRingY = this.y + 35; // Optical center on lower ring band
+    const hpRingY = this.y + 36.5; // Optical center on lower ring band (between 34px and 44px)
     ctx.save();
     ctx.translate(this.x, hpRingY);
     ctx.scale(1.0, 1.1);

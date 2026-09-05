@@ -24,8 +24,8 @@ export const H = 800;
 
 // ── Ball & Stat Settings (5 combat attributes: hp/maxHp, atk, def, spd) ──
 export const INNER_R = 34;         // Radius of inner dark core (original ball size)
-export const RING_THICKNESS = 8;   // Edge thickness (x0.8)
-export const BALL_R = INNER_R + RING_THICKNESS; // 42 total outer collision radius
+export const RING_THICKNESS = 10;  // Edge thickness matching initiative display (was 8)
+export const BALL_R = INNER_R + RING_THICKNESS; // 44 total outer collision radius
 export const BALL_MAX_HP = 100;
 export const DEFAULT_HP = 100;
 export const DEFAULT_ATK = 10;
