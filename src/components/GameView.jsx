@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '../game/Engine.js';
 import { sound } from '../game/audio.js';
-import { TEAM_SIZE, W, H, SHOW_BOSS_BAR } from '../game/constants.js';
+import { TEAM_SIZE, W, H, SHOW_TOP_BAR } from '../game/constants.js';
 import {
   Volume2, VolumeX, RotateCcw, HelpCircle,
-  Trophy, Skull, X, Shield, Swords
+  Trophy, Skull, X, Shield, Swords, Coins
 } from 'lucide-react';
 
 function SquarcleBall({ char, isCurrent, isPlayer }) {
@@ -176,7 +176,9 @@ export default function GameView({ onExitToLobby }) {
     activeOwner: 1,
     turnPhase: 'PLAYER_AIM',
     initiativeQueue: [],
+    topBarInfo: null,
     boss: null,
+    goldEarned: 0,
     playerAliveCount: TEAM_SIZE,
     aiAliveCount: TEAM_SIZE,
   });
@@ -215,39 +217,69 @@ export default function GameView({ onExitToLobby }) {
     setIsMuted(muted);
   };
 
-  const boss = snapshot.boss;
-  const bossHpRatio = boss ? Math.max(0, Math.min(100, (boss.totalHp / boss.maxTotalHp) * 100)) : 0;
+  const topBar = snapshot.topBarInfo || snapshot.boss;
+  const topBarRatio = topBar ? Math.max(0, Math.min(100, (topBar.ratio ?? (topBar.hp / (topBar.maxHp || 1))) * 100)) : 0;
 
   return (
     <div className="relative w-full h-[100dvh] flex items-center justify-center bg-[#05070a] select-none overflow-hidden font-sans">
       {/* ── Main Arcade Phone Frame (NOXCAT Deep Tech Theme) ── */}
       <div className="relative w-full max-w-[480px] h-full max-h-[920px] flex flex-col justify-between items-center shadow-2xl bg-[#080d14] border-x border-[#172331]">
         
-        {/* ── Boss HP Bar (Top Header OUTSIDE the battle area) ── */}
-        {SHOW_BOSS_BAR && boss && (
-          <header className="w-full shrink-0 z-20 px-3 pt-3 pb-1 flex flex-col items-center bg-[#080d14] border-b border-[#172331]/60">
-            <div className="w-full max-w-[420px] bg-[#0c131dc0] backdrop-blur-md border border-[#ff2a55]/40 rounded-full px-3 py-1 flex items-center gap-2 shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
-              {/* Boss Skull Badge */}
-              <div className="flex items-center gap-1 bg-[#220a12] border border-[#ff2a55] px-2 py-0.5 rounded-full shrink-0">
-                <Skull size={13} className="text-[#ff2a55] animate-pulse" />
-                <span className="text-[10px] font-black text-[#ff2a55] font-mono tracking-wider">
-                  BOSS
-                </span>
+        {/* ── Top Health Bar (Matches reference art: name on left, angled bar on right) ── */}
+        {SHOW_TOP_BAR && topBar && (
+          <header className="w-full shrink-0 z-20 px-3.5 pt-2.5 pb-1.5 flex items-center justify-between gap-3 bg-[#080d14] border-b border-[#172331]/80">
+            {/* Title / Name on left */}
+            <div className="flex items-center shrink-0">
+              <span className="text-xs font-mono font-black text-white uppercase tracking-wider drop-shadow-[0_0_8px_rgba(255,255,255,0.25)] select-none">
+                {topBar.name}
+              </span>
+            </div>
+
+            {/* Angled Tech Health Bar on right */}
+            <div className="relative flex-1 max-w-[340px] h-4 flex items-center justify-end">
+              <div
+                className="relative w-full h-full p-[1.5px] overflow-hidden"
+                style={{
+                  clipPath: 'polygon(6px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 6px 100%, 0% 50%)',
+                  background: 'linear-gradient(180deg, #24364e 0%, #101a28 100%)',
+                  boxShadow: 'inset 0 0 4px rgba(0,0,0,0.9)',
+                }}
+              >
+                <div
+                  className="w-full h-full relative overflow-hidden"
+                  style={{
+                    clipPath: 'polygon(5px 0%, calc(100% - 7px) 0%, 100% 50%, calc(100% - 7px) 100%, 5px 100%, 0% 50%)',
+                    background: '#090e15',
+                  }}
+                >
+                  {/* Subtle diagonal tech stripes pattern matching sketch */}
+                  <div
+                    className="absolute inset-0 opacity-20 pointer-events-none"
+                    style={{
+                      backgroundImage: 'repeating-linear-gradient(-45deg, #ffffff 0, #ffffff 2px, transparent 2px, transparent 8px)',
+                    }}
+                  />
+
+                  {/* Liquid HP fill */}
+                  <div
+                    className="h-full bg-gradient-to-r from-[#ffd000] via-[#ff5533] to-[#ff2a55] transition-all duration-300 shadow-[0_0_12px_rgba(255,42,85,0.8)] relative"
+                    style={{ width: `${topBarRatio}%` }}
+                  >
+                    {/* Diagonal hatching on active bar */}
+                    <div
+                      className="absolute inset-0 opacity-25 pointer-events-none"
+                      style={{
+                        backgroundImage: 'repeating-linear-gradient(-45deg, #ffffff 0, #ffffff 2px, transparent 2px, transparent 8px)',
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Segmented Boss HP Bar */}
-              <div className="flex-1 flex flex-col gap-0.5">
-                <div className="flex justify-between items-center text-[10px] font-mono font-bold px-0.5">
-                  <span className="text-white drop-shadow">ENEMY FLEET</span>
-                  <span className="text-[#ff2a55] drop-shadow">{boss.totalHp} / {boss.maxTotalHp}</span>
-                </div>
-                <div className="w-full h-2.5 bg-[#141d28] rounded-full overflow-hidden p-0.5 border border-[#ff2a55]/30">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#ffd000] via-[#ff5533] to-[#ff2a55] rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(255,42,85,0.6)]"
-                    style={{ width: `${bossHpRatio}%` }}
-                  />
-                </div>
-              </div>
+              {/* Exact HP Numbers */}
+              <span className="absolute right-2 text-[10px] font-mono font-black text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
+                {topBar.hp} / {topBar.maxHp}
+              </span>
             </div>
           </header>
         )}
@@ -305,13 +337,14 @@ export default function GameView({ onExitToLobby }) {
 
           {/* 2. Utility Toolbar (Below the characters) */}
           <div className="w-full px-3 py-1.5 bg-[#06090e] border-t border-[#131c26] flex items-center justify-between">
-            {/* Battle / Round status */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-[#0d1622] text-[#00ff66] border border-[#00ff66]/30 shadow-[0_0_8px_rgba(0,255,102,0.15)]">
-                BATTLE R{snapshot.round}
-              </span>
-              <span className="text-[11px] font-mono font-bold text-slate-400">
-                INITIATIVE QUEUE
+            {/* Gold earned this fight (fixed width to prevent layout overflow/jitter) */}
+            <div
+              className="w-[88px] h-7 px-2 py-0.5 rounded-lg bg-[#0d1622] border border-[#ffd000]/40 shadow-[0_0_10px_rgba(255,208,0,0.15)] flex items-center gap-1.5 shrink-0 select-none overflow-hidden"
+              title="Gold earned this fight (1 gold per damage dealt)"
+            >
+              <Coins size={14} className="text-[#ffd000] shrink-0 drop-shadow-[0_0_4px_rgba(255,208,0,0.5)]" />
+              <span className="text-xs font-mono font-black text-[#ffd000] tabular-nums truncate leading-none">
+                +{snapshot.goldEarned ?? 0}
               </span>
             </div>
 

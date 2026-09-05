@@ -1,7 +1,8 @@
 import {
   W, H, BALL_R, DRAG_MAX, SPEED_SCALE, COLORS,
   TEAM_SIZE, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD,
-  ENEMY_START_Y, PLAYER_START_Y
+  ENEMY_START_Y, PLAYER_START_Y,
+  SHOW_TOP_BAR, TOP_BAR_MODE, BOSS_TARGET_ID, BOSS_DISPLAY_NAME, FLEET_DISPLAY_NAME
 } from './constants.js';
 import { Ball } from './Ball.js';
 import { DmgNum, Particle, GlassShard, LiquidDrop, ImpactRing } from './DmgNum.js';
@@ -24,6 +25,10 @@ export class GameEngine {
     this.turnQueue = []; // array of labels in order
     this.turnIndex = 0;
     this.round = 1;
+
+    // Gold reward & Fleet tracking
+    this.goldEarned = 0;
+    this.initialEnemyFleetMaxHp = 0;
 
     // Screen Shake punch
     this.shake = 0;
@@ -137,6 +142,12 @@ export class GameEngine {
     // Turn order: All Team 1 pegs, then All Team 2 pegs
     this.turnQueue = [...pLabels, ...aLabels];
     this.turnIndex = 0;
+
+    // Record initial enemy fleet total max HP (prevents HP bar magically increasing on kills)
+    this.initialEnemyFleetMaxHp = this.balls
+      .filter(b => b.owner === 2)
+      .reduce((sum, b) => sum + b.maxHp, 0);
+    this.goldEarned = 0;
 
     this.emitLog(`🎮 Match Started! Round 1 (Team 1 Phase: ${pLabels.join(', ')})`);
     this.startTurn();
@@ -295,26 +306,46 @@ export class GameEngine {
     });
   }
 
-  // Floating Boss Info for top bar
-  getBossInfo() {
-    const aliveAi = this.balls.filter(b => b.owner === 2 && b.alive);
-    if (aliveAi.length === 0) return null;
+  // Top Health Bar info (supports 'boss' mode and 'fleet' mode)
+  getTopBarInfo() {
+    if (!SHOW_TOP_BAR) return null;
+    const aiBalls = this.balls.filter(b => b.owner === 2);
+    if (aiBalls.length === 0) return null;
 
-    const boss = aliveAi.find(b => b.label === '2a') || aliveAi[0];
-    const totalAiHp = aliveAi.reduce((sum, b) => sum + b.hp, 0);
-    const maxTotalAiHp = aliveAi.length * 100;
-
-    return {
-      label: boss.label,
-      hp: boss.hp,
-      maxHp: boss.maxHp,
-      totalHp: totalAiHp,
-      maxTotalHp: maxTotalAiHp,
-    };
+    if (TOP_BAR_MODE === 'boss') {
+      // Boss Mode: tracks specific designated enemy unit
+      const boss = aiBalls.find(b => b.label === BOSS_TARGET_ID) || aiBalls[0];
+      const hp = boss ? Math.max(0, boss.hp) : 0;
+      const maxHp = boss ? boss.maxHp : DEFAULT_HP;
+      return {
+        mode: 'boss',
+        name: BOSS_DISPLAY_NAME,
+        targetId: boss ? boss.label : BOSS_TARGET_ID,
+        hp,
+        maxHp,
+        ratio: maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0,
+        alive: boss ? boss.alive : false,
+      };
+    } else {
+      // Fleet Mode: total current HP against initial fixed fleet max HP
+      const currentFleetHp = aiBalls.reduce((sum, b) => sum + Math.max(0, b.hp), 0);
+      const fleetMaxHp = this.initialEnemyFleetMaxHp || (aiBalls.length * DEFAULT_HP);
+      return {
+        mode: 'fleet',
+        name: FLEET_DISPLAY_NAME,
+        targetId: null,
+        hp: currentFleetHp,
+        maxHp: fleetMaxHp,
+        ratio: fleetMaxHp > 0 ? Math.max(0, Math.min(1, currentFleetHp / fleetMaxHp)) : 0,
+        alive: currentFleetHp > 0,
+      };
+    }
   }
 
   sendSnapshot() {
     if (!this.callbacks.onSnapshot) return;
+
+    const topBar = this.getTopBarInfo();
 
     this.callbacks.onSnapshot({
       round: this.round,
@@ -322,7 +353,9 @@ export class GameEngine {
       activeOwner: this.activeBall?.owner || 1,
       turnPhase: this.state,
       initiativeQueue: this.getInitiativeQueue(),
-      boss: this.getBossInfo(),
+      topBarInfo: topBar,
+      boss: topBar, // Backwards-compatible
+      goldEarned: this.goldEarned,
     });
   }
 

@@ -6,8 +6,13 @@
 // Easily change to 1, 2, 3, 4, 5, etc. to test different team sizes
 export const TEAM_SIZE = 3;
 
-// ── BACKDOOR VARIABLE: Toggle Boss HP Bar on / off (defaults to true) ──
-export const SHOW_BOSS_BAR = true;
+// ── BACKDOOR VARIABLES: Top Health Bar Settings ──
+export const SHOW_TOP_BAR = true;       // Show or hide top health bar
+export const SHOW_BOSS_BAR = true;      // Backward compatible alias
+export const TOP_BAR_MODE = 'fleet';    // 'boss' | 'fleet'
+export const BOSS_TARGET_ID = '2a';     // Target unit in 'boss' mode (e.g. '2a', '2b', '2c')
+export const BOSS_DISPLAY_NAME = 'VOID GOLIATH'; // Custom boss title text
+export const FLEET_DISPLAY_NAME = 'ENEMY FLEET'; // Custom fleet title text
 
 // ── Arena Dimensions (Portrait 90° CCW rotated) ──
 export const W = 550;
