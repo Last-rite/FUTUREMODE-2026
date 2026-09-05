@@ -7,6 +7,32 @@ import {
   Trophy, Skull, X, Shield, Swords, Coins
 } from 'lucide-react';
 
+/**
+ * Dynamic HP bar gradient:
+ * - Keeps the leftmost color (1:3 soft tinted white) and rightmost color (team color) constant.
+ * - As the health bar gets shorter, the transition between them naturally becomes harsher and harsher.
+ * - Red (Enemy): rgb(255, 184, 198) to rgb(255, 42, 85)
+ * - Green (Player): rgb(170, 255, 204) to rgb(0, 255, 102)
+ */
+function getHpGradient(ratio, colorType = 'red') {
+  if (colorType === 'red') {
+    return 'linear-gradient(to right, rgb(255, 184, 198), rgb(255, 42, 85))';
+  } else {
+    return 'linear-gradient(to right, rgb(170, 255, 204), rgb(0, 255, 102))';
+  }
+}
+
+/**
+ * Maintains the hexagonal shape with right triangle tip as the bar shrinks
+ */
+function getHpFillClipPath(ratio) {
+  if (ratio <= 0) return 'none';
+  if (ratio < 4) {
+    return 'polygon(0% 0%, 100% 50%, 0% 100%)';
+  }
+  return 'polygon(5px 0%, calc(100% - 6px) 0%, 100% 50%, calc(100% - 6px) 100%, 5px 100%, 0% 50%)';
+}
+
 function SquarcleBall({ char, isCurrent, isPlayer }) {
   const canvasRef = useRef(null);
   const phaseRef = useRef(0);
@@ -177,6 +203,7 @@ export default function GameView({ onExitToLobby }) {
     turnPhase: 'PLAYER_AIM',
     initiativeQueue: [],
     topBarInfo: null,
+    playerBarInfo: null,
     boss: null,
     goldEarned: 0,
     playerAliveCount: TEAM_SIZE,
@@ -220,6 +247,9 @@ export default function GameView({ onExitToLobby }) {
   const topBar = snapshot.topBarInfo || snapshot.boss;
   const topBarRatio = topBar ? Math.max(0, Math.min(100, (topBar.ratio ?? (topBar.hp / (topBar.maxHp || 1))) * 100)) : 0;
 
+  const playerBar = snapshot.playerBarInfo;
+  const playerBarRatio = playerBar ? Math.max(0, Math.min(100, (playerBar.ratio ?? (playerBar.hp / (playerBar.maxHp || 1))) * 100)) : 0;
+
   return (
     <div className="relative w-full h-[100dvh] flex items-center justify-center bg-[#05070a] select-none overflow-hidden font-sans">
       {/* ── Main Arcade Phone Frame (NOXCAT Deep Tech Theme) ── */}
@@ -252,27 +282,16 @@ export default function GameView({ onExitToLobby }) {
                     background: '#090e15',
                   }}
                 >
-                  {/* Subtle diagonal tech stripes pattern matching sketch */}
-                  <div
-                    className="absolute inset-0 opacity-20 pointer-events-none"
-                    style={{
-                      backgroundImage: 'repeating-linear-gradient(-45deg, #ffffff 0, #ffffff 2px, transparent 2px, transparent 8px)',
-                    }}
-                  />
-
                   {/* Liquid HP fill */}
                   <div
-                    className="h-full bg-gradient-to-r from-[#ffd000] via-[#ff5533] to-[#ff2a55] transition-all duration-300 shadow-[0_0_12px_rgba(255,42,85,0.8)] relative"
-                    style={{ width: `${topBarRatio}%` }}
-                  >
-                    {/* Diagonal hatching on active bar */}
-                    <div
-                      className="absolute inset-0 opacity-25 pointer-events-none"
-                      style={{
-                        backgroundImage: 'repeating-linear-gradient(-45deg, #ffffff 0, #ffffff 2px, transparent 2px, transparent 8px)',
-                      }}
-                    />
-                  </div>
+                    className="h-full transition-all duration-300 shadow-[0_0_12px_rgba(255,42,85,0.8)] relative"
+                    style={{
+                      width: `${topBarRatio}%`,
+                      opacity: topBarRatio > 0 ? 1 : 0,
+                      clipPath: getHpFillClipPath(topBarRatio),
+                      background: getHpGradient(topBarRatio / 100, 'red'),
+                    }}
+                  />
                 </div>
               </div>
 
@@ -284,10 +303,10 @@ export default function GameView({ onExitToLobby }) {
           </header>
         )}
 
-        {/* ── Playfield Arena Area ── */}
-        <main className="relative flex-1 w-full min-h-0 flex items-center justify-center p-2 overflow-hidden">
+        {/* ── Playfield Arena Area (Shrunk horizontally slightly) ── */}
+        <main className="relative flex-1 w-full min-h-0 flex items-center justify-center px-4 py-1.5 overflow-hidden">
           <div
-            className="relative flex items-center justify-center h-full max-h-full max-w-full"
+            className="relative flex items-center justify-center h-full max-h-full max-w-[94%]"
             style={{ aspectRatio: `${W} / ${H}` }}
           >
             {/* Interactive Game Canvas */}
@@ -297,6 +316,54 @@ export default function GameView({ onExitToLobby }) {
             />
           </div>
         </main>
+
+        {/* ── Player Total HP Bar (Between battle board and initiative rack) ── */}
+        {playerBar && (
+          <div className="w-full shrink-0 z-20 px-3.5 py-1.5 flex items-center justify-between gap-3 bg-[#080d14] border-t border-[#172331]/80">
+            {/* Title / Name on left */}
+            <div className="flex items-center shrink-0">
+              <span className="text-xs font-mono font-black text-[#00ff66] uppercase tracking-wider drop-shadow-[0_0_8px_rgba(0,255,102,0.35)] select-none">
+                {playerBar.name || 'PLAYER SQUAD'}
+              </span>
+            </div>
+
+            {/* Angled Tech Health Bar on right */}
+            <div className="relative flex-1 max-w-[340px] h-4 flex items-center justify-end">
+              <div
+                className="relative w-full h-full p-[1.5px] overflow-hidden"
+                style={{
+                  clipPath: 'polygon(6px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 6px 100%, 0% 50%)',
+                  background: 'linear-gradient(180deg, #183e2a 0%, #0d1e15 100%)',
+                  boxShadow: 'inset 0 0 4px rgba(0,0,0,0.9)',
+                }}
+              >
+                <div
+                  className="w-full h-full relative overflow-hidden"
+                  style={{
+                    clipPath: 'polygon(5px 0%, calc(100% - 7px) 0%, 100% 50%, calc(100% - 7px) 100%, 5px 100%, 0% 50%)',
+                    background: '#07120c',
+                  }}
+                >
+                  {/* Liquid HP fill with white-to-green transition */}
+                  <div
+                    className="h-full transition-all duration-300 shadow-[0_0_12px_rgba(0,255,102,0.8)] relative"
+                    style={{
+                      width: `${playerBarRatio}%`,
+                      opacity: playerBarRatio > 0 ? 1 : 0,
+                      clipPath: getHpFillClipPath(playerBarRatio),
+                      background: getHpGradient(playerBarRatio / 100, 'green'),
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Exact HP Numbers */}
+              <span className="absolute right-2 text-[10px] font-mono font-black text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
+                {playerBar.hp} / {playerBar.maxHp}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* ── Monster Strike Bottom Console (Initiative Queue + Toolbar) ── */}
         <footer className="w-full shrink-0 z-10 flex flex-col bg-[#080d14] border-t border-[#172331] shadow-[0_-8px_25px_rgba(0,0,0,0.7)]">
@@ -337,13 +404,13 @@ export default function GameView({ onExitToLobby }) {
 
           {/* 2. Utility Toolbar (Below the characters) */}
           <div className="w-full px-3 py-1.5 bg-[#06090e] border-t border-[#131c26] flex items-center justify-between">
-            {/* Gold earned this fight (fixed width to prevent layout overflow/jitter) */}
+            {/* Gold earned this fight (NOXCAT Neon Green vibe) */}
             <div
-              className="w-[88px] h-7 px-2 py-0.5 rounded-lg bg-[#0d1622] border border-[#ffd000]/40 shadow-[0_0_10px_rgba(255,208,0,0.15)] flex items-center gap-1.5 shrink-0 select-none overflow-hidden"
+              className="w-[88px] h-7 px-2 py-0.5 rounded-lg bg-[#0d1622] border border-[#00ff66]/40 shadow-[0_0_10px_rgba(0,255,102,0.15)] flex items-center gap-1.5 shrink-0 select-none overflow-hidden"
               title="Gold earned this fight (1 gold per damage dealt)"
             >
-              <Coins size={14} className="text-[#ffd000] shrink-0 drop-shadow-[0_0_4px_rgba(255,208,0,0.5)]" />
-              <span className="text-xs font-mono font-black text-[#ffd000] tabular-nums truncate leading-none">
+              <Coins size={14} className="text-[#00ff66] shrink-0 drop-shadow-[0_0_4px_rgba(0,255,102,0.6)]" />
+              <span className="text-xs font-mono font-black text-[#00ff66] tabular-nums truncate leading-none drop-shadow-[0_0_4px_rgba(0,255,102,0.4)]">
                 +{snapshot.goldEarned ?? 0}
               </span>
             </div>

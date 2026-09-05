@@ -14,6 +14,10 @@ export const BOSS_TARGET_ID = '2a';     // Target unit in 'boss' mode (e.g. '2a'
 export const BOSS_DISPLAY_NAME = 'VOID GOLIATH'; // Custom boss title text
 export const FLEET_DISPLAY_NAME = 'ENEMY FLEET'; // Custom fleet title text
 
+// ── BACKDOOR VARIABLE: Enemy Agent Inaccuracy ──
+// Default 10: rolls ±deg on aim direction, and (100% - inacc% + rand(-inacc, inacc)%) of max power
+export const ENEMY_AGENT_INACCURACY = 10;
+
 // ── Arena Dimensions (Portrait 90° CCW rotated) ──
 export const W = 550;
 export const H = 800;

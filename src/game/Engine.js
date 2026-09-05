@@ -2,7 +2,8 @@ import {
   W, H, BALL_R, DRAG_MAX, SPEED_SCALE, COLORS,
   TEAM_SIZE, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD,
   ENEMY_START_Y, PLAYER_START_Y,
-  SHOW_TOP_BAR, TOP_BAR_MODE, BOSS_TARGET_ID, BOSS_DISPLAY_NAME, FLEET_DISPLAY_NAME
+  SHOW_TOP_BAR, TOP_BAR_MODE, BOSS_TARGET_ID, BOSS_DISPLAY_NAME, FLEET_DISPLAY_NAME,
+  ENEMY_AGENT_INACCURACY
 } from './constants.js';
 import { Ball } from './Ball.js';
 import { DmgNum, Particle, GlassShard, LiquidDrop, ImpactRing } from './DmgNum.js';
@@ -29,6 +30,10 @@ export class GameEngine {
     // Gold reward & Fleet tracking
     this.goldEarned = 0;
     this.initialEnemyFleetMaxHp = 0;
+    this.initialPlayerFleetMaxHp = 0;
+
+    // Backdoor: Enemy agent inaccuracy (default 10 degrees and power variation)
+    this.enemy_agent_inaccuracy = ENEMY_AGENT_INACCURACY;
 
     // Screen Shake punch
     this.shake = 0;
@@ -143,11 +148,15 @@ export class GameEngine {
     this.turnQueue = [...pLabels, ...aLabels];
     this.turnIndex = 0;
 
-    // Record initial enemy fleet total max HP (prevents HP bar magically increasing on kills)
+    // Record initial fleet total max HP (prevents HP bar magically increasing on kills)
     this.initialEnemyFleetMaxHp = this.balls
       .filter(b => b.owner === 2)
       .reduce((sum, b) => sum + b.maxHp, 0);
+    this.initialPlayerFleetMaxHp = this.balls
+      .filter(b => b.owner === 1)
+      .reduce((sum, b) => sum + b.maxHp, 0);
     this.goldEarned = 0;
+    this.enemy_agent_inaccuracy = ENEMY_AGENT_INACCURACY;
 
     this.emitLog(`🎮 Match Started! Round 1 (Team 1 Phase: ${pLabels.join(', ')})`);
     this.startTurn();
@@ -191,24 +200,37 @@ export class GameEngine {
       if (this.state !== 'AI_AIM') return;
 
       const snapshot = this.getSnapshot();
+      // Perfect AI agent calculates its best move based on simulations (unmodified)
       const move = this.agent.chooseMove(snapshot, ball.label);
 
-      // AI phantom aim preview with intended angle and power
+      // Backdoor: Inaccuracy applied after the perfect agent calculated its best move
+      const inacc = this.enemy_agent_inaccuracy ?? ENEMY_AGENT_INACCURACY;
+
+      // 1. Aim direction: randomly roll +- of this degree
+      const angleRollDeg = (Math.random() * 2 - 1) * inacc;
+      const finalTheta = move.theta + (angleRollDeg * Math.PI) / 180;
+
+      // 2. Power: use (100% - inacc% + rand(-inacc, +inacc)%) of max power (capped at 100%)
+      const powerRollPct = (Math.random() * 2 - 1) * inacc;
+      const powerFactor = Math.min(1.0, Math.max(0.05, (100 - inacc + powerRollPct) / 100));
+      const finalPower = powerFactor * DRAG_MAX;
+
+      // AI phantom aim preview with post-inaccuracy angle and power
       this.aiAimPreview = {
         ox: ball.x,
         oy: ball.y,
-        theta: move.theta,
-        power: move.power,
+        theta: finalTheta,
+        power: finalPower,
       };
 
       this.aiTimer = setTimeout(() => {
         if (this.state !== 'AI_AIM') return;
         this.aiAimPreview = null;
 
-        const vx = Math.cos(move.theta) * move.power * SPEED_SCALE;
-        const vy = Math.sin(move.theta) * move.power * SPEED_SCALE;
+        const vx = Math.cos(finalTheta) * finalPower * SPEED_SCALE;
+        const vy = Math.sin(finalTheta) * finalPower * SPEED_SCALE;
 
-        sound.playLaunch(Math.min(1.0, move.power / DRAG_MAX));
+        sound.playLaunch(Math.min(1.0, finalPower / DRAG_MAX));
         ball.launch(vx, vy);
         this.state = 'ROLLING';
         this.emitLog(`⚡ AI launches peg ${ball.label}!`);
@@ -342,10 +364,26 @@ export class GameEngine {
     }
   }
 
+  // Player Total Health Bar info
+  getPlayerBarInfo() {
+    const pBalls = this.balls.filter(b => b.owner === 1);
+    if (pBalls.length === 0) return null;
+    const currentHp = pBalls.reduce((sum, b) => sum + Math.max(0, b.hp), 0);
+    const maxHp = this.initialPlayerFleetMaxHp || (pBalls.length * DEFAULT_HP);
+    return {
+      name: 'PLAYER SQUAD',
+      hp: currentHp,
+      maxHp,
+      ratio: maxHp > 0 ? Math.max(0, Math.min(1, currentHp / maxHp)) : 0,
+      alive: currentHp > 0,
+    };
+  }
+
   sendSnapshot() {
     if (!this.callbacks.onSnapshot) return;
 
     const topBar = this.getTopBarInfo();
+    const playerBar = this.getPlayerBarInfo();
 
     this.callbacks.onSnapshot({
       round: this.round,
@@ -354,6 +392,7 @@ export class GameEngine {
       turnPhase: this.state,
       initiativeQueue: this.getInitiativeQueue(),
       topBarInfo: topBar,
+      playerBarInfo: playerBar,
       boss: topBar, // Backwards-compatible
       goldEarned: this.goldEarned,
     });
@@ -566,6 +605,11 @@ export class GameEngine {
           sound.playDamage();
           this.shake = Math.max(this.shake, 11 + ev.damage * 0.65);
           if (navigator.vibrate) navigator.vibrate([25]);
+
+          // Award 1 gold per point of damage dealt to enemy pegs
+          if (ev.attacker.owner === 1 && ev.defender.owner === 2) {
+            this.goldEarned += ev.damage;
+          }
 
           this.dmgNums.push(new DmgNum(ev.x, ev.y - BALL_R - 14, ev.damage));
           this.impactRings.push(new ImpactRing(ev.x, ev.y, ev.attacker.color));
