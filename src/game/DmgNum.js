@@ -27,13 +27,15 @@ export class DmgNum {
     const scale = 1.0 + (1.0 - this.life / this.maxLife) * 0.35;
 
     ctx.globalAlpha = alpha;
-    ctx.font = `900 ${Math.round(22 * scale)}px "Courier New", monospace`;
+    ctx.font = `900 ${Math.round(22 * scale)}px Arial, Helvetica, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
 
     // Black heavy border
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 6;
     ctx.strokeText(`-${this.val}`, this.x, this.y);
 
     // Neon fill

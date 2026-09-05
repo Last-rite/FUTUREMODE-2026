@@ -68,8 +68,8 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
 
     const render = () => {
       const size = 58;
-      const ringW = 7;
-      const innerSize = size - ringW * 2; // 44
+      const ringW = 9;
+      const innerSize = size - ringW * 2; // 40
       const maxHp = char.maxHp || 100;
       const hpRatio = Math.max(0, Math.min(1, char.hp / maxHp));
 
@@ -132,7 +132,7 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
         }
       }
 
-      // Cutout inner squarcle core (7px border width)
+      // Cutout inner squarcle core (9px border width)
       ctx.beginPath();
       ctx.roundRect(ringW, ringW, innerSize, innerSize, 8);
       ctx.fillStyle = '#080d14';
@@ -142,18 +142,21 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       ctx.stroke();
 
       // Centered Character Label inside inner squarcle
-      ctx.font = '900 15px monospace';
+      ctx.font = '900 15px Arial, Helvetica, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3.5;
+      ctx.strokeText(char.label, size / 2, size / 2);
       ctx.fillStyle = '#ffffff';
       ctx.fillText(char.label, size / 2, size / 2);
 
       ctx.restore();
 
-      // Outer squarcle border:
-      // When NOT their turn, outer green/red edge is slightly thicker (3.0px) and bold
-      // When IS their turn, neon white active edge
-      const borderW = isCurrent ? 2.5 : 3.0;
+      // Outer squarcle border
+      const borderW = isCurrent ? 3.0 : 3.0;
       const inset = borderW / 2;
       ctx.beginPath();
       ctx.roundRect(inset, inset, size - borderW, size - borderW, 14);
@@ -172,14 +175,12 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
 
   return (
     <div
-      className={`relative rounded-2xl p-0.5 transition-all duration-200 ${
+      className={`relative rounded-2xl transition-all duration-200 ${
         isCurrent
           ? isPlayer
-            ? 'shadow-[0_0_22px_rgba(0,255,102,0.8)] scale-105 z-20'
-            : 'shadow-[0_0_22px_rgba(255,42,85,0.8)] scale-105 z-20'
-          : isPlayer
-          ? 'border border-[#00ff66]/60 shadow-[0_0_8px_rgba(0,255,102,0.25)] opacity-90'
-          : 'border border-[#ff2a55]/60 shadow-[0_0_8px_rgba(255,42,85,0.25)] opacity-90'
+            ? 'shadow-[0_0_22px_rgba(0,255,102,0.85)] scale-105 z-20'
+            : 'shadow-[0_0_22px_rgba(255,42,85,0.85)] scale-105 z-20'
+          : 'opacity-90'
       }`}
     >
       <canvas
@@ -303,10 +304,10 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
           </header>
         )}
 
-        {/* ── Playfield Arena Area (Shrunk horizontally slightly) ── */}
-        <main className="relative flex-1 w-full min-h-0 flex items-center justify-center px-4 py-1.5 overflow-hidden">
+        {/* ── Playfield Arena Area ── */}
+        <main className="relative flex-1 w-full min-h-0 flex items-center justify-center px-2 py-1 overflow-hidden">
           <div
-            className="relative flex items-center justify-center h-full max-h-full max-w-[94%]"
+            className="relative flex items-center justify-center h-full max-h-full max-w-full"
             style={{ aspectRatio: `${W} / ${H}` }}
           >
             {/* Interactive Game Canvas */}
