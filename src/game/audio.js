@@ -1,11 +1,27 @@
+import baseMusicUrl from '../../assets/base.mp3';
+import battleMusicUrl from '../../assets/battle.mp3';
+import victoryMusicUrl from '../../assets/Victory.mp3';
+import defeatMusicUrl from '../../assets/Dead.mp3';
+
+export const MUSIC_TRACKS = Object.freeze({
+  base: { src: baseMusicUrl, loop: true },
+  battle: { src: battleMusicUrl, loop: true },
+  victory: { src: victoryMusicUrl, loop: true },
+  defeat: { src: defeatMusicUrl, loop: false },
+});
+
 /**
- * Procedural Web Audio API sound engine (zero external assets needed)
+ * Shared audio engine for procedural sound effects and streamed music assets.
  */
 
 class SoundEngine {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.music = null;
+    this.musicKey = null;
+    this.desiredMusicKey = null;
+    this.unlockHandler = null;
   }
 
   init() {
@@ -22,7 +38,101 @@ class SoundEngine {
 
   toggleMute() {
     this.muted = !this.muted;
+    if (this.muted) {
+      this.music?.pause();
+    } else {
+      this.resumeMusic();
+    }
     return this.muted;
+  }
+
+  playMusic(key, { restart = false } = {}) {
+    const track = MUSIC_TRACKS[key];
+    if (!track) return;
+
+    this.desiredMusicKey = key;
+    if (this.muted || typeof Audio === 'undefined') return;
+
+    if (this.musicKey === key && this.music) {
+      if (restart) this.music.currentTime = 0;
+      this.tryPlayMusic(this.music);
+      return;
+    }
+
+    this.releaseMusicElement(this.music);
+
+    const music = new Audio(track.src);
+    music.loop = track.loop;
+    music.preload = 'auto';
+    music.volume = 0.34;
+
+    this.music = music;
+    this.musicKey = key;
+    this.tryPlayMusic(music);
+  }
+
+  resumeMusic() {
+    if (!this.desiredMusicKey) return;
+    if (this.musicKey !== this.desiredMusicKey || !this.music) {
+      this.playMusic(this.desiredMusicKey);
+      return;
+    }
+    this.tryPlayMusic(this.music);
+  }
+
+  tryPlayMusic(music) {
+    if (this.muted || !music || music !== this.music) return;
+
+    try {
+      const playResult = music.play();
+      if (playResult?.catch) {
+        playResult.catch(() => {
+          if (music === this.music) this.waitForInteraction();
+        });
+      }
+    } catch {
+      if (music === this.music) this.waitForInteraction();
+    }
+  }
+
+  releaseMusicElement(music) {
+    if (!music) return;
+    music.pause();
+    music.currentTime = 0;
+
+    // Fully release the previous media resource so a stale/HMR-created player
+    // cannot continue a buffered looping track in the background.
+    if (typeof music.removeAttribute === 'function') {
+      music.removeAttribute('src');
+      if (typeof music.load === 'function') music.load();
+    }
+  }
+
+  waitForInteraction() {
+    if (this.unlockHandler || typeof document === 'undefined') return;
+
+    this.unlockHandler = () => {
+      document.removeEventListener('pointerdown', this.unlockHandler, true);
+      document.removeEventListener('keydown', this.unlockHandler, true);
+      this.unlockHandler = null;
+      this.init();
+      this.resumeMusic();
+    };
+
+    document.addEventListener('pointerdown', this.unlockHandler, true);
+    document.addEventListener('keydown', this.unlockHandler, true);
+  }
+
+  stopMusic() {
+    this.releaseMusicElement(this.music);
+    this.music = null;
+    this.musicKey = null;
+    this.desiredMusicKey = null;
+    if (this.unlockHandler && typeof document !== 'undefined') {
+      document.removeEventListener('pointerdown', this.unlockHandler, true);
+      document.removeEventListener('keydown', this.unlockHandler, true);
+      this.unlockHandler = null;
+    }
   }
 
   // Slingshot launch whoosh
@@ -180,3 +290,7 @@ class SoundEngine {
 }
 
 export const sound = new SoundEngine();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => sound.stopMusic());
+}

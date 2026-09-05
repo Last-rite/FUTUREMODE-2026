@@ -1,4 +1,5 @@
 import levelCityImg from '../assets/level_city.png';
+import levelRemnantImg from '../../assets/level_remnant.png';
 
 // Plausible mock database fixtures strictly aligned with game-design Documents.md
 // and the sketch designs (trade_example.jpg, mourn_example.jpg).
@@ -88,7 +89,7 @@ export function createStarterRosterForPlayer(playerId) {
       selected: false,
       accent: '#00ff66',
       quote: 'Tomorrow already happened.',
-      skill: '時空衝擊：撞牆後下一次攻擊 +2 傷害。',
+      skill: '時空衝擊：撞牆後，本次移動的下一次攻擊 +2 傷害；命中後重置。',
       equipped: null,
       ownerId: pId,
     },
@@ -126,7 +127,7 @@ export function createStarterRosterForPlayer(playerId) {
       selected: false,
       accent: '#00ff66',
       quote: 'Try moving me.',
-      skill: '堅毅立場：若上一輪未命中任何目標，下一次受擊免傷並使對手減速。',
+      skill: '堅毅立場：被敵人撞擊時，使攻擊者額外減速一次。',
       equipped: null,
       ownerId: pId,
     },
@@ -227,8 +228,8 @@ export const DEMO_DUNGEONS = [
   {
     id: 'dungeon-zero',
     chapter: '01',
-    name: '零號資料井',
-    subtitle: 'DATA WELL // ENTRY NODE',
+    name: '幽蘭城堡',
+    subtitle: 'ORCHID CASTLE // ENTRY',
     difficulty: 'NORMAL',
     cost: 5,
     loot: 3,
@@ -238,12 +239,13 @@ export const DEMO_DUNGEONS = [
   {
     id: 'dungeon-ash',
     chapter: '02',
-    name: '灰燼轉運站',
-    subtitle: 'ASH RELAY // HIGH RISK',
+    name: '古代遺跡',
+    subtitle: 'ANCIENT RUINS // HIGH RISK',
     difficulty: 'HARD',
     cost: 8,
     loot: 7,
     tone: '#ff5f3d',
+    image: levelRemnantImg,
   },
 ];
 
@@ -461,10 +463,7 @@ export function createDemoDatabase() {
     pets: allPets,
     items: allItems,
     dungeons: DEMO_DUNGEONS.map((entry) => ({ ...entry })),
-    dungeonProgress: {
-      'player-cyber-pup': ['dungeon-zero'],
-      'player-pixel-ghost': ['dungeon-zero', 'dungeon-ash'],
-    },
+    dungeonProgress: {},
     trades: DEMO_TRADES.map((entry) => ({ ...entry })),
     lostAssets: DEMO_LOST_ASSETS.map((entry) => ({ ...entry })),
   };

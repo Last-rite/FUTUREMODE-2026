@@ -49,6 +49,12 @@ export const MIN_SPD = 0.6;        // Stop threshold
 export const PHYSICS_HERTZ = 120;  // Substep physics loop (120Hz for zero tunneling)
 export const MAX_SIM_STEPS = 3000; // Cap for AI evaluation
 
+// ── Character Special Skills ──
+export const FUTURE_WALL_DAMAGE_BONUS = 2;
+export const COOL_KNOCKBACK_MULTIPLIER = 0.9;
+export const COOL_MIN_KNOCKBACK_SPEED = 6;
+export const HARD_EXTRA_SLOW_MULTIPLIER = 0.5;
+
 // ── NOXCAT Color Palette (Black + Neon Green + Crisp White) ──
 export const COLORS = {
   BG1: '#05070a',         // Deep obsidian black

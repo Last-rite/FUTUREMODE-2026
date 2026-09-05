@@ -832,8 +832,23 @@ export class GameEngine {
             this.goldEarned += actualHpLoss;
           }
 
-          this.dmgNums.push(new DmgNum(ev.x, ev.y - BALL_R - 14, ev.damage));
+          this.dmgNums.push(new DmgNum(
+            ev.x,
+            ev.y - BALL_R - 14,
+            ev.damage,
+            ev.bonusDamage > 0
+          ));
           this.impactRings.push(new ImpactRing(ev.x, ev.y, ev.attacker.color));
+
+          if (ev.bonusDamage > 0) {
+            this.emitLog(`⏩ ${ev.attacker.label} consumed FUTURE charge for +${ev.bonusDamage} damage!`);
+          }
+          if (ev.knockback) {
+            this.emitLog(`💨 ${ev.attacker.label} knocked ${ev.defender.label} back!`);
+          }
+          if (ev.slowedByHard) {
+            this.emitLog(`🛡️ ${ev.defender.label} slowed ${ev.attacker.label}!`);
+          }
 
           for (let p = 0; p < 7; p++) {
             this.particles.push(new Particle(ev.x, ev.y, ev.attacker.color));

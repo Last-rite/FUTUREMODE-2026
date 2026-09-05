@@ -1,9 +1,18 @@
 import {
   BALL_R, INNER_R, DEFAULT_HP, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_SPD,
-  DAMP, BOUNCE_DAMP, MIN_SPD, W, H, COLORS
+  DAMP, BOUNCE_DAMP, MIN_SPD, W, H, COLORS,
+  FUTURE_WALL_DAMAGE_BONUS, COOL_KNOCKBACK_MULTIPLIER,
+  COOL_MIN_KNOCKBACK_SPEED, HARD_EXTRA_SLOW_MULTIPLIER
 } from './constants.js';
 import { dist, lerpColor, hexToRgba } from './physics.js';
 import { getBallImage } from './sprites.js';
+
+function getSkillType({ code, name, idString }) {
+  if (code === '02' || name?.includes('FUTURE') || idString?.includes('tech')) return 'future';
+  if (code === '03' || name?.includes('COOL') || idString?.includes('rush')) return 'cool';
+  if (code === '04' || name?.includes('HARD') || idString?.includes('tank')) return 'hard';
+  return 'none';
+}
 
 export class Ball {
   constructor(label, owner, x, y, atk = DEFAULT_ATK, def = DEFAULT_DEF, maxHp = DEFAULT_HP, spd = DEFAULT_SPD, options = {}) {
@@ -20,6 +29,8 @@ export class Ball {
     this.name = options.name || label;
     this.code = options.code || '';
     this.image = options.image || null;
+    this.skillType = options.skillType || getSkillType(this);
+    this.futureDamageBonus = 0;
 
     // Accent color:
     // Enemies (owner === 2) have uniform red '#ff2a55'
@@ -119,6 +130,8 @@ export class Ball {
   }
 
   launch(vx, vy) {
+    // FUTURE's wall charge only lasts for the current movement/turn.
+    this.futureDamageBonus = 0;
     const spdMultiplier = this.spd > 10 ? (this.spd / 100) : this.spd;
     this.vx = vx * spdMultiplier;
     this.vy = vy * spdMultiplier;
@@ -170,6 +183,11 @@ export class Ball {
       events.push({ type: 'wall', speed: Math.abs(this.vy), x: this.x, y: this.y });
     }
 
+    if (this.skillType === 'future' && events.some((event) => event.type === 'wall')) {
+      // Repeated wall bounces refresh the charge rather than stacking it.
+      this.futureDamageBonus = FUTURE_WALL_DAMAGE_BONUS;
+    }
+
     // Ball-to-ball collisions
     const diameter = BALL_R * 2;
     for (const other of allBalls) {
@@ -216,9 +234,31 @@ export class Ball {
 
         // Damage calculation: Attacker ATK - Defender DEF (always minimum 1 damage)
         if (other.owner !== this.owner) {
-          const rawDmg = Math.max(1, this.atk - other.def);
+          const bonusDamage = this.skillType === 'future' ? this.futureDamageBonus : 0;
+          if (bonusDamage > 0) this.futureDamageBonus = 0;
+
+          const rawDmg = Math.max(1, this.atk + bonusDamage - other.def);
           const hpLost = Math.min(rawDmg, Math.max(0, other.hp));
           other.hp = Math.max(0, other.hp - rawDmg);
+
+          let knockback = false;
+          if (this.skillType === 'cool' && other.hp > 0) {
+            const knockbackSpeed = Math.max(
+              COOL_MIN_KNOCKBACK_SPEED,
+              impactSpd * COOL_KNOCKBACK_MULTIPLIER
+            );
+            other.vx = -nx * knockbackSpeed;
+            other.vy = -ny * knockbackSpeed;
+            other.moving = true;
+            other.triggerWave(5.5);
+            knockback = true;
+          }
+
+          const slowedByHard = other.skillType === 'hard';
+          if (slowedByHard) {
+            this.vx *= HARD_EXTRA_SLOW_MULTIPLIER;
+            this.vy *= HARD_EXTRA_SLOW_MULTIPLIER;
+          }
 
           // Heavy wave jolt on damaged ball (stacks if already shaking!)
           other.triggerWave(4.0 + rawDmg * 0.4);
@@ -230,6 +270,9 @@ export class Ball {
             damage: rawDmg,
             effectiveDmg: hpLost,
             hpLost,
+            bonusDamage,
+            knockback,
+            slowedByHard,
             x: contactX,
             y: contactY,
           });
@@ -247,6 +290,7 @@ export class Ball {
       this.vx = 0;
       this.vy = 0;
       this.trail = [];
+      this.futureDamageBonus = 0;
     }
 
     return events;

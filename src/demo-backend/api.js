@@ -1,4 +1,4 @@
-import { createDemoDatabase, createStarterRosterForPlayer } from './fixtures.js';
+import { createDemoDatabase, createStarterRosterForPlayer, DEMO_DUNGEONS } from './fixtures.js';
 import { getAuthCookie } from '../utils/cookieStorage.js';
 import { tradeBackend, TransferUnit, TransferTreasure } from './tradeBackend.js';
 import { lostAssetsBackend } from './lostAssetsBackend.js';
@@ -25,12 +25,27 @@ function readDb() {
               p.atk = 8;
               p.def = 3;
               p.spd = 120;
+              p.skill = '疾風推進：碰撞時強力擊退對手。';
             } else if (p.name === 'HARD NOXCAT' || p.idString?.includes('tank')) {
               p.hp = 100;
               p.atk = 10;
               p.def = 3;
               p.spd = 80;
+              p.skill = '堅毅立場：被敵人撞擊時，使攻擊者額外減速一次。';
+            } else if (p.name === 'FUTURE NOXCAT' || p.idString?.includes('tech')) {
+              p.skill = '時空衝擊：撞牆後，本次移動的下一次攻擊 +2 傷害；命中後重置。';
             }
+          });
+        }
+        if (parsed && Array.isArray(parsed.dungeons)) {
+          parsed.dungeons.forEach((dungeon) => {
+            const fixture = DEMO_DUNGEONS.find((entry) => entry.id === dungeon.id);
+            if (!fixture) return;
+            dungeon.name = fixture.name;
+            dungeon.subtitle = fixture.subtitle;
+            dungeon.difficulty = fixture.difficulty;
+            dungeon.tone = fixture.tone;
+            dungeon.image = fixture.image;
           });
         }
         memoryDb = parsed;

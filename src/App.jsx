@@ -12,12 +12,14 @@ import { demoApi } from './demo-backend/api.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
 import { getActiveTeam } from './utils/teamStorage.js';
 import { startBackgroundPreload, preloadGameDataAssets } from './utils/assetPreloader.js';
+import { sound } from './game/audio.js';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [data, setData] = useState(null);
   const [view, setView] = useState('loading');
   const [activeDungeon, setActiveDungeon] = useState(null);
+  const [battleOutcome, setBattleOutcome] = useState(null);
   const [isEnteringBattle, setIsEnteringBattle] = useState(false);
   const [toast, setToast] = useState(null);
   const transitionTimeoutsRef = useRef([]);
@@ -40,6 +42,23 @@ export default function App() {
     };
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    if (view !== 'game') {
+      sound.playMusic('base');
+      return;
+    }
+
+    if (battleOutcome === 'PLAYER') {
+      sound.playMusic('victory', { restart: true });
+    } else if (battleOutcome) {
+      sound.playMusic('defeat', { restart: true });
+    } else {
+      sound.playMusic('battle');
+    }
+  }, [view, battleOutcome]);
+
+  useEffect(() => () => sound.stopMusic(), []);
 
   const handleLoginSuccess = async ({ mode, username, password, displayName }) => {
     const user = mode === 'register'
@@ -87,6 +106,8 @@ export default function App() {
 
   const handleStartGame = (dungeon) => {
     clearTransitionTimeouts();
+    setBattleOutcome(null);
+    sound.playMusic('battle', { restart: true });
     setActiveDungeon(dungeon);
     setIsEnteringBattle(true);
     // Switch to game screen mid-transition (450ms) behind closed shutters
@@ -110,8 +131,14 @@ export default function App() {
   };
 
   const handleBattleComplete = async (result) => {
+    setBattleOutcome(result?.winner || 'AI');
     const nextData = await demoApi.recordBattleResult(result, activeDungeon?.id, currentUser?.id);
     setData(nextData);
+  };
+
+  const handleExitBattle = () => {
+    setBattleOutcome(null);
+    setView('home');
   };
 
   if (view === 'loading') return <div className="boot-screen"><BrandLockup /><div className="boot-line"><i /></div></div>;
@@ -125,7 +152,7 @@ export default function App() {
           user={currentUser}
           dungeon={activeDungeon}
           playerTeam={getActiveTeam(data)}
-          onExitToLobby={() => setView('home')}
+          onExitToLobby={handleExitBattle}
           onBattleComplete={handleBattleComplete}
         />
       ) : (

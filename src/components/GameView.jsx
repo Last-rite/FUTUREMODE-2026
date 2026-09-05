@@ -3,7 +3,7 @@ import { GameEngine } from '../game/Engine.js';
 import { sound } from '../game/audio.js';
 import { TEAM_SIZE, W, H, SHOW_TOP_BAR, SETTLEMENT_REWARD_COUNT } from '../game/constants.js';
 import {
-  Volume2, VolumeX, HelpCircle,
+  HelpCircle,
   Skull, X, Shield, Swords, Coins, Gift, MapPin,
   Cat, ShieldPlus
 } from 'lucide-react';
@@ -440,7 +440,6 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
     aiAliveCount: TEAM_SIZE,
   });
 
-  const [isMuted, setIsMuted] = useState(false);
   const [gameOver, setGameOver] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -498,11 +497,6 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
     };
   }, [playerTeam, dungeon]);
 
-
-  const handleToggleMute = () => {
-    const muted = sound.toggleMute();
-    setIsMuted(muted);
-  };
 
   const handleDebugKillOpponents = () => {
     engineRef.current?.debugKillOpponents();
@@ -741,14 +735,6 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
                 KILL ME
               </button>
 
-              <button
-                onClick={handleToggleMute}
-                aria-label="Mute / Unmute"
-                title={isMuted ? 'Unmute' : 'Mute'}
-                className="p-1.5 rounded-lg bg-[#0e1620] hover:bg-[#162232] text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60 cursor-pointer"
-              >
-                {isMuted ? <VolumeX size={15} className="text-[#ff2a55]" /> : <Volume2 size={15} className="text-[#00ff66]" />}
-              </button>
               <button
                 onClick={() => setShowHelp(true)}
                 aria-label="Info & Rules"

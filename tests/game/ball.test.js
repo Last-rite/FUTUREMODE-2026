@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Ball } from '../../src/game/Ball.js';
-import { BALL_R, W, H } from '../../src/game/constants.js';
+import {
+  BALL_R, W, H, FUTURE_WALL_DAMAGE_BONUS,
+  HARD_EXTRA_SLOW_MULTIPLIER, COOL_MIN_KNOCKBACK_SPEED,
+} from '../../src/game/constants.js';
 
 describe('Ball Entity & Combat Attributes', () => {
   it('initializes basic combat stats without equipment', () => {
@@ -91,5 +94,60 @@ describe('Ball Entity & Combat Attributes', () => {
     expect(damageEvent).toBeDefined();
     expect(damageEvent.damage).toBe(15); // 20 - 5
     expect(ball2.hp).toBe(85);
+  });
+
+  it('FUTURE: wall bounce grants +2 to the next hit in the same movement and then resets', () => {
+    const future = new Ball('1a', 1, BALL_R - 1, 200, 10, 2, 100, 100, { code: '02' });
+    future.moving = true;
+    future.vx = -4;
+
+    future.updatePhysics([future]);
+    expect(future.futureDamageBonus).toBe(FUTURE_WALL_DAMAGE_BONUS);
+
+    const enemy = new Ball('2a', 2, future.x + BALL_R, 200, 10, 2, 100, 100);
+    future.moving = true;
+    future.vx = 4;
+    const events = future.updatePhysics([future, enemy]);
+    const damage = events.find((event) => event.type === 'damage');
+
+    expect(damage.bonusDamage).toBe(2);
+    expect(damage.damage).toBe(10);
+    expect(future.futureDamageBonus).toBe(0);
+  });
+
+  it('COOL: knocks a surviving enemy away on contact', () => {
+    const cool = new Ball('1a', 1, 100, 200, 10, 2, 100, 100, { code: '03' });
+    const enemy = new Ball('2a', 2, 100 + BALL_R, 200, 10, 2, 100, 100);
+    cool.moving = true;
+    cool.vx = 5;
+
+    const events = cool.updatePhysics([cool, enemy]);
+    const damage = events.find((event) => event.type === 'damage');
+
+    expect(damage.knockback).toBe(true);
+    expect(enemy.moving).toBe(true);
+    expect(Math.hypot(enemy.vx, enemy.vy)).toBeGreaterThanOrEqual(COOL_MIN_KNOCKBACK_SPEED);
+  });
+
+  it('HARD: applies one extra slowdown when an enemy collides with it', () => {
+    const normalAttacker = new Ball('2a', 2, 100, 200, 10, 2, 100, 100);
+    const normalTarget = new Ball('1a', 1, 100 + BALL_R, 200, 10, 2, 100, 100);
+    normalAttacker.moving = true;
+    normalAttacker.vx = 8;
+    normalAttacker.updatePhysics([normalAttacker, normalTarget]);
+    const normalSpeed = Math.hypot(normalAttacker.vx, normalAttacker.vy);
+
+    const hardAttacker = new Ball('2b', 2, 100, 300, 10, 2, 100, 100);
+    const hardTarget = new Ball('1b', 1, 100 + BALL_R, 300, 10, 2, 100, 100, { code: '04' });
+    hardAttacker.moving = true;
+    hardAttacker.vx = 8;
+    const events = hardAttacker.updatePhysics([hardAttacker, hardTarget]);
+    const damage = events.find((event) => event.type === 'damage');
+
+    expect(damage.slowedByHard).toBe(true);
+    expect(Math.hypot(hardAttacker.vx, hardAttacker.vy)).toBeCloseTo(
+      normalSpeed * HARD_EXTRA_SLOW_MULTIPLIER,
+      5
+    );
   });
 });
