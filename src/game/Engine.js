@@ -752,12 +752,12 @@ export class GameEngine {
 
     ctx.restore();
 
-    // ── Dark Gray Arena Hit Counter (Matching Hand-Drawn Design Sketch) ──
+    // ── Solid Dark Gray Arena Hit Counter (Pure color, enlarged, matching HP font) ──
     if (this.hitCount > 0) {
       ctx.save();
       const cx = W / 2;
       const cy = 385;
-      const scale = 1.0 + (this.hitPulse || 0) * 0.12;
+      const scale = 1.0 + (this.hitPulse || 0) * 0.10;
 
       ctx.translate(cx, cy);
       ctx.scale(scale, scale);
@@ -765,28 +765,20 @@ export class GameEngine {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      // 1. Large Hit Number
-      ctx.font = 'italic 900 135px "Chakra Petch", "Oxanium", sans-serif';
-      ctx.fillStyle = 'rgba(40, 52, 65, 0.28)';
-      ctx.fillText(`${this.hitCount}`, 0, -35);
+      // Pure solid dark gray (no extra border or outline colors)
+      ctx.fillStyle = '#2d3947';
 
-      ctx.strokeStyle = 'rgba(125, 145, 165, 0.35)';
-      ctx.lineWidth = 2.5;
-      ctx.strokeText(`${this.hitCount}`, 0, -35);
+      // 1. Large Hit Number (Enlarged to 200px, identical font to HP numbers)
+      ctx.font = 'italic 900 200px "Chakra Petch", "Oxanium", Arial, sans-serif';
+      ctx.fillText(`${this.hitCount}`, 0, -45);
 
       // 2. 'HITS' Sub-label
-      ctx.font = 'italic 900 34px "Chakra Petch", "Oxanium", sans-serif';
+      ctx.font = 'italic 900 46px "Chakra Petch", "Oxanium", Arial, sans-serif';
       if ('letterSpacing' in ctx) {
-        ctx.letterSpacing = '10px';
+        ctx.letterSpacing = '12px';
       }
       const labelText = ('letterSpacing' in ctx) ? 'HITS' : 'H I T S';
-
-      ctx.fillStyle = 'rgba(40, 52, 65, 0.28)';
-      ctx.fillText(labelText, 0, 52);
-
-      ctx.strokeStyle = 'rgba(125, 145, 165, 0.35)';
-      ctx.lineWidth = 2;
-      ctx.strokeText(labelText, 0, 52);
+      ctx.fillText(labelText, 0, 75);
 
       ctx.restore();
     }
