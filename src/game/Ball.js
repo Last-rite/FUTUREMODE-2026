@@ -337,43 +337,29 @@ export class Ball {
     ctx.textBaseline = 'middle';
 
     // Label ("1b", "2c", etc.) centered inside the dark core
-    ctx.font = '900 16px Arial, Helvetica, sans-serif';
+    ctx.font = 'italic 900 16px "Chakra Petch", "Oxanium", Arial, sans-serif';
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4.5;
     ctx.strokeText(this.label, this.x, this.y - 2);
     ctx.fillStyle = COLORS.WHITE;
     ctx.fillText(this.label, this.x, this.y - 2);
 
     // 6. HP Text positioned exactly on the lower part of the HP ring
-    let hpColor = COLORS.WHITE; // Default white for full health (100%)
-    if (hpRatio < 1.0) {
-      // Piecewise gradient:
-      // From 60% to 100% HP: use grey/white gradient from 90% to 100%
-      // From 0% to 60% HP: use gradient from 0% to 90%
-      let effectiveRatio;
-      if (hpRatio >= 0.6) {
-        effectiveRatio = 0.9 + 0.1 * ((hpRatio - 0.6) / 0.4);
-      } else {
-        effectiveRatio = 0.9 * (hpRatio / 0.6);
-      }
-      const g = Math.round(25 + 190 * effectiveRatio);
-      const b = Math.round(35 + 190 * effectiveRatio);
-      hpColor = `rgb(255, ${g}, ${b})`;
-    }
+    // Minimalist solid color: pure white when healthy, solid crimson when in critical danger
+    const hpColor = (hpRatio <= 0.25) ? '#ff2a55' : '#ffffff';
 
     const hpRingY = this.y + 36.5; // Optical center on lower ring band (between 34px and 44px)
     ctx.save();
     ctx.translate(this.x, hpRingY);
-    ctx.scale(1.0, 1.1);
-    ctx.font = '900 24px Arial, Helvetica, sans-serif';
+    ctx.font = 'italic 900 23px "Chakra Petch", "Oxanium", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4.5;
 
     // Optical centering to compensate for digit shape asymmetry and canvas baseline droop
     const metrics = ctx.measureText(`${this.hp}`);

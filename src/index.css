@@ -30,6 +30,13 @@ button, input, select { font: inherit; } button { color: inherit; touch-action: 
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 
+.combat-hp-num {
+  font-family: 'Chakra Petch', 'Oxanium', monospace, sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
 .app-viewport, .auth-screen { width: 100%; height: 100dvh; display: grid; place-items: center; background: radial-gradient(circle at 50% -10%, rgba(0,255,102,.12), transparent 36%), linear-gradient(145deg, #020304, #07100c 55%, #020304); }
 .phone-shell { position: relative; width: min(100%, 480px); height: 100dvh; max-height: 960px; overflow: hidden; background: var(--bg); border-inline: 1px solid var(--line); box-shadow: 0 0 80px rgba(0,0,0,.8); }
 .screen-scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: var(--safe-top) 18px calc(var(--safe-bottom) + 20px); scrollbar-width: none; }

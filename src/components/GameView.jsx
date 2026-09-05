@@ -143,7 +143,7 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       ctx.stroke();
 
       // Centered Character Label inside inner squarcle
-      ctx.font = '900 15px Arial, Helvetica, sans-serif';
+      ctx.font = 'italic 900 15px "Chakra Petch", "Oxanium", Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.lineJoin = 'round';
@@ -352,7 +352,7 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
               </div>
 
               {/* Exact HP Numbers */}
-              <span className="absolute right-2 text-[10px] font-mono font-black text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
+              <span className="absolute right-2 text-[11px] combat-hp-num text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
                 {topBar.hp} / {topBar.maxHp}
               </span>
             </div>
@@ -414,7 +414,7 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
               </div>
 
               {/* Exact HP Numbers */}
-              <span className="absolute right-2 text-[10px] font-mono font-black text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
+              <span className="absolute right-2 text-[11px] combat-hp-num text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
                 {playerBar.hp} / {playerBar.maxHp}
               </span>
             </div>

@@ -27,7 +27,7 @@ export class DmgNum {
     const scale = 1.0 + (1.0 - this.life / this.maxLife) * 0.35;
 
     ctx.globalAlpha = alpha;
-    ctx.font = `900 ${Math.round(22 * scale)}px Arial, Helvetica, sans-serif`;
+    ctx.font = `italic 900 ${Math.round(22 * scale)}px "Chakra Petch", "Oxanium", Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
