@@ -2,7 +2,8 @@ import {
   BALL_R, INNER_R, DEFAULT_HP, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_SPD,
   DAMP, BOUNCE_DAMP, MIN_SPD, W, H, COLORS
 } from './constants.js';
-import { dist, lerpColor } from './physics.js';
+import { dist, lerpColor, hexToRgba } from './physics.js';
+import { getBallImage } from './sprites.js';
 
 export class Ball {
   constructor(label, owner, x, y, atk = DEFAULT_ATK, def = DEFAULT_DEF, maxHp = DEFAULT_HP, spd = DEFAULT_SPD, options = {}) {
@@ -17,6 +18,12 @@ export class Ball {
     this.idString = options.idString || (owner === 1 ? 'peg_player' : 'peg_enemy');
     this.name = options.name || label;
     this.code = options.code || '';
+    this.image = options.image || null;
+
+    // Accent color:
+    // Enemies (owner === 2) have uniform red '#ff2a55'
+    // Players (owner === 1) have uniform green '#00ff66'
+    this.accent = this.owner === 2 ? '#ff2a55' : '#00ff66';
     this.equipment = options.equipment ? { ...options.equipment, isBroken: false } : null;
 
     // Base Combat Attributes
@@ -82,15 +89,16 @@ export class Ball {
   }
 
   get color() {
-    return this.owner === 1 ? COLORS.P_COL : COLORS.A_COL;
+    return this.accent || (this.owner === 1 ? COLORS.P_COL : COLORS.A_COL);
   }
 
   get darkColor() {
-    return this.owner === 1 ? COLORS.P_COL_DARK : COLORS.A_COL_DARK;
+    if (this.owner === 2) return COLORS.A_COL_DARK;
+    return lerpColor(this.color, '#000000', 0.55);
   }
 
   get glowColor() {
-    return this.owner === 1 ? COLORS.P_COL_GLOW : COLORS.A_COL_GLOW;
+    return hexToRgba(this.color, 0.45);
   }
 
   triggerWave(amount) {
@@ -290,7 +298,21 @@ export class Ball {
     const innerR = INNER_R; // 34px inner core (exact size of original ball)
     const hpRatio = Math.max(0, Math.min(1, this.hp / this.maxHp));
 
+    // 0. Ambient bottom ground glow (底光) under the peg matching pet accent
     ctx.save();
+    const ambientR = BALL_R * 1.32;
+    const ambGrad = ctx.createRadialGradient(
+      this.x, this.y + 3, BALL_R * 0.4,
+      this.x, this.y + 3, ambientR
+    );
+    ambGrad.addColorStop(0, hexToRgba(this.accent, 0.28));
+    ambGrad.addColorStop(0.65, hexToRgba(this.accent, 0.09));
+    ambGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = ambGrad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y + 3, ambientR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // 1. Dark empty glass ring track
     ctx.beginPath();
@@ -368,39 +390,80 @@ export class Ball {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // 4. Center Inner Core
+    // 4. Center Inner Core & Character Sprite Image
+    ctx.save();
     ctx.beginPath();
     ctx.arc(this.x, this.y, innerR - 0.5, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Dark cyber background inside the core
     ctx.fillStyle = '#080d14';
     ctx.fill();
 
-    // Specular shine on top-left of core
+    // Distinctive radial background glow (底色/底光) matching exhibition area
+    const coreGlow = ctx.createRadialGradient(
+      this.x, this.y - 2, 2,
+      this.x, this.y, innerR - 0.5
+    );
+    coreGlow.addColorStop(0, hexToRgba(this.accent, 0.45));
+    coreGlow.addColorStop(0.55, hexToRgba(this.accent, 0.18));
+    coreGlow.addColorStop(0.9, hexToRgba(this.accent, 0.04));
+    coreGlow.addColorStop(1, 'rgba(8, 13, 20, 0)');
+    ctx.fillStyle = coreGlow;
+    ctx.fill();
+
+    const img = getBallImage(this);
+    if (img && img.complete && img.naturalWidth > 0) {
+      // Draw pixel art crisply (imageSmoothingEnabled = false)
+      const prevSmoothing = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false;
+
+      // Inner core diameter is (innerR * 2) = 68px. Image fills ~90% (approx 61px)
+      const imgSize = Math.round((innerR - 2.5) * 2);
+
+      // Sprite drop-shadow glow matching the accent color
+      ctx.save();
+      ctx.shadowColor = hexToRgba(this.accent, 0.55);
+      ctx.shadowBlur = 10;
+      ctx.drawImage(
+        img,
+        Math.round(this.x - imgSize / 2),
+        Math.round(this.y - imgSize / 2),
+        imgSize,
+        imgSize
+      );
+      ctx.restore();
+
+      ctx.imageSmoothingEnabled = prevSmoothing;
+    } else {
+      // Fallback: Label ("1b", "2c", etc.) centered inside the dark core
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'italic 900 16px "Chakra Petch", "Oxanium", Arial, sans-serif';
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2.2;
+      const labelX = Math.round(this.x);
+      const labelY = Math.round(this.y - 2);
+      ctx.strokeText(this.label, labelX, labelY);
+      ctx.fillStyle = COLORS.WHITE;
+      ctx.fillText(this.label, labelX, labelY);
+    }
+
+    // Specular shine on top-left of core (glass orb reflection over the sprite)
     const spec = ctx.createRadialGradient(
       this.x - innerR * 0.3, this.y - innerR * 0.35, 1,
       this.x - innerR * 0.3, this.y - innerR * 0.35, innerR * 0.7
     );
-    spec.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+    spec.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
     spec.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = spec;
     ctx.beginPath();
     ctx.arc(this.x, this.y, innerR - 0.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // 5. Centered Label inside Core
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Label ("1b", "2c", etc.) centered inside the dark core
-    ctx.font = 'italic 900 16px "Chakra Petch", "Oxanium", Arial, sans-serif';
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2.2;
-    const labelX = Math.round(this.x);
-    const labelY = Math.round(this.y - 2);
-    ctx.strokeText(this.label, labelX, labelY);
-    ctx.fillStyle = COLORS.WHITE;
-    ctx.fillText(this.label, labelX, labelY);
+    ctx.restore();
 
     // 6. HP Text positioned exactly on the lower part of the HP ring
     // Minimalist solid color: pure white when healthy, solid crimson when in critical danger

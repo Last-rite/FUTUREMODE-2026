@@ -10,6 +10,8 @@ import {
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
+import { getBallImage } from '../game/sprites.js';
+import { hexToRgba, lerpColor } from '../game/physics.js';
 
 /**
  * Dynamic HP bar gradient:
@@ -43,6 +45,8 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
   const waveAmpRef = useRef(0);
   const prevHpRef = useRef(char.hp);
   const prevCurrentRef = useRef(isCurrent);
+
+  const accent = isPlayer ? '#00ff66' : '#ff2a55';
 
   // Trigger wave when hit/damaged or when engine passes waveAmp
   useEffect(() => {
@@ -109,13 +113,8 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
         const surfaceY = size - size * hpRatio;
 
         const liqGrad = ctx.createLinearGradient(0, surfaceY, 0, size);
-        if (isPlayer) {
-          liqGrad.addColorStop(0, '#00ff66');
-          liqGrad.addColorStop(1, '#008f39');
-        } else {
-          liqGrad.addColorStop(0, '#ff2a55');
-          liqGrad.addColorStop(1, '#99112e');
-        }
+        liqGrad.addColorStop(0, accent);
+        liqGrad.addColorStop(1, lerpColor(accent, '#000000', 0.55));
 
         ctx.beginPath();
         ctx.moveTo(-4, size + 4);
@@ -152,29 +151,65 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Centered Character Label inside inner squarcle
-      ctx.font = 'italic 900 15px "Chakra Petch", "Oxanium", Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2.0;
+      // Distinctive radial background glow (底色/底光)
       const centerCoord = Math.round(size / 2);
-      ctx.strokeText(char.label, centerCoord, centerCoord);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(char.label, centerCoord, centerCoord);
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(ringW, ringW, innerSize, innerSize, 8);
+      ctx.clip();
+
+      const coreGlow = ctx.createRadialGradient(
+        centerCoord, centerCoord - 2, 1,
+        centerCoord, centerCoord, innerSize / 2
+      );
+      coreGlow.addColorStop(0, hexToRgba(accent, 0.45));
+      coreGlow.addColorStop(0.55, hexToRgba(accent, 0.18));
+      coreGlow.addColorStop(0.9, hexToRgba(accent, 0.04));
+      coreGlow.addColorStop(1, 'rgba(8, 13, 20, 0)');
+      ctx.fillStyle = coreGlow;
+      ctx.fill();
+
+      // Draw character sprite if available
+      const img = getBallImage(char);
+      if (img && img.complete && img.naturalWidth > 0) {
+        const prevSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
+        const spriteSize = innerSize - 4; // ~36px
+        ctx.save();
+        ctx.shadowColor = hexToRgba(accent, 0.55);
+        ctx.shadowBlur = 8;
+        ctx.drawImage(
+          img,
+          Math.round(centerCoord - spriteSize / 2),
+          Math.round(centerCoord - spriteSize / 2),
+          spriteSize,
+          spriteSize
+        );
+        ctx.restore();
+        ctx.imageSmoothingEnabled = prevSmoothing;
+      } else {
+        // Centered Character Label inside inner squarcle
+        ctx.font = 'italic 900 15px "Chakra Petch", "Oxanium", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.0;
+        ctx.strokeText(char.label, centerCoord, centerCoord);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(char.label, centerCoord, centerCoord);
+      }
+      ctx.restore(); // Restore clip
 
       ctx.restore();
 
       // Outer squarcle border
-      const borderW = isCurrent ? 3.0 : 3.0;
+      const borderW = 3.0;
       const inset = borderW / 2;
       ctx.beginPath();
       ctx.roundRect(inset, inset, size - borderW, size - borderW, 14);
-      ctx.strokeStyle = isCurrent
-        ? '#ffffff'
-        : (isPlayer ? '#00ff66' : '#ff2a55');
+      ctx.strokeStyle = isCurrent ? '#ffffff' : accent;
       ctx.lineWidth = borderW;
       ctx.stroke();
 
@@ -183,17 +218,18 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [char.hp, char.maxHp, char.label, isCurrent, isPlayer]);
+  }, [char.hp, char.maxHp, char.label, isCurrent, isPlayer, accent]);
 
   return (
     <div
       className={`relative rounded-2xl transition-all duration-200 ${
-        isCurrent
-          ? isPlayer
-            ? 'shadow-[0_0_22px_rgba(0,255,102,0.85)] scale-105 z-20'
-            : 'shadow-[0_0_22px_rgba(255,42,85,0.85)] scale-105 z-20'
-          : 'opacity-90'
+        isCurrent ? 'scale-105 z-20' : 'opacity-90'
       }`}
+      style={{
+        boxShadow: isCurrent
+          ? `0 0 20px ${hexToRgba(accent, 0.85)}`
+          : `0 0 8px ${hexToRgba(accent, 0.3)}`,
+      }}
     >
       <canvas
         ref={canvasRef}
@@ -346,6 +382,34 @@ function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
   );
 }
 
+/**
+ * Calculate dynamic scale for subsequent initiative queue items (index > 0)
+ * If items overflow horizontally, scale down step-by-step: 1.0 -> 0.9 -> 0.8 -> 0.7 ...
+ * Also scales down the gap between items proportionally.
+ */
+function getRackScale(queueLength, availableWidth) {
+  if (queueLength <= 1) return { scale: 1.0, gap: 10 };
+
+  const baseItemW = 58;
+  const firstItemW = 58;
+  const baseGap = 10;
+  const countOthers = queueLength - 1;
+
+  // Step down from 1.0 to 0.9, 0.8, 0.7, 0.6, 0.5, 0.4...
+  for (let s = 1.0; s >= 0.4; s = Math.round((s - 0.1) * 10) / 10) {
+    const itemW = baseItemW * s;
+    const gap = baseGap * s;
+    const totalWidth = firstItemW + countOthers * itemW + countOthers * gap;
+    if (totalWidth <= availableWidth) {
+      return { scale: s, gap: Math.round(gap * 10) / 10 };
+    }
+  }
+
+  const rawScale = (availableWidth - firstItemW) / (countOthers * (baseItemW + baseGap));
+  const minScale = Math.max(0.3, Math.floor(rawScale * 10) / 10);
+  return { scale: minScale, gap: Math.round(baseGap * minScale * 10) / 10 };
+}
+
 export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBattleComplete }) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -367,6 +431,37 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
   const [isMuted, setIsMuted] = useState(false);
   const [gameOver, setGameOver] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+
+  // Measure initiative rack width to auto-scale subsequent items when overflowing
+  const rackRef = useRef(null);
+  const [rackWidth, setRackWidth] = useState(() => (
+    typeof window !== 'undefined' ? window.innerWidth : 390
+  ));
+
+  useEffect(() => {
+    const el = rackRef.current;
+    if (!el) return;
+    const updateWidth = () => {
+      if (el) setRackWidth(el.clientWidth);
+    };
+    updateWidth();
+
+    const ro = new ResizeObserver(() => {
+      updateWidth();
+    });
+    ro.observe(el);
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
+
+  const queueLength = snapshot.initiativeQueue?.length || 0;
+  // Available width inside padding px-3 (12px on each side) with 4px safety buffer
+  const availableRackWidth = Math.max(0, (rackWidth || 360) - 28);
+  const { scale: queueScale, gap: queueGap } = getRackScale(queueLength, availableRackWidth);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -528,35 +623,74 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
         {/* ── Monster Strike Bottom Console (Initiative Queue + Toolbar) ── */}
         <footer className="w-full shrink-0 z-10 flex flex-col bg-[#080d14] border-t border-[#172331] shadow-[0_-8px_25px_rgba(0,0,0,0.7)]">
           {/* 1. Initiative Character Rack (Leftmost is ALWAYS the active mover) */}
-          <div className="w-full px-3 pt-6 pb-2.5 overflow-x-auto scrollbar-none flex items-center gap-2.5">
+          <div
+            ref={rackRef}
+            className="w-full px-3 pt-6 pb-2.5 overflow-x-auto scrollbar-none flex items-center"
+            style={{ gap: `${queueGap}px` }}
+          >
             {snapshot.initiativeQueue.map((char, index) => {
               const isCurrent = char.isCurrent;
               const isPlayer = char.owner === 1;
 
+              if (index === 0) {
+                return (
+                  <div
+                    key={`${char.label}-${index}`}
+                    className="relative shrink-0 flex flex-col items-center"
+                    style={{ width: '58px', height: '58px' }}
+                  >
+                    {/* Prominent Leftmost "GO!" Banner */}
+                    {isCurrent && (() => {
+                      const tokenAccent = isPlayer ? '#00ff66' : '#ff2a55';
+                      return (
+                        <div
+                          className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-black font-mono uppercase tracking-wider text-center shadow-lg animate-bounce z-30 border border-white pointer-events-none"
+                          style={{
+                            backgroundColor: tokenAccent,
+                            color: isPlayer ? '#000000' : '#ffffff',
+                            boxShadow: `0 0 12px ${hexToRgba(tokenAccent, 0.9)}`,
+                          }}
+                        >
+                          GO!
+                        </div>
+                      );
+                    })()}
+
+                    {/* Centered Squarcle Ball with Liquid Wave Ring */}
+                    <SquarcleBall
+                      char={char}
+                      isCurrent={isCurrent}
+                      isPlayer={isPlayer}
+                    />
+                  </div>
+                );
+              }
+
+              const scaledW = Math.round(58 * queueScale * 10) / 10;
               return (
                 <div
                   key={`${char.label}-${index}`}
-                  className="relative shrink-0 flex flex-col items-center"
+                  className="relative shrink-0 flex items-center justify-center"
+                  style={{
+                    width: `${scaledW}px`,
+                    height: `${scaledW}px`,
+                  }}
                 >
-                  {/* Prominent Leftmost "GO!" Banner */}
-                  {isCurrent && (
-                    <div
-                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-black font-mono uppercase tracking-wider text-center shadow-lg animate-bounce z-30 border ${
-                        isPlayer
-                          ? 'bg-[#00ff66] text-black border-white shadow-[0_0_12px_rgba(0,255,102,0.9)]'
-                          : 'bg-[#ff2a55] text-white border-white shadow-[0_0_12px_rgba(255,42,85,0.9)]'
-                      }`}
-                    >
-                      GO!
-                    </div>
-                  )}
-
-                  {/* Centered Squarcle Ball with Liquid Wave Ring */}
-                  <SquarcleBall
-                    char={char}
-                    isCurrent={isCurrent}
-                    isPlayer={isPlayer}
-                  />
+                  <div
+                    style={{
+                      width: '58px',
+                      height: '58px',
+                      transform: `scale(${queueScale})`,
+                      transformOrigin: 'center center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <SquarcleBall
+                      char={char}
+                      isCurrent={false}
+                      isPlayer={isPlayer}
+                    />
+                  </div>
                 </div>
               );
             })}
