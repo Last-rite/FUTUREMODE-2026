@@ -10,6 +10,29 @@ import {
 function SquarcleBall({ char, isCurrent, isPlayer }) {
   const canvasRef = useRef(null);
   const phaseRef = useRef(0);
+  const waveAmpRef = useRef(0);
+  const prevHpRef = useRef(char.hp);
+  const prevCurrentRef = useRef(isCurrent);
+
+  // Trigger wave when hit/damaged or when engine passes waveAmp
+  useEffect(() => {
+    if (char.hp < prevHpRef.current) {
+      waveAmpRef.current = Math.min(7.5, waveAmpRef.current + 4.0);
+    }
+    prevHpRef.current = char.hp;
+
+    if (char.waveAmp && char.waveAmp > waveAmpRef.current) {
+      waveAmpRef.current = char.waveAmp;
+    }
+  }, [char.hp, char.waveAmp]);
+
+  // Gentle wave jolt when active turn starts
+  useEffect(() => {
+    if (isCurrent && !prevCurrentRef.current) {
+      waveAmpRef.current = Math.max(waveAmpRef.current, 3.2);
+    }
+    prevCurrentRef.current = isCurrent;
+  }, [isCurrent]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -18,12 +41,21 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
     let animId;
 
     const render = () => {
-      phaseRef.current += 0.07;
       const size = 58;
       const ringW = 7;
       const innerSize = size - ringW * 2; // 44
       const maxHp = char.maxHp || 100;
       const hpRatio = Math.max(0, Math.min(1, char.hp / maxHp));
+
+      // Wave undulation decays exponentially toward stasis, matching peg physics
+      if (waveAmpRef.current > 0.04) {
+        phaseRef.current += 0.22;
+        waveAmpRef.current *= 0.972;
+      } else {
+        waveAmpRef.current = 0; // Stasis
+      }
+      const waveAmp = waveAmpRef.current;
+      const phase = phaseRef.current;
 
       ctx.clearRect(0, 0, size, size);
 
@@ -35,11 +67,9 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       ctx.fill();
       ctx.clip();
 
-      // Liquid fill with undulation wave
+      // Liquid fill with undulation wave (weakens to stasis when waveAmp = 0)
       if (hpRatio > 0) {
         const surfaceY = size - size * hpRatio;
-        const waveAmp = isCurrent ? 2.2 : 1.4;
-        const phase = phaseRef.current;
 
         const liqGrad = ctx.createLinearGradient(0, surfaceY, 0, size);
         if (isPlayer) {
@@ -54,7 +84,7 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
         ctx.moveTo(-4, size + 4);
         ctx.lineTo(-4, surfaceY);
         for (let x = -4; x <= size + 4; x += 2) {
-          const y = surfaceY + (hpRatio < 0.99 ? Math.sin(x * 0.25 + phase) * waveAmp : 0);
+          const y = surfaceY + (hpRatio < 0.99 && waveAmp > 0.04 ? Math.sin(x * 0.25 + phase) * waveAmp : 0);
           ctx.lineTo(x, y);
         }
         ctx.lineTo(size + 4, size + 4);
@@ -68,7 +98,7 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           for (let x = 0; x <= size; x += 2) {
-            const y = surfaceY + Math.sin(x * 0.25 + phase) * waveAmp;
+            const y = surfaceY + (waveAmp > 0.04 ? Math.sin(x * 0.25 + phase) * waveAmp : 0);
             if (x === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
@@ -81,7 +111,7 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       ctx.roundRect(ringW, ringW, innerSize, innerSize, 8);
       ctx.fillStyle = '#080d14';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -94,13 +124,17 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
 
       ctx.restore();
 
-      // Outer squarcle border
+      // Outer squarcle border:
+      // When NOT their turn, outer green/red edge is slightly thicker (3.0px) and bold
+      // When IS their turn, neon white active edge
+      const borderW = isCurrent ? 2.5 : 3.0;
+      const inset = borderW / 2;
       ctx.beginPath();
-      ctx.roundRect(0.75, 0.75, size - 1.5, size - 1.5, 13.5);
+      ctx.roundRect(inset, inset, size - borderW, size - borderW, 14);
       ctx.strokeStyle = isCurrent
         ? '#ffffff'
-        : (isPlayer ? 'rgba(0, 255, 102, 0.45)' : 'rgba(255, 42, 85, 0.45)');
-      ctx.lineWidth = isCurrent ? 2.5 : 1.2;
+        : (isPlayer ? '#00ff66' : '#ff2a55');
+      ctx.lineWidth = borderW;
       ctx.stroke();
 
       animId = requestAnimationFrame(render);
@@ -115,9 +149,11 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       className={`relative rounded-2xl p-0.5 transition-all duration-200 ${
         isCurrent
           ? isPlayer
-            ? 'shadow-[0_0_20px_rgba(0,255,102,0.65)] scale-105 z-20'
-            : 'shadow-[0_0_20px_rgba(255,42,85,0.65)] scale-105 z-20'
-          : 'opacity-85 hover:opacity-100'
+            ? 'shadow-[0_0_22px_rgba(0,255,102,0.8)] scale-105 z-20'
+            : 'shadow-[0_0_22px_rgba(255,42,85,0.8)] scale-105 z-20'
+          : isPlayer
+          ? 'border border-[#00ff66]/60 shadow-[0_0_8px_rgba(0,255,102,0.25)] opacity-90'
+          : 'border border-[#ff2a55]/60 shadow-[0_0_8px_rgba(255,42,85,0.25)] opacity-90'
       }`}
     >
       <canvas

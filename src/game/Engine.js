@@ -284,6 +284,7 @@ export class GameEngine {
         atk: b.atk,
         def: b.def,
         spd: b.spd,
+        waveAmp: b.waveAmp,
         isCurrent: idx === 0,
         isBoss: b.owner === 2 && b.label === '2a',
       };

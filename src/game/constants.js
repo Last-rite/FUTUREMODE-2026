@@ -23,9 +23,9 @@ export const DEFAULT_ATK = 10;
 export const DEFAULT_DEF = 2;
 export const DEFAULT_SPD = 1.0;    // Speed multiplier on ball release
 
-// ── Spawn Y Coordinates ──
-export const ENEMY_START_Y = 175;  // Moved down for breathing room below boss bar
-export const PLAYER_START_Y = 660; // Player starting row
+// ── Spawn Y Coordinates (both exactly 140px indent from their edges) ──
+export const ENEMY_START_Y = 140;  // 140px from top edge (0 + 140)
+export const PLAYER_START_Y = 660; // 140px from bottom edge (800 - 140)
 
 // ── Slingshot & Physics (from game_v2.py) ──
 export const DRAG_MAX = 160;       // Max pull distance
