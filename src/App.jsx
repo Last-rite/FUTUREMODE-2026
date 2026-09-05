@@ -9,6 +9,7 @@ import Toast from './components/Toast.jsx';
 import BattleTransitionOverlay from './components/BattleTransitionOverlay.jsx';
 import { demoApi } from './demo-backend/api.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
+import { getActiveTeam } from './utils/teamStorage.js';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -105,6 +106,7 @@ export default function App() {
         <GameView
           user={currentUser}
           dungeon={activeDungeon}
+          playerTeam={getActiveTeam(data)}
           onExitToLobby={() => setView('home')}
           onBattleComplete={(result) => demoApi.recordBattleResult(result, activeDungeon?.id)}
         />

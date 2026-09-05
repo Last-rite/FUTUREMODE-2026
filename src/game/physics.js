@@ -48,8 +48,9 @@ export class SimBall {
   }
 
   launch(vx, vy) {
-    this.vx = vx * this.spd;
-    this.vy = vy * this.spd;
+    const spdMultiplier = this.spd > 10 ? (this.spd / 100) : this.spd;
+    this.vx = vx * spdMultiplier;
+    this.vy = vy * spdMultiplier;
     this.moving = true;
   }
 

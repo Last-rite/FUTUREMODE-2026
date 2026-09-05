@@ -8,16 +8,23 @@ export const DEMO_PLAYERS = [
 ];
 
 export const DEMO_PETS = [
-  { id: 'nox-001', code: '01', name: 'NOXCAT', className: 'CORE', level: 12, hp: 100, atk: 8, def: 2, spd: 5, protected: true, selected: true, accent: '#00ff66', quote: 'Feel Nothing. Do Everything.', skill: '自動回家：戰鬥中 HP 歸零時自動返回背包，不掉落不遺失。', equipped: 'item-shield' },
-  { id: 'nox-002', code: '02', name: 'FUTURE NOXCAT', className: 'TECH', level: 10, hp: 80, atk: 9, def: 1, spd: 7, protected: false, selected: true, accent: '#8bff3d', quote: 'Tomorrow already happened.', skill: '時空衝擊：撞牆後下一次攻擊 +2 傷害。', equipped: 'item-blade' },
-  { id: 'nox-003', code: '03', name: 'COOL NOXCAT', className: 'RUSH', level: 11, hp: 100, atk: 10, def: 2, spd: 10, protected: false, selected: true, accent: '#35d9ff', quote: 'No rush. I am the rush.', skill: '疾風推進：碰撞時強力擊退對手。', equipped: null },
-  { id: 'nox-004', code: '04', name: 'HARD NOXCAT', className: 'TANK', level: 8, hp: 130, atk: 6, def: 3, spd: 3, protected: false, selected: false, accent: '#ffcc33', quote: 'Try moving me.', skill: '堅毅立場：若上一輪未命中任何目標，下一次受擊免傷並使對手減速。', equipped: null },
+  // 3 copies of the current 1st guy (100hp, 10 atk, 2 def, 100% spd)
+  { id: 'nox-001', idString: 'peg_noxcat_core_1', code: '01', name: 'NOXCAT', className: 'CORE', level: 12, hp: 100, atk: 10, def: 2, spd: 100, protected: true, selected: true, accent: '#00ff66', quote: 'Feel Nothing. Do Everything.', skill: '自動回家：戰鬥中 HP 歸零時自動返回背包，不掉落不遺失。', equipped: 'item-shield' },
+  { id: 'nox-001-b', idString: 'peg_noxcat_core_2', code: '01', name: 'NOXCAT #2', className: 'CORE', level: 12, hp: 100, atk: 10, def: 2, spd: 100, protected: false, selected: true, accent: '#00ff66', quote: 'Feel Nothing. Do Everything.', skill: '自動回家：戰鬥中 HP 歸零時自動返回背包，不掉落不遺失。', equipped: 'item-blade' },
+  { id: 'nox-001-c', idString: 'peg_noxcat_core_3', code: '01', name: 'NOXCAT #3', className: 'CORE', level: 12, hp: 100, atk: 10, def: 2, spd: 100, protected: false, selected: true, accent: '#00ff66', quote: 'Feel Nothing. Do Everything.', skill: '自動回家：戰鬥中 HP 歸零時自動返回背包，不掉落不遺失。', equipped: null },
+  // The next 3 guys:
+  // 100hp 12 atk 1 def 100%spd
+  { id: 'nox-002', idString: 'peg_noxcat_tech', code: '02', name: 'FUTURE NOXCAT', className: 'TECH', level: 10, hp: 100, atk: 12, def: 1, spd: 100, protected: false, selected: false, accent: '#8bff3d', quote: 'Tomorrow already happened.', skill: '時空衝擊：撞牆後下一次攻擊 +2 傷害。', equipped: null },
+  // 100hp 10atk 3 def 80%spd
+  { id: 'nox-003', idString: 'peg_noxcat_rush', code: '03', name: 'COOL NOXCAT', className: 'RUSH', level: 11, hp: 100, atk: 10, def: 3, spd: 80, protected: false, selected: false, accent: '#35d9ff', quote: 'No rush. I am the rush.', skill: '疾風推進：碰撞時強力擊退對手。', equipped: null },
+  // 100hp 8 atk 2 def 120%spd
+  { id: 'nox-004', idString: 'peg_noxcat_tank', code: '04', name: 'HARD NOXCAT', className: 'TANK', level: 8, hp: 100, atk: 8, def: 2, spd: 120, protected: false, selected: false, accent: '#ffcc33', quote: 'Try moving me.', skill: '堅毅立場：若上一輪未命中任何目標，下一次受擊免傷並使對手減速。', equipped: null },
 ];
 
 export const DEMO_ITEMS = [
-  { id: 'item-blade', name: '像素劍', type: 'WEAPON', bonus: 'ATK +3', rarity: 'RARE', hpBonus: 0, atkBonus: 3, defBonus: 0, spdBonus: 0, quote: '只要砍得夠快，敵人就追不上。', skill: '鋒刃加成：提升裝備者 3 點基礎攻擊力。' },
-  { id: 'item-shield', name: '資料盾', type: 'GEAR', bonus: 'DEF +3', rarity: 'COMMON', hpBonus: 0, atkBonus: 0, defBonus: 3, spdBonus: 0, quote: '擋得住攻擊，擋不住隊友犯蠢。', skill: '資料壁壘：提升裝備者 3 點基礎防禦力。' },
-  { id: 'item-home', name: '回家石', type: 'TREASURE', bonus: '防止一次掉落', rarity: 'EPIC', hpBonus: 20, atkBonus: 0, defBonus: 1, spdBonus: 0, quote: '帶你安全抵達溫暖的貓窩。', skill: '空間折躍：戰鬥 HP 歸零時觸發，防止本次掉落並直接回家。' },
+  { id: 'item-blade', idString: 'wpn_pixel_blade', name: '像素劍', type: 'WEAPON', bonus: 'ATK +2', rarity: 'RARE', hpBonus: 0, atkBonus: 2, defBonus: 0, spdBonus: 0, quote: '只要砍得夠快，敵人就追不上。', skill: '鋒刃加成：提升裝備者 2 點基礎攻擊力。' },
+  { id: 'item-shield', idString: 'gear_data_shield', name: '資料盾', type: 'GEAR', bonus: 'DEF +1', rarity: 'COMMON', hpBonus: 0, atkBonus: 0, defBonus: 1, spdBonus: 0, quote: '擋得住攻擊，擋不住隊友犯蠢。', skill: '資料壁壘：提升裝備者 1 點基礎防禦力。' },
+  { id: 'item-home', idString: 'item_return_stone', name: '回家石', type: 'TREASURE', bonus: 'HP +5 · 防止一次掉落', rarity: 'EPIC', hpBonus: 5, atkBonus: 0, defBonus: 0, spdBonus: 0, quote: '帶你安全抵達溫暖的貓窩。', skill: '空間折躍：提升裝備者 5 點生命上限；戰鬥 HP 歸零時觸發，防止本次掉落並直接回家。' },
 ];
 
 export const DEMO_DUNGEONS = [

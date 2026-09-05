@@ -5,7 +5,7 @@ import {
 import { dist, lerpColor } from './physics.js';
 
 export class Ball {
-  constructor(label, owner, x, y, atk = DEFAULT_ATK, def = DEFAULT_DEF, maxHp = DEFAULT_HP, spd = DEFAULT_SPD) {
+  constructor(label, owner, x, y, atk = DEFAULT_ATK, def = DEFAULT_DEF, maxHp = DEFAULT_HP, spd = DEFAULT_SPD, options = {}) {
     this.label = label;
     this.owner = owner; // 1 = player, 2 = AI
     this.x = x;
@@ -13,12 +13,22 @@ export class Ball {
     this.vx = 0;
     this.vy = 0;
     
-    // 5 Combat Attributes (hidden from direct board display): hp/maxHp, atk, def, spd
-    this.maxHp = Number(maxHp) || DEFAULT_HP;
+    // Identification & Equipment
+    this.idString = options.idString || (owner === 1 ? 'peg_player' : 'peg_enemy');
+    this.name = options.name || label;
+    this.code = options.code || '';
+    this.equipment = options.equipment ? { ...options.equipment, isBroken: false } : null;
+
+    // Base Combat Attributes
+    this.baseMaxHp = Number(maxHp) || DEFAULT_HP;
+    this.baseAtk = Number(atk) || DEFAULT_ATK;
+    this.baseDef = Number(def) || DEFAULT_DEF;
+    this.baseSpd = Number(spd) || DEFAULT_SPD;
+
+    // Equipment that grants max HP is calculated at combat start (and again if equipment breaks)
+    const initialHpBonus = (this.equipment && !this.equipment.isBroken) ? (Number(this.equipment.hpBonus) || 0) : 0;
+    this.maxHp = this.baseMaxHp + initialHpBonus;
     this.hp = this.maxHp;
-    this.atk = Number(atk) || DEFAULT_ATK;
-    this.def = Number(def) || DEFAULT_DEF;
-    this.spd = Number(spd) || DEFAULT_SPD;
 
     this.moving = false;
     this.alive = true;
@@ -27,6 +37,48 @@ export class Ball {
     // Liquid ring wave dynamics (stasis when 0, waves upon impact, stacks if hit while shaking)
     this.waveAmp = 0;
     this.wavePhase = 0;
+  }
+
+  // Dynamic getters: Calculate buffs from equipment on access for future support of weapon breaking
+  get atk() {
+    let bonus = 0;
+    if (this.equipment && !this.equipment.isBroken) {
+      bonus += (Number(this.equipment.atkBonus) || 0);
+    }
+    return this.baseAtk + bonus;
+  }
+
+  get def() {
+    let bonus = 0;
+    if (this.equipment && !this.equipment.isBroken) {
+      bonus += (Number(this.equipment.defBonus) || 0);
+    }
+    return this.baseDef + bonus;
+  }
+
+  get spd() {
+    let bonus = 0;
+    if (this.equipment && !this.equipment.isBroken) {
+      bonus += (Number(this.equipment.spdBonus) || 0);
+    }
+    return this.baseSpd + bonus;
+  }
+
+  // Recalculates maxHp when equipment breaks or changes, clamping hp to the new max
+  recalculateMaxHp() {
+    const hpBonus = (this.equipment && !this.equipment.isBroken) ? (Number(this.equipment.hpBonus) || 0) : 0;
+    this.maxHp = this.baseMaxHp + hpBonus;
+    if (this.hp > this.maxHp) {
+      this.hp = this.maxHp;
+    }
+  }
+
+  // In-combat equipment break trigger
+  breakEquipment() {
+    if (this.equipment && !this.equipment.isBroken) {
+      this.equipment.isBroken = true;
+      this.recalculateMaxHp();
+    }
   }
 
   get color() {
@@ -58,8 +110,9 @@ export class Ball {
   }
 
   launch(vx, vy) {
-    this.vx = vx * this.spd;
-    this.vy = vy * this.spd;
+    const spdMultiplier = this.spd > 10 ? (this.spd / 100) : this.spd;
+    this.vx = vx * spdMultiplier;
+    this.vy = vy * spdMultiplier;
     this.moving = true;
     this.trail = [];
     this.triggerWave(3.5); // Initial jolt on launch

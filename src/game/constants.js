@@ -34,7 +34,7 @@ export const BALL_MAX_HP = 100;
 export const DEFAULT_HP = 100;
 export const DEFAULT_ATK = 10;
 export const DEFAULT_DEF = 2;
-export const DEFAULT_SPD = 1.0;    // Speed multiplier on ball release
+export const DEFAULT_SPD = 100;    // 100% speed (normalized in physics)
 
 // ── Spawn Y Coordinates (both exactly 140px indent from their edges) ──
 export const ENEMY_START_Y = 140;  // 140px from top edge (0 + 140)

@@ -15,6 +15,8 @@ export class GameEngine {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.callbacks = callbacks; // onSnapshot, onGameOver, onLog
+    this.playerTeam = callbacks.playerTeam || [];
+    this.dungeon = callbacks.dungeon || null;
 
     this.dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
     this.agent = new Agent2();
@@ -135,26 +137,68 @@ export class GameEngine {
     this.shake = 0;
     this.separationTicks = 0;
 
-    // Create teams based on TEAM_SIZE backdoor constant
+    // Create teams based on playerTeam and TEAM_SIZE backdoor constant
     // Team 1: Player (Bottom, y ~ 660, NOXCAT Neon Green)
     // Team 2: AI (Top, y ~ 140, Cyber Crimson)
-    const pSpacing = W / (TEAM_SIZE + 1);
     const pLabels = [];
     const aLabels = [];
 
-    for (let i = 0; i < TEAM_SIZE; i++) {
+    const pCount = (this.playerTeam && this.playerTeam.length > 0) ? this.playerTeam.length : TEAM_SIZE;
+    const pSpacing = W / (pCount + 1);
+
+    for (let i = 0; i < pCount; i++) {
       const char = String.fromCharCode(97 + i);
       const pLabel = `1${char}`;
-      const aLabel = `2${char}`;
-
       const px = pSpacing * (i + 1);
       const py = PLAYER_START_Y;
-      this.balls.push(new Ball(pLabel, 1, px, py, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD));
-      pLabels.push(pLabel);
 
-      const ax = pSpacing * (i + 1);
+      if (this.playerTeam && this.playerTeam[i]) {
+        const pet = this.playerTeam[i];
+        const atk = pet.atk ?? DEFAULT_ATK;
+        const def = pet.def ?? DEFAULT_DEF;
+        const hp = pet.hp ?? DEFAULT_HP;
+        const spd = pet.spd ?? DEFAULT_SPD;
+
+        const options = {
+          idString: pet.idString || `peg_${pet.id || 'player'}`,
+          name: pet.name || pLabel,
+          code: pet.code || '',
+          equipment: pet.equippedItem ? {
+            id: pet.equippedItem.id,
+            idString: pet.equippedItem.idString || pet.equippedItem.id,
+            name: pet.equippedItem.name,
+            type: pet.equippedItem.type,
+            hpBonus: pet.equippedItem.hpBonus || 0,
+            atkBonus: pet.equippedItem.atkBonus || 0,
+            defBonus: pet.equippedItem.defBonus || 0,
+            spdBonus: pet.equippedItem.spdBonus || 0,
+          } : null,
+        };
+
+        this.balls.push(new Ball(pLabel, 1, px, py, atk, def, hp, spd, options));
+      } else {
+        this.balls.push(new Ball(pLabel, 1, px, py, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD));
+      }
+      pLabels.push(pLabel);
+    }
+
+    // Team 2: Enemy pieces (Enemies can wear equipment, default to null / no natural spawn)
+    const aCount = TEAM_SIZE;
+    const aSpacing = W / (aCount + 1);
+    for (let i = 0; i < aCount; i++) {
+      const char = String.fromCharCode(97 + i);
+      const aLabel = `2${char}`;
+      const ax = aSpacing * (i + 1);
       const ay = ENEMY_START_Y;
-      this.balls.push(new Ball(aLabel, 2, ax, ay, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD));
+
+      const enemyOptions = {
+        idString: `enemy_drone_${char}`,
+        name: `ENEMY ${char.toUpperCase()}`,
+        code: char.toUpperCase(),
+        equipment: null, // Enemies can wear equipment, default to null (no natural equipment spawn)
+      };
+
+      this.balls.push(new Ball(aLabel, 2, ax, ay, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD, enemyOptions));
       aLabels.push(aLabel);
     }
 
@@ -326,10 +370,18 @@ export class GameEngine {
       balls: this.balls.map(b => ({
         label: b.label,
         owner: b.owner,
+        idString: b.idString,
+        name: b.name,
+        code: b.code,
+        equipment: b.equipment,
         x: b.x,
         y: b.y,
         hp: b.hp,
         maxHp: b.maxHp,
+        baseMaxHp: b.baseMaxHp,
+        baseAtk: b.baseAtk,
+        baseDef: b.baseDef,
+        baseSpd: b.baseSpd,
         atk: b.atk,
         def: b.def,
         spd: b.spd,
@@ -364,8 +416,16 @@ export class GameEngine {
       return {
         label,
         owner: b.owner,
+        idString: b.idString,
+        name: b.name,
+        code: b.code,
+        equipment: b.equipment,
         hp: b.hp,
         maxHp: b.maxHp,
+        baseMaxHp: b.baseMaxHp,
+        baseAtk: b.baseAtk,
+        baseDef: b.baseDef,
+        baseSpd: b.baseSpd,
         atk: b.atk,
         def: b.def,
         spd: b.spd,

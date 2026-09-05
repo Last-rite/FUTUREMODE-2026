@@ -2,7 +2,7 @@ import { createDemoDatabase } from './fixtures.js';
 
 // TEST BACKEND ONLY. This async localStorage adapter mirrors a future API
 // boundary so screens can later swap to HTTP without changing their UI logic.
-const DB_KEY = 'futuremode_demo_backend_v2';
+const DB_KEY = 'futuremode_demo_backend_v4';
 const wait = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 const DEMO_PASSWORD = 'demo1234';
 

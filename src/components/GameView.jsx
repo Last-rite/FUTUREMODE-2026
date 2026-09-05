@@ -200,6 +200,14 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
         height={58}
         className="w-[58px] h-[58px] block rounded-2xl bg-[#060a0f]"
       />
+      {char.equipment && (
+        <span
+          title={`Equipped: ${char.equipment.name} (${char.equipment.type})`}
+          className="absolute -bottom-1 -right-1 z-10 px-1 py-0.5 bg-[#0a121c] border border-[#00ff66]/70 rounded text-[8px] font-mono font-bold text-[#00ff66] shadow-[0_0_6px_rgba(0,255,102,0.6)] leading-none"
+        >
+          {char.equipment.type === 'WEAPON' ? 'ATK' : 'DEF'}
+        </span>
+      )}
     </div>
   );
 }
@@ -327,7 +335,7 @@ function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
   );
 }
 
-export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
+export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBattleComplete }) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
 
@@ -341,7 +349,7 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
     playerBarInfo: null,
     boss: null,
     goldEarned: 0,
-    playerAliveCount: TEAM_SIZE,
+    playerAliveCount: playerTeam?.length || TEAM_SIZE,
     aiAliveCount: TEAM_SIZE,
   });
 
@@ -353,6 +361,8 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
     if (!canvasRef.current) return;
 
     const engine = new GameEngine(canvasRef.current, {
+      playerTeam,
+      dungeon,
       onSnapshot: (snap) => {
         setSnapshot(snap);
       },
@@ -368,7 +378,7 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
     return () => {
       engine.destroy();
     };
-  }, []);
+  }, [playerTeam, dungeon]);
 
 
   const handleToggleMute = () => {

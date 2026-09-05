@@ -15,8 +15,22 @@ import NoxPlaceholder from './NoxPlaceholder.jsx';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
+import {
+  getStoredLoadouts,
+  saveStoredLoadouts,
+  getActiveLoadoutIndex,
+  setActiveLoadoutIndex,
+} from '../utils/teamStorage.js';
 
 const STAT_ICONS = { hp: Shield, atk: Swords, def: Shield, spd: Zap };
+
+// Stat bar bounds: leftmost is 0, rightmost is 999 HP, 99 ATK, 20 DEF, 999% SPD
+const STAT_MAX_LIMITS = {
+  hp: 999,
+  atk: 99,
+  def: 20,
+  spd: 999,
+};
 
 // Custom cyber weapon illustration component
 export function ItemIllustration({ item, size = 'lg' }) {
@@ -92,41 +106,17 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   const touchInfoRef = useRef(null);
 
   // Loadout management: 5 tabs storing distinct 3-slot party line-ups
-  const LOADOUTS_KEY = 'futuremode_party_loadouts_v3';
-  const [loadout, setLoadout] = useState(1);
-  const [loadouts, setLoadouts] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LOADOUTS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    try {
-      const savedV2 = localStorage.getItem('futuremode_party_loadouts_v2');
-      if (savedV2) {
-        const parsed = JSON.parse(savedV2);
-        const normalized = {};
-        for (const k of [1, 2, 3, 4, 5]) {
-          const arr = parsed[k] || [];
-          normalized[k] = [arr[0] || null, arr[1] || null, arr[2] || null];
-        }
-        return normalized;
-      }
-    } catch (e) {}
-    const pIds = data.pets.map((p) => p.id);
-    const selectedIds = data.pets.filter((p) => p.selected).map((p) => p.id);
-    return {
-      1: [selectedIds[0] || pIds[0] || null, selectedIds[1] || pIds[1] || null, selectedIds[2] || pIds[2] || null],
-      2: [pIds[0] || null, pIds[1] || null, null],
-      3: [pIds[0] || null, null, pIds[2] || null],
-      4: [pIds[0] || null, pIds[3] || null, null],
-      5: [pIds[0] || null, null, null],
-    };
-  });
+  const [loadout, setLoadout] = useState(() => getActiveLoadoutIndex());
+  const [loadouts, setLoadouts] = useState(() => getStoredLoadouts(data.pets));
 
   const saveLoadouts = (next) => {
     setLoadouts(next);
-    try {
-      localStorage.setItem(LOADOUTS_KEY, JSON.stringify(next));
-    } catch (e) {}
+    saveStoredLoadouts(next);
+  };
+
+  const handleSelectLoadout = (number) => {
+    setLoadout(number);
+    setActiveLoadoutIndex(number);
   };
 
   // Fixed 3 slot array [slot0, slot1, slot2]
@@ -431,7 +421,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               <button
                 key={number}
                 className={`sketch-tab-btn ${isActive ? 'is-active' : 'is-inactive'}`}
-                onClick={() => setLoadout(number)}
+                onClick={() => handleSelectLoadout(number)}
                 role="tab"
                 aria-selected={isActive}
                 aria-label={`編組 ${number}`}
@@ -745,6 +735,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               {['hp', 'atk', 'def', 'spd'].map((key) => {
                 const Icon = STAT_ICONS[key];
                 const value = selectedPet[key];
+                const maxRef = STAT_MAX_LIMITS[key] || 100;
+                const barWidth = Math.min(100, Math.max(0, (value / maxRef) * 100));
+                const displayVal = key === 'spd' ? `${value}%` : value;
+
                 return (
                   <div className="sketch-stat-row" key={key}>
                     <div className="sketch-stat-label-wrap">
@@ -753,11 +747,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                         {key.toUpperCase()} :
                       </span>
                     </div>
-                    <strong className="sketch-stat-val">{value}</strong>
+                    <strong className="sketch-stat-val">{displayVal}</strong>
                     <div className="sketch-stat-bar-track">
                       <div
                         className="sketch-stat-bar-fill"
-                        style={{ width: `${Math.min(100, (value / 130) * 100)}%` }}
+                        style={{ width: `${barWidth}%` }}
                       />
                     </div>
                   </div>
@@ -824,8 +818,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                 const Icon = STAT_ICONS[key];
                 const bonusVal = getItemBonus(selectedItem, key);
                 const hasBonus = bonusVal > 0;
-                const maxRef = key === 'hp' ? 30 : 5;
-                const fillWidth = hasBonus ? Math.min(100, Math.max(25, (bonusVal / maxRef) * 100)) : 0;
+                const maxRef = STAT_MAX_LIMITS[key] || 100;
+                const fillWidth = hasBonus ? Math.min(100, Math.max(0, (bonusVal / maxRef) * 100)) : 0;
+                const displayBonus = hasBonus
+                  ? (key === 'spd' ? `+${bonusVal}%` : `+${bonusVal}`)
+                  : (key === 'spd' ? '+0%' : '+0');
 
                 return (
                   <div className={`sketch-stat-row ${hasBonus ? 'is-boosted' : ''}`} key={key}>
@@ -834,15 +831,15 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                         <Icon size={12} />
                         {key.toUpperCase()} :
                       </span>
-                      {/* Blue handwritten-style "增加量" callout matching sketch */}
+                      {/* Blue handwritten-style arrow callout matching sketch */}
                       {hasBonus && (
                         <span className="sketch-increase-callout">
-                          增加量 ➔
+                          ➔
                         </span>
                       )}
                     </div>
                     <strong className={`sketch-stat-val ${hasBonus ? 'text-[#35d9ff]' : 'text-[#56655c]'}`}>
-                      {hasBonus ? `+${bonusVal}` : '+0'}
+                      {displayBonus}
                     </strong>
                     <div className="sketch-stat-bar-track">
                       <div
