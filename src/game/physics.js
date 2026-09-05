@@ -12,19 +12,38 @@ export function lerp(a, b, t) {
 }
 
 export function lerpColor(c1, c2, t) {
-  const r1 = parseInt(c1.slice(1, 3), 16);
-  const g1 = parseInt(c1.slice(3, 5), 16);
-  const b1 = parseInt(c1.slice(5, 7), 16);
+  if (!c1 || !c1.startsWith('#')) c1 = '#00ff66';
+  if (!c2 || !c2.startsWith('#')) c2 = '#000000';
+  let s1 = c1.slice(1);
+  if (s1.length === 3) s1 = s1.split('').map(x => x + x).join('');
+  let s2 = c2.slice(1);
+  if (s2.length === 3) s2 = s2.split('').map(x => x + x).join('');
 
-  const r2 = parseInt(c2.slice(1, 3), 16);
-  const g2 = parseInt(c2.slice(3, 5), 16);
-  const b2 = parseInt(c2.slice(5, 7), 16);
+  const r1 = parseInt(s1.slice(0, 2), 16) || 0;
+  const g1 = parseInt(s1.slice(2, 4), 16) || 0;
+  const b1 = parseInt(s1.slice(4, 6), 16) || 0;
+
+  const r2 = parseInt(s2.slice(0, 2), 16) || 0;
+  const g2 = parseInt(s2.slice(2, 4), 16) || 0;
+  const b2 = parseInt(s2.slice(4, 6), 16) || 0;
 
   const r = Math.round(lerp(r1, r2, t));
   const g = Math.round(lerp(g1, g2, t));
   const b = Math.round(lerp(b1, b2, t));
 
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+export function hexToRgba(hex, alpha = 1) {
+  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return `rgba(0, 255, 102, ${alpha})`;
+  let c = hex.slice(1);
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return `rgba(0, 255, 102, ${alpha})`;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 /**

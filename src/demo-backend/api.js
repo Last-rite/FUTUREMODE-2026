@@ -15,6 +15,9 @@ function readDb() {
       const saved = localStorage.getItem(DB_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.pets)) {
+          parsed.pets.forEach(p => { p.accent = '#00ff66'; });
+        }
         memoryDb = parsed;
         return parsed;
       }
@@ -185,7 +188,7 @@ export const demoApi = {
       spd: petData.spd || 100,
       protected: false,
       selected: false,
-      accent: petData.accent || (count % 3 === 0 ? '#ffcc33' : count % 2 === 0 ? '#35d9ff' : '#00ff66'),
+      accent: '#00ff66',
       quote: petData.quote || 'Feel Nothing. Do Everything.',
       skill: petData.skill || '自動回家：戰鬥中 HP 歸零時自動返回背包。',
       equipped: null,

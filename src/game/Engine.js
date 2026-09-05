@@ -163,6 +163,8 @@ export class GameEngine {
           idString: pet.idString || `peg_${pet.id || 'player'}`,
           name: pet.name || pLabel,
           code: pet.code || '',
+          accent: pet.accent || null,
+          image: pet.image || pet.avatar || null,
           equipment: pet.equippedItem ? {
             id: pet.equippedItem.id,
             idString: pet.equippedItem.idString || pet.equippedItem.id,
@@ -195,6 +197,7 @@ export class GameEngine {
         idString: `enemy_drone_${char}`,
         name: `ENEMY ${char.toUpperCase()}`,
         code: char.toUpperCase(),
+        accent: '#ff2a55',
         equipment: null, // Enemies can wear equipment, default to null (no natural equipment spawn)
       };
 
@@ -419,6 +422,7 @@ export class GameEngine {
         idString: b.idString,
         name: b.name,
         code: b.code,
+        accent: b.accent || (b.owner === 2 ? '#ff2a55' : '#00ff66'),
         equipment: b.equipment,
         hp: b.hp,
         maxHp: b.maxHp,
