@@ -228,7 +228,7 @@ export const DEMO_DUNGEONS = [
   {
     id: 'dungeon-zero',
     chapter: '01',
-    name: '幽蘭城堡',
+    name: '幽藍之都',
     subtitle: 'ORCHID CASTLE // ENTRY',
     difficulty: 'NORMAL',
     cost: 5,

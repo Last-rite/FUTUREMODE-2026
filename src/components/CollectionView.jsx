@@ -224,7 +224,7 @@ function DetailSpeechBubble({ statsRef, containerRef, quote, isWeapon = false })
           : {}),
       }}
     >
-      <p>「{quote}」</p>
+      <p>{quote}</p>
       <span
         className={`sketch-bubble-tail ${isWeapon ? 'sketch-bubble-tail--item' : ''}`}
         style={{
@@ -988,12 +988,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             </button>
           </header>
 
-          {/* Name Banner: "名字 >>" with angled trapezoidal cut */}
+          {/* Name Banner: 主標題箭頭 + 右側獨立箭頭飾條 (符合示意圖) */}
           <div className="sketch-fs-name-row">
             <div className="sketch-name-banner">
               <h2>{selectedPet.name}</h2>
-              <span className="sketch-banner-chevron">&gt;&gt;</span>
             </div>
+            <div className="sketch-name-chevron" aria-hidden="true" />
           </div>
 
           {/* Main Content Area: Stats on left, Speech Bubble & Art on right */}
@@ -1074,12 +1074,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             </button>
           </header>
 
-          {/* Name Banner: "名字 >>" with cyan trapezoidal cut */}
+          {/* Name Banner: 主標題箭頭 + 右側獨立箭頭飾條 (符合示意圖) */}
           <div className="sketch-fs-name-row">
             <div className="sketch-name-banner sketch-name-banner--item">
               <h2>{selectedItem.name}</h2>
-              <span className="sketch-banner-chevron">&gt;&gt;</span>
             </div>
+            <div className="sketch-name-chevron sketch-name-chevron--item" aria-hidden="true" />
           </div>
 
           {/* Main Content Area: Left Stats with dynamic "增加量", Right Bubble & Big Art */}
