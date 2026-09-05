@@ -125,7 +125,17 @@
 
 ## 第三方服務、資料與素材
 
-請逐項列出來源、連結與授權方式；不要提交金鑰、Token 或個人資料。
+
+本專案所使用之所有外部素材、模型工具與第三方資料均遵循合法授權規範：
+| 類別 | 名稱／項目 | 來源與工具 | 授權／使用說明 |
+| :--- | :--- | :--- | :--- |
+| **官方 IP 素材** | NOXCAT 原型角色圖像與標識 | NOXCAT 官方黑客松授權提供 | 僅限於本屆黑客松參賽作品中創作與展示使用 |
+| **AI 生成美術** | 像素風貓貓變體、裝備與地城背景 | Google Gemini / Nano Banana (Imagen Pipeline) 輔助生成 | 團隊透過 Prompt Engineering 生成之原創衍生像素資產 |
+| **AI 生成音樂** | 大廳、戰鬥、勝利與失敗 BGM (MP3) | Suno AI v3.5 / v4 生成 | 由團隊自訂風格 Prompt 生成之原創遊戲配樂 |
+| **程序化音效** | 彈珠碰撞、反彈、擊中與陣亡打擊音 | Web Audio API (純程式碼振盪器合成) | 團隊自行以 JavaScript 程式化合成，無外部版權依賴 |
+| **向量圖示** | HUD 武器、防具、金幣與選單圖示 | Lucide React | [ISC License](https://lucide.dev/license)（開源授權） |
+| **字體資源** | 像素與科技感字體家族 | Google Fonts (Silkscreen, Orbitron, Inter) | [SIL Open Font License 1.1](https://openfontlicense.org/)（開源免費商用） |
+| **雲端部署服務** | 雲端容器託管與自動化 CI/CD | Zeabur | 大會贊助額度與平台免費方案提供 |
 
 ## 團隊成員
 
