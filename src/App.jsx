@@ -30,7 +30,7 @@ export default function App() {
     const bootstrap = async () => {
       const session = getAuthCookie();
       if (!session?.id) { setView('auth'); return; }
-      const gameData = await demoApi.getGameData();
+      const gameData = await demoApi.getGameData(session.id);
       setCurrentUser(session); setData(gameData); setView('home');
     };
     bootstrap();
@@ -40,35 +40,47 @@ export default function App() {
     const user = mode === 'register'
       ? await demoApi.register(username, password, displayName)
       : await demoApi.login(username, password);
-    const gameData = await demoApi.getGameData();
+    const gameData = await demoApi.getGameData(user.id);
     setAuthCookie(user); setCurrentUser(user); setData(gameData); setView('home');
   };
   const handleSignOut = () => { clearAuthCookie(); setCurrentUser(null); setView('auth'); };
   const showMessage = (message, tone = 'success') => setToast({ message, tone, key: Date.now() });
 
   const handleToggleParty = async (petId) => {
-    const nextData = await demoApi.togglePartyMember(petId);
+    const nextData = await demoApi.togglePartyMember(petId, currentUser?.id);
     setData(nextData);
   };
 
   const handleEquipItem = async (petId, itemId) => {
-    const nextData = await demoApi.equipItem(petId, itemId);
+    const nextData = await demoApi.equipItem(petId, itemId, currentUser?.id);
     setData(nextData);
   };
 
+  const handleAddPet = async (petData) => {
+    const nextData = await demoApi.addPet(petData, currentUser?.id);
+    setData(nextData);
+    showMessage('成功召喚新 NOXCAT！');
+  };
+
+  const handleAddItem = async (itemData) => {
+    const nextData = await demoApi.addItem(itemData, currentUser?.id);
+    setData(nextData);
+    showMessage('成功鍛造新裝備！');
+  };
+
   const handleCreateTrade = async (trade) => {
-    const nextData = await demoApi.createTrade(trade);
+    const nextData = await demoApi.createTrade({ ...trade, playerId: currentUser?.id });
     setData(nextData);
   };
 
   const handleResolveTrade = async (tradeId, status) => {
-    const nextData = await demoApi.resolveTrade(tradeId, status);
+    const nextData = await demoApi.resolveTrade(tradeId, status, currentUser?.id);
     setData(nextData);
     showMessage(status === 'accepted' ? '已接受測試交易' : '已拒絕測試交易');
   };
 
   const handleReset = async () => {
-    const nextData = await demoApi.reset();
+    const nextData = await demoApi.reset(currentUser?.id);
     setData(nextData);
     showMessage('測試資料已重置');
   };

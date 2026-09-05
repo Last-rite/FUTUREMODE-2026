@@ -114,7 +114,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 /* Placeholder avatar */
 .nox-avatar { position: relative; flex: none; display: grid; place-items: center; overflow: hidden; border: 1px solid color-mix(in srgb, var(--pet-accent) 55%, #26323b); border-radius: 16px; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--pet-accent) 16%, transparent), transparent 57%), #070b0f; color: var(--pet-accent); box-shadow: inset 0 0 18px rgba(255,255,255,.025); }
 .nox-avatar svg { width: 42%; height: 42%; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--pet-accent) 55%, transparent)); }.nox-avatar--sm { width: 56px; height: 56px; border-radius: 13px; }.nox-avatar--md { width: 78px; height: 78px; }.nox-avatar--lg { width: 112px; height: 112px; }.nox-avatar--hero { width: 170px; height: 170px; }
-.nox-avatar__scan { position: absolute; inset: 0; background: repeating-linear-gradient(to bottom, transparent 0 5px, rgba(255,255,255,.025) 6px); }.nox-avatar__code { position: absolute; top: 5px; left: 6px; font: 800 7px ui-monospace, monospace; letter-spacing: .08em; }.nox-avatar__placeholder { position: absolute; bottom: 4px; font: 800 5px ui-monospace, monospace; letter-spacing: .06em; color: #82908a; }
+.nox-avatar__scan { position: absolute; inset: 0; background: repeating-linear-gradient(to bottom, transparent 0 5px, rgba(255,255,255,.025) 6px); pointer-events: none; z-index: 2; }.nox-avatar__code { position: absolute; top: 5px; left: 6px; font: 800 7px ui-monospace, monospace; letter-spacing: .08em; }.nox-avatar__placeholder { position: absolute; bottom: 4px; font: 800 5px ui-monospace, monospace; letter-spacing: .06em; color: #82908a; }
+.nox-avatar__img { width: 92%; height: 92%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--pet-accent, #00ff66) 45%, transparent)); z-index: 1; pointer-events: none; }
+.nox-avatar--hero .nox-avatar__img { width: 95%; height: 95%; filter: drop-shadow(0 0 28px color-mix(in srgb, var(--pet-accent, #00ff66) 60%, transparent)); }
 
 /* Home */
 .home-screen { background: linear-gradient(#060a0e, #030507); }.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0 15px; }.player-line { display: flex; align-items: center; gap: 7px; margin-top: 5px; }.player-line strong { font: 900 14px ui-monospace, monospace; }.player-line > span:last-child { color: var(--muted); font: 800 9px ui-monospace, monospace; }.online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 9px var(--green); }
@@ -197,6 +199,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-terrain-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .sketch-mission__node { position: absolute; z-index: 2; left: 50%; top: 38%; display: grid; place-items: center; width: min(40vw, 156px); aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid var(--dungeon-tone); border-radius: 50%; color: var(--dungeon-tone); background: radial-gradient(circle, color-mix(in srgb, var(--dungeon-tone) 14%, #050705), #050705 68%); animation: sketchNode 2.8s ease-in-out infinite; }
 .sketch-mission__node span { position: absolute; bottom: 20px; color: #88968d; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 10px; letter-spacing: .14em; }
+.sketch-mission__node-img { width: 88%; height: 88%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 0 16px color-mix(in srgb, var(--dungeon-tone) 55%, transparent)); }
 @keyframes sketchNode { 50% { transform: translate(-50%, -53%); } }
 .sketch-stage-arrow { position: absolute; z-index: 5; top: 38%; display: grid; place-items: center; width: 44px; height: 58px; transform: translateY(-50%); border: none; background: transparent; color: #9aa69d; cursor: pointer; transition: color .15s ease, transform .15s ease; }
 .sketch-stage-arrow:active { color: var(--green); transform: translateY(-50%) scale(.92); }
@@ -222,12 +225,18 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 @media (max-height: 700px) { .sketch-home { gap: 6px; } .sketch-brandbar { min-height: 40px; } .sketch-mission__heading { min-height: 60px; } .sketch-mission__node { width: 120px; } .sketch-party__member:nth-child(2) { transform: translateY(-10px); } .sketch-start { min-height: 48px; } }
 
 /* Pet screen: collection view starts directly with loadouts */
-.sketch-collection { padding: max(14px, var(--safe-top)) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
+.sketch-collection {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: max(10px, var(--safe-top)) 14px calc(var(--safe-bottom) + 72px);
+  background: #050705;
+}
 .sketch-trade { padding: var(--safe-top) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
 .sketch-collection-brandbar { display: flex; align-items: center; min-height: 42px; padding: 0 4px; }
 
-/* Loadout Tabs & Interactive Circular Switcher */
-.sketch-loadout-tabs { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 14px; }
+.sketch-loadout-tabs { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 10px; }
 
 /* The Big Circle + Small Overlapping Circle Mode Switcher */
 .sketch-circle-switcher { position: relative; width: 48px; height: 44px; padding: 0 !important; border: none !important; background: transparent !important; overflow: visible; cursor: pointer; flex-shrink: 0; }
@@ -259,10 +268,9 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 /* Battle Party Loadout Area */
 .sketch-loadout { display: grid; gap: 8px; padding: 12px 6px 14px; border-block: 2px solid #2d382f; background: radial-gradient(circle at 50% 45%, rgba(0,255,102,.07), transparent 60%); }
 .sketch-loadout--weapon-mode { background: radial-gradient(circle at 50% 45%, rgba(53,217,255,.07), transparent 60%); }
-.sketch-loadout__indicator { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
-.sketch-loadout__indicator span { font: 900 11px/1 ui-monospace, monospace; color: #9bb0a2; letter-spacing: .08em; }
-.sketch-anim-swap-btn { padding: 4px 9px; border: 1px solid #334438; border-radius: 20px; background: #090f0b; color: var(--green); font: 850 9px/1 ui-monospace, monospace; cursor: pointer; transition: all .15s; }
-.sketch-anim-swap-btn:hover { border-color: var(--green); box-shadow: 0 0 8px rgba(0,255,102,.3); }
+.sketch-loadout__indicator { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; gap: 8px; }
+.sketch-loadout__indicator > span:first-child { font: 900 11px/1 ui-monospace, monospace; color: #9bb0a2; letter-spacing: .08em; white-space: nowrap; }
+.sketch-loadout__indicator .sketch-drag-hint { font: 800 10px/1 ui-monospace, monospace; color: #6b8072; text-align: right; margin: 0; letter-spacing: .04em; white-space: nowrap; }
 
 /* Slots Container & Morphing Circles with Corner-Anchored Pivots */
 .sketch-loadout__slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; min-height: 155px; }
@@ -273,10 +281,38 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-loadout__slot.is-drag-over { outline: 2px solid var(--green) !important; outline-offset: 4px; transform: scale(1.06); filter: drop-shadow(0 0 12px rgba(0,255,102,.6)); }
 .sketch-loadout--weapon-mode .sketch-loadout__slot.is-drag-over { outline: 2px solid #35d9ff !important; filter: drop-shadow(0 0 12px rgba(53,217,255,.6)); }
 
-.sketch-slot-remove-btn { position: absolute; top: -4px; right: -2px; z-index: 12; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #3d4a41; background: #090e0b; color: #7d8f83; cursor: pointer; transition: all .15s; padding: 0; }
+.sketch-slot-remove-btn {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  max-width: 22px !important;
+  max-height: 22px !important;
+  aspect-ratio: 1 / 1 !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  border-radius: 50% !important;
+  border: 1px solid #3d4a41;
+  background: #090e0b;
+  color: #7d8f83;
+  cursor: pointer;
+  transition: all .15s;
+  overflow: hidden;
+}
+.sketch-slot-remove-btn svg {
+  flex-shrink: 0;
+  display: block;
+}
 .sketch-slot-remove-btn:hover { border-color: #ff4757; color: #ff4757; background: #1f0b0e; box-shadow: 0 0 8px rgba(255,71,87,.5); transform: scale(1.12); }
-
-.sketch-drag-hint { font: 800 10px/1 ui-monospace, monospace; color: #6b8072; text-align: center; margin-top: 2px; letter-spacing: .04em; }
 .sketch-vault-token[draggable="true"] { cursor: grab; user-select: none; -webkit-user-select: none; }
 .sketch-vault-token[draggable="true"]:active { cursor: grabbing; }
 .sketch-vault-token.is-dragging { opacity: .35; transform: scale(.92); }
@@ -418,12 +454,12 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .slot-morph-node--pet.is-secondary { box-shadow: 0 0 0 3px #050705; border-color: var(--pet-accent, #00ff66); color: var(--pet-accent, #00ff66); background: #08150e; }
 
 /* Vault Grid Section & Custom Cyberpunk Scrollbar */
-.sketch-vault-section { margin-top: 14px; display: grid; gap: 8px; }
-.sketch-vault-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 6px; }
+.sketch-vault-section { flex: 1; min-height: 0; margin-top: 10px; margin-bottom: 0; display: flex; flex-direction: column; gap: 6px; }
+.sketch-vault-header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 2px 6px; }
 .sketch-vault-title { font: 950 12px/1 ui-monospace, monospace; color: #cfd8d2; letter-spacing: .06em; }
 .sketch-vault-count { font: 800 9px/1 ui-monospace, monospace; color: var(--green); }
-.sketch-vault-wrapper { display: flex; gap: 6px; position: relative; height: clamp(285px, 40vh, 340px); }
-.sketch-vault-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 6px 14px 4px; scrollbar-width: none; -ms-overflow-style: none; }
+.sketch-vault-wrapper { flex: 1; min-height: 0; display: flex; gap: 6px; position: relative; overscroll-behavior: contain; }
+.sketch-vault-scroll { flex: 1; height: 100%; overflow-y: auto; overflow-x: hidden; padding: 6px 6px 12px 4px; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior: contain; }
 .sketch-vault-scroll::-webkit-scrollbar { display: none; }
 .sketch-vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 7px; padding-top: 2px; }
 .sketch-vault-token { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #e8ede9; text-align: center; cursor: pointer; }
@@ -434,20 +470,20 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-vault-token > span { color: #718078; font: 750 7px/1 ui-monospace, monospace; }
 .sketch-vault-token .nox-avatar__placeholder { display: none; }
 
-.sketch-vault-token.is-empty { min-height: auto; border: none; background: transparent; display: grid; justify-items: center; align-items: center; }
-.sketch-vault-empty-circle { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); aspect-ratio: 1 / 1; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #263029; border-radius: 50%; color: #354139; }
+.sketch-vault-token.is-empty { min-height: auto; border: none; background: transparent; display: grid; justify-items: center; align-items: center; cursor: default; pointer-events: none; }
+.sketch-vault-empty-circle { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); aspect-ratio: 1 / 1; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #202b23; border-radius: 50%; color: #2e3b32; user-select: none; }
 .sketch-vault-empty-circle i { font: 300 22px/1 sans-serif; font-style: normal; }
 .sketch-vault-empty-circle small { font: 700 6px/1 ui-monospace, monospace; }
 .item-bonus-pill { display: inline-block; padding: 1px 4px; border: 1px solid #1a382c; border-radius: 4px; color: #35d9ff; font: 850 7px/1 ui-monospace, monospace; background: #061513; }
-.item-bonus-pill { display: inline-block; padding: 1px 4px; border: 1px solid #1a382c; border-radius: 4px; color: #35d9ff; font: 850 7px/1 ui-monospace, monospace; background: #061513; }
 
 /* Custom Hand-Drawn Styled Cyberpunk Scrollbar */
-.sketch-custom-scrollbar { display: flex; flex-direction: column; align-items: center; width: 18px; background: #070b08; border: 1px solid #212c24; }
-.sketch-scroll-arrow { display: grid; place-items: center; width: 100%; height: 18px; padding: 0; border: 0; background: #0c130e; color: #6e7f73; cursor: pointer; }
+.sketch-custom-scrollbar { display: flex; flex-direction: column; align-items: center; width: 18px; background: #070b08; border: 1px solid #212c24; user-select: none; -webkit-user-select: none; touch-action: none; overscroll-behavior: contain; }
+.sketch-scroll-arrow { display: grid; place-items: center; width: 100%; height: 18px; padding: 0; border: 0; background: #0c130e; color: #6e7f73; cursor: pointer; user-select: none; }
 .sketch-scroll-arrow:hover { color: var(--green); }
-.sketch-scroll-track { position: relative; flex: 1; width: 100%; background: #060907; overflow: hidden; }
-.sketch-scroll-thumb { position: absolute; left: 2px; right: 2px; height: 32px; background: var(--green); border-radius: 2px; box-shadow: 0 0 8px rgba(0,255,102,.55); cursor: pointer; transition: top .1s ease-out; }
-.sketch-thumb-grip { position: absolute; inset: 6px 2px; border-block: 1px solid #052611; background: repeating-linear-gradient(180deg, #052611 0 2px, transparent 2px 4px); }
+.sketch-scroll-track { position: relative; flex: 1; width: 100%; background: #060907; overflow: hidden; cursor: pointer; user-select: none; }
+.sketch-scroll-thumb { position: absolute; left: 2px; right: 2px; min-height: 24px; background: var(--green); border-radius: 2px; box-shadow: 0 0 8px rgba(0,255,102,.55); cursor: grab; user-select: none; }
+.sketch-scroll-thumb.is-dragging { cursor: grabbing; background: #39ff7f; box-shadow: 0 0 14px rgba(0,255,102,.8); }
+.sketch-thumb-grip { position: absolute; inset: 6px 2px; border-block: 1px solid #052611; background: repeating-linear-gradient(180deg, #052611 0 2px, transparent 2px 4px); pointer-events: none; }
 
 /* Weapon / Item Artwork Illustration */
 .cyber-item-art { position: relative; display: grid; place-items: center; border: 2px solid #2d4538; border-radius: 50%; background: radial-gradient(circle, #081813 40%, #050705 90%); transition: transform .12s; overflow: hidden; }
