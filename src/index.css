@@ -123,3 +123,175 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 @media (min-width: 520px) { .phone-shell { height: min(94dvh, 920px); border: 1px solid var(--line); border-radius: 32px; } }
 @media (max-height: 700px) { .auth-visual { height: 130px; }.auth-orbit--two { width: 160px; height: 84px; }.auth-copy p { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
+
+/* Hand-drawn game-design alignment */
+.sketch-home { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px; padding: var(--safe-top) 14px calc(var(--safe-bottom) + 94px); overflow: hidden; background: #050705; }
+.sketch-brandbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; }
+.sketch-brandbar__actions { display: flex; align-items: center; gap: 6px; }
+.sketch-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sketch-brand__mark { display: grid; place-items: center; width: 35px; height: 35px; border: 2px solid var(--green); color: var(--green); transform: rotate(45deg); }
+.sketch-brand__mark i { font: 950 10px/1 ui-monospace, monospace; font-style: normal; transform: rotate(-45deg); }
+.sketch-brand > span:last-child { display: grid; line-height: 1; }
+.sketch-brand strong { font: 950 13px/1 ui-monospace, monospace; letter-spacing: .02em; }
+.sketch-brand small { margin-top: 4px; color: var(--green); font: 800 7px/1 ui-monospace, monospace; letter-spacing: .18em; }
+.sketch-icon-button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid #25302a; border-radius: 0; background: #090d0a; color: #8d9b91; cursor: pointer; }
+.sketch-icon-button:active { transform: scale(.92); color: var(--green); border-color: var(--green); }
+.sketch-playerbar { display: flex; align-items: center; justify-content: space-between; min-height: 33px; padding: 0 10px; border-block: 1px solid #273028; color: #aab5ad; font: 750 9px/1 ui-monospace, monospace; }
+.sketch-playerbar strong { display: flex; align-items: center; gap: 5px; color: var(--green); font-size: 10px; }
+.sketch-mission { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 2px solid #2d362f; background: #070a08; }
+.sketch-mission__heading { position: relative; z-index: 2; min-height: 77px; display: grid; place-items: center; align-content: center; border-bottom: 1px solid #2d362f; text-align: center; background: #090d0a; }
+.sketch-mission__heading span { color: var(--dungeon-tone); font: 800 8px/1 ui-monospace, monospace; letter-spacing: .16em; }
+.sketch-mission__heading h1 { margin: 5px 0 4px; font-size: clamp(20px, 6vw, 26px); line-height: 1; letter-spacing: -.04em; }
+.sketch-mission__heading small { color: #758078; font: 700 8px/1 ui-monospace, monospace; }
+.sketch-mission__field { position: relative; min-height: 0; overflow: hidden; background: linear-gradient(transparent 49%, rgba(0,255,102,.04) 50%), repeating-linear-gradient(90deg, transparent 0 39px, rgba(0,255,102,.025) 40px), #050705; }
+.sketch-mission__field::after { content: ''; position: absolute; inset: auto 8% 7% 8%; height: 45%; border: 1px solid color-mix(in srgb, var(--dungeon-tone) 25%, transparent); border-bottom: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); opacity: .55; }
+.sketch-field-line { position: absolute; display: block; height: 1px; background: color-mix(in srgb, var(--dungeon-tone) 35%, transparent); transform-origin: left center; }
+.sketch-field-line--one { width: 44%; left: 0; top: 35%; transform: rotate(12deg); }
+.sketch-field-line--two { width: 34%; right: 0; top: 26%; transform: rotate(-18deg); }
+.sketch-field-line--three { width: 46%; left: 30%; top: 61%; transform: rotate(-7deg); }
+.sketch-mission__node { position: absolute; z-index: 2; left: 50%; top: 38%; display: grid; place-items: center; width: min(42vw, 170px); aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid var(--dungeon-tone); border-radius: 50%; color: var(--dungeon-tone); background: radial-gradient(circle, color-mix(in srgb, var(--dungeon-tone) 13%, #050705), #050705 65%); box-shadow: 0 0 0 8px #050705, 0 0 0 9px color-mix(in srgb, var(--dungeon-tone) 30%, transparent), 0 0 38px color-mix(in srgb, var(--dungeon-tone) 18%, transparent); animation: sketchNode 2.8s ease-in-out infinite; }
+.sketch-mission__node::before { content: ''; position: absolute; inset: 11px; border: 1px dashed color-mix(in srgb, var(--dungeon-tone) 55%, transparent); border-radius: 50%; }
+.sketch-mission__node span { position: absolute; bottom: 23px; color: #6f7e73; font: 800 6px/1 ui-monospace, monospace; letter-spacing: .1em; }
+@keyframes sketchNode { 50% { transform: translate(-50%, -53%); } }
+.sketch-stage-arrow { position: absolute; z-index: 5; top: 38%; display: grid; place-items: center; width: 44px; height: 58px; transform: translateY(-50%); border: 1px solid #29332c; border-radius: 0; background: rgba(5,7,5,.86); color: #9aa69d; }
+.sketch-stage-arrow:active { color: var(--green); border-color: var(--green); transform: translateY(-50%) scale(.92); }
+.sketch-stage-arrow--left { left: 0; border-left: 0; }
+.sketch-stage-arrow--right { right: 0; border-right: 0; }
+.sketch-party { position: absolute; z-index: 4; left: 8%; right: 8%; bottom: 5%; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; justify-items: center; }
+.sketch-party__member { position: relative; display: grid; place-items: center; }
+.sketch-party__member:nth-child(2) { transform: translateY(-18px); }
+.sketch-party__member .nox-avatar { width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); border-width: 2px; border-radius: 50%; background: #080c09; box-shadow: 0 0 0 5px #050705, 0 0 0 6px color-mix(in srgb, var(--pet-accent) 35%, transparent); }
+.sketch-party__member > span { position: absolute; right: -5px; bottom: -3px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font: 900 9px/1 ui-monospace, monospace; }
+.sketch-start { justify-self: center; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; width: min(78%, 300px); min-height: 58px; padding: 0 13px; border: 2px solid #001a0a; border-radius: 0; background: var(--green); color: #001407; box-shadow: 5px 5px 0 #0d361b; font: 950 18px/1 ui-monospace, monospace; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.sketch-start small { justify-self: end; font-size: 9px; }
+.sketch-start:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #0d361b; filter: brightness(.86); }
+.sketch-bottom-nav.bottom-nav { left: 0; right: 0; bottom: 0; min-height: calc(72px + env(safe-area-inset-bottom)); padding: 5px 14px max(7px, env(safe-area-inset-bottom)); border: 0; border-top: 2px solid #2a352d; border-radius: 0; background: #080b09; box-shadow: 0 -8px 30px rgba(0,0,0,.65); backdrop-filter: none; }
+.sketch-bottom-nav.bottom-nav button { min-height: 58px; border-radius: 0; color: #667169; }
+.sketch-bottom-nav.bottom-nav button small { font: 800 8px/1 ui-monospace, monospace; letter-spacing: .06em; }
+.sketch-bottom-nav.bottom-nav button.is-active { color: var(--green); background: transparent; }
+.sketch-bottom-nav__icon { width: 42px !important; height: 36px !important; border-radius: 0 !important; }
+.sketch-bottom-nav button.is-active .sketch-bottom-nav__icon { position: relative; background: transparent !important; box-shadow: none !important; }
+.sketch-bottom-nav button.is-active .sketch-bottom-nav__icon::before { content: ''; position: absolute; inset: -7px -12px; z-index: -1; border: 2px solid var(--green); transform: skewX(-12deg); background: #0b1710; }
+@media (max-height: 700px) { .sketch-home { gap: 6px; } .sketch-brandbar { min-height: 40px; } .sketch-mission__heading { min-height: 62px; } .sketch-mission__node { width: 126px; } .sketch-party__member:nth-child(2) { transform: translateY(-10px); } .sketch-start { min-height: 50px; } }
+
+/* Pet screen: three circular party slots over a dense four-column vault */
+.sketch-collection, .sketch-trade { padding: var(--safe-top) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
+.sketch-feature-brand { display: flex; align-items: center; justify-content: space-between; min-height: 54px; border-bottom: 1px solid #2b342d; }
+.sketch-feature-brand > div { display: grid; }
+.sketch-feature-brand strong { font: 950 14px/1 ui-monospace, monospace; }
+.sketch-feature-brand span { margin-top: 5px; color: var(--green); font: 800 9px/1 ui-monospace, monospace; letter-spacing: .08em; }
+.sketch-loadout-tabs { display: grid; grid-template-columns: 1.25fr repeat(5, 1fr); gap: 4px; margin: 12px 0; }
+.sketch-loadout-tabs button { min-width: 0; min-height: 44px; border: 1px solid #29332c; border-radius: 0; background: #090d0a; color: #758078; font: 900 12px/1 ui-monospace, monospace; }
+.sketch-loadout-tabs button.is-active { border-color: var(--green); background: var(--green); color: #001407; box-shadow: 3px 3px 0 #12361e; }
+.sketch-loadout { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; min-height: 180px; padding: 16px 5px 14px; border-block: 2px solid #2d382f; background: radial-gradient(circle at 50% 45%, rgba(0,255,102,.08), transparent 58%); }
+.sketch-loadout__slot { position: relative; display: grid; place-items: center; }
+.sketch-loadout__slot:nth-child(2) { transform: translateY(-10px); }
+.sketch-loadout__slot > button { position: relative; display: grid; place-items: center; width: clamp(82px, 25vw, 108px); aspect-ratio: 1; padding: 0; border: 2px solid #344039; border-radius: 50%; background: #070a08; color: #47534b; }
+.sketch-loadout__slot > button.is-filled { border-color: var(--pet-accent); box-shadow: 0 0 0 5px #050705, 0 0 0 6px color-mix(in srgb, var(--pet-accent) 40%, transparent); }
+.sketch-loadout__slot > button:active { transform: scale(.94); }
+.sketch-loadout__slot .nox-avatar { width: 100%; height: 100%; border: 0; border-radius: 50%; }
+.sketch-loadout__slot > button > span { position: absolute; top: -4px; left: -2px; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font: 900 10px/1 ui-monospace, monospace; }
+.sketch-equipped { position: absolute; right: 0; bottom: -7px; display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid #344039; border-radius: 50%; background: #080b09; color: #4c5950; }
+.sketch-equipped.is-equipped { border-color: var(--green); color: var(--green); box-shadow: 0 0 12px rgba(0,255,102,.2); }
+.sketch-vault-switch { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #2d382f; }
+.sketch-vault-switch button { min-height: 45px; border: 0; border-radius: 0; border-bottom: 3px solid transparent; background: transparent; color: #6f7b73; font: 900 10px/1 ui-monospace, monospace; }
+.sketch-vault-switch button.is-active { border-bottom-color: var(--green); color: var(--green); }
+.sketch-vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 7px; padding: 14px 1px; }
+.sketch-vault-token { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #e8ede9; text-align: center; }
+.sketch-vault-token:active .nox-avatar, .sketch-vault-token:active .sketch-item-token { transform: scale(.91); }
+.sketch-vault-token .nox-avatar, .sketch-item-token { width: clamp(62px, 19vw, 78px); height: clamp(62px, 19vw, 78px); border-width: 2px; border-radius: 50%; transition: transform .12s; }
+.sketch-vault-token.is-selected .nox-avatar { box-shadow: 0 0 0 3px #050705, 0 0 0 5px var(--pet-accent), 0 0 17px color-mix(in srgb, var(--pet-accent) 30%, transparent); }
+.sketch-vault-token strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 850 8px/1 ui-monospace, monospace; }
+.sketch-vault-token > span { color: #718078; font: 750 7px/1 ui-monospace, monospace; }
+.sketch-vault-token .nox-avatar__placeholder { display: none; }
+.sketch-vault-token.is-empty { min-height: 92px; align-content: center; border: 1px dashed #263029; border-radius: 50%; color: #354139; }
+.sketch-vault-token.is-empty i { font: 300 24px/1 sans-serif; font-style: normal; }
+.sketch-vault-token.is-empty small { font: 700 6px/1 ui-monospace, monospace; }
+.sketch-item-token { display: grid; place-items: center; border: 2px solid #4b5a50; background: #090d0a; color: var(--green); }
+.sketch-item-token small { position: absolute; margin-top: 40px; color: #718078; font: 700 5px/1 ui-monospace, monospace; }
+
+/* Full-screen pet detail silhouette from the hand sketch */
+.sketch-pet-detail { position: absolute; z-index: 40; inset: 0; display: grid; grid-template-rows: auto minmax(0,1fr) auto; padding: var(--safe-top) 16px calc(var(--safe-bottom) + 16px); overflow: hidden; background: radial-gradient(circle at 76% 57%, color-mix(in srgb, var(--pet-accent) 13%, transparent), transparent 34%), #050705; animation: detailPageIn .22s ease-out; }
+@keyframes detailPageIn { from { opacity: 0; transform: translateX(10px); } }
+.sketch-pet-detail__close { position: absolute; z-index: 3; top: var(--safe-top); right: 14px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #334038; border-radius: 0; background: #090d0a; }
+.sketch-pet-detail > header { min-height: 112px; display: grid; align-content: center; padding-right: 52px; }
+.sketch-pet-detail > header small { color: var(--pet-accent); font: 800 8px/1 ui-monospace, monospace; letter-spacing: .13em; }
+.sketch-pet-detail > header h2 { width: fit-content; max-width: 95%; margin: 8px 0 0; padding: 10px 38px 10px 12px; font-size: clamp(24px, 8vw, 37px); line-height: .95; background: #e8eee9; color: #050705; clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 50%, calc(100% - 28px) 100%, 0 100%); }
+.sketch-pet-detail__body { position: relative; min-height: 0; border: 2px solid #303a32; overflow: hidden; }
+.sketch-detail-stats { position: absolute; z-index: 3; top: 8%; left: 12px; width: 44%; display: grid; gap: 15px; }
+.sketch-detail-stats > div { display: grid; grid-template-columns: 1fr auto; gap: 5px 8px; }
+.sketch-detail-stats span { display: flex; align-items: center; gap: 5px; color: #bac4bd; font: 850 9px/1 ui-monospace, monospace; }
+.sketch-detail-stats strong { color: var(--pet-accent); font: 950 12px/1 ui-monospace, monospace; }
+.sketch-detail-stats i { grid-column: 1/-1; height: 6px; border: 1px solid #48554c; transform: skewX(28deg); overflow: hidden; }
+.sketch-detail-stats b { display: block; height: 100%; background: var(--pet-accent); }
+.sketch-pet-detail blockquote { position: absolute; z-index: 4; top: 28%; right: 10px; width: 45%; margin: 0; padding: 13px; border: 2px solid var(--pet-accent); border-radius: 50%; background: #090d0a; color: #d8dfda; font-size: 10px; line-height: 1.5; text-align: center; }
+.sketch-detail-character { position: absolute; right: -20px; bottom: 5%; }
+.sketch-detail-character .nox-avatar { width: min(60vw, 270px); height: min(60vw, 270px); border: 2px solid var(--pet-accent); border-radius: 42% 42% 8% 42%; }
+.sketch-detail-skill { position: absolute; z-index: 5; left: 13px; bottom: 8%; width: 48%; display: grid; gap: 6px; padding: 10px; border-left: 3px solid var(--pet-accent); background: rgba(5,7,5,.82); }
+.sketch-detail-skill small { color: var(--pet-accent); font: 900 9px/1 ui-monospace, monospace; }
+.sketch-detail-skill strong { font-size: 10px; line-height: 1.5; }
+.sketch-detail-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; border: 0; border-radius: 0; background: var(--pet-accent); color: #001407; font: 950 12px/1 ui-monospace, monospace; }
+.sketch-detail-action.is-remove { border: 1px solid #425047; background: #101611; color: #d3dbd5; }
+
+/* Trade and lost screens: visual asset routes rather than dashboard cards */
+.sketch-trade-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: 10px 0 14px; border-bottom: 2px solid #303a32; }
+.sketch-trade-tabs button { min-height: 58px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-bottom: 4px solid transparent; border-radius: 0; background: transparent; color: #647067; font: 900 11px/1 ui-monospace, monospace; }
+.sketch-trade-tabs button.is-active { border-bottom-color: var(--green); color: var(--green); background: rgba(0,255,102,.04); }
+.sketch-trade-list { position: relative; display: grid; gap: 11px; padding-bottom: 70px; }
+.sketch-trade-row { position: relative; display: grid; grid-template-columns: 43px 1fr; gap: 3px 9px; padding: 10px; border: 2px solid #303a32; background: #080b09; }
+.sketch-trade-status { grid-row: 1 / 3; align-self: center; display: grid; place-items: center; width: 39px; height: 39px; border: 2px solid var(--amber); border-radius: 50%; color: var(--amber); }
+.sketch-trade-row.is-accepted .sketch-trade-status { border-color: var(--green); color: var(--green); }
+.sketch-trade-row.is-rejected .sketch-trade-status { border-color: var(--red); color: var(--red); }
+.sketch-trade-user { display: flex; align-items: center; gap: 5px; min-width: 0; color: #aeb9b1; }
+.sketch-trade-user span { overflow: hidden; text-overflow: ellipsis; font: 850 8px/1 ui-monospace, monospace; }
+.sketch-trade-user small { margin-left: auto; color: #69756d; font-size: 7px; }
+.sketch-trade-assets { display: grid; grid-template-columns: 1fr 36px 1fr; align-items: center; gap: 3px; }
+.sketch-asset-disc { min-width: 0; min-height: 75px; display: grid; place-items: center; align-content: center; gap: 5px; border: 2px solid #3b493f; border-radius: 50%; background: #050705; color: var(--green); }
+.sketch-asset-disc--item { color: #9fe7ff; border-color: #315260; }
+.sketch-asset-disc small { width: 100%; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b4beb7; font: 750 6px/1 ui-monospace, monospace; text-align: center; }
+.sketch-exchange-arrow { display: grid; place-items: center; color: var(--green); }
+.sketch-trade-row footer { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.sketch-trade-row footer button { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid #344039; border-radius: 0; background: #0c110d; color: #a4afa7; font: 850 8px/1 ui-monospace, monospace; }
+.sketch-trade-row footer button:last-child { border-color: var(--green); color: var(--green); }
+.sketch-floating-plus { position: sticky; z-index: 4; bottom: 82px; grid-column: 1; justify-self: end; display: grid; place-items: center; width: 60px; height: 60px; margin: -42px 2px 0 0; border: 2px solid #001407; border-radius: 50%; background: var(--green); color: #001407; box-shadow: 4px 4px 0 #174425; }
+.sketch-floating-plus:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 #174425; }
+.sketch-lost-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.sketch-lost-card { display: grid; grid-template-columns: 1fr 25px 1fr; align-items: center; justify-items: center; gap: 4px; min-width: 0; padding: 11px 7px; border: 2px solid #303a32; background: #080b09; }
+.sketch-lost-card .nox-avatar { width: 62px; height: 62px; border-radius: 50%; }
+.sketch-lost-card .nox-avatar__placeholder { display: none; }
+.sketch-lost-route { color: var(--red); }
+.sketch-lost-place { display: grid; place-items: center; width: 54px; height: 54px; border: 2px solid #526057; border-radius: 50%; color: #bac3bc; }
+.sketch-lost-card h3, .sketch-lost-card p, .sketch-lost-card > small { grid-column: 1/-1; max-width: 100%; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.sketch-lost-card h3 { margin-top: 5px; font: 900 9px/1 ui-monospace, monospace; }
+.sketch-lost-card p { color: var(--red); font: 800 8px/1 ui-monospace, monospace; }
+.sketch-lost-card > small { color: #68736b; font-size: 7px; }
+.sketch-create-trade { border-radius: 0; border-color: #334039; background: #080b09; }
+.sketch-create-trade > small { color: var(--green); font: 850 8px/1 ui-monospace, monospace; }
+
+/* Only the post-battle settlement layer is changed; battle playfield/HUD remain intact. */
+.battle-settlement { position: absolute; z-index: 30; inset: 0; display: grid; grid-template-rows: 1fr auto auto 1fr; justify-items: center; align-items: center; padding: max(30px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); overflow: hidden; background: rgba(1,3,2,.88); backdrop-filter: blur(9px); color: var(--green); animation: settlementIn .28s ease-out; }
+@keyframes settlementIn { from { opacity: 0; transform: scale(1.04); } }
+.battle-settlement.is-defeat { color: var(--red); }
+.battle-settlement__lines { position: absolute; inset: 0; pointer-events: none; }
+.battle-settlement__lines i { position: absolute; left: 8%; right: 8%; height: 1px; background: currentColor; opacity: .3; }
+.battle-settlement__lines i:nth-child(1) { top: 35%; transform: rotate(6deg); }
+.battle-settlement__lines i:nth-child(2) { top: 43%; transform: rotate(-4deg); }
+.battle-settlement__lines i:nth-child(3) { top: 53%; transform: rotate(2deg); }
+.battle-settlement > p { align-self: end; margin: 0 0 14px; color: #a0ada4; font: 800 9px/1 ui-monospace, monospace; letter-spacing: .14em; }
+.battle-settlement h2 { z-index: 2; margin: 0; color: currentColor; font: 950 clamp(39px, 13vw, 62px)/1 ui-monospace, monospace; letter-spacing: -.08em; text-shadow: 0 0 30px currentColor; }
+.battle-settlement h2 span { color: #dfe7e1; font-weight: 300; }
+.battle-settlement__assets { z-index: 2; display: flex; justify-content: center; gap: 18px; margin-top: 34px; }
+.battle-settlement__assets > div { display: grid; justify-items: center; gap: 8px; }
+.battle-settlement__assets span { display: grid; place-items: center; width: 82px; height: 72px; clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); background: var(--green); color: #001407; box-shadow: 0 0 22px currentColor; }
+.battle-settlement__assets .is-place span { background: #88958c; color: #071009; }
+.battle-settlement.is-defeat .battle-settlement__assets .is-gain span { background: var(--red); color: white; }
+.battle-settlement__assets strong { color: #d7dfd9; font: 850 8px/1 ui-monospace, monospace; }
+.battle-settlement > button { align-self: end; width: min(78%, 280px); min-height: 54px; border: 1px solid currentColor; border-radius: 0; background: transparent; color: currentColor; font: 900 12px/1 ui-monospace, monospace; animation: settlementPrompt 1.5s ease-in-out infinite; }
+@keyframes settlementPrompt { 50% { opacity: .5; } }
+
+/* The login keeps username/password but adopts the same hand-drawn angular shell. */
+.auth-card { border-radius: 0; clip-path: polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px); }
+.auth-mark, .credential-input, .demo-account-pills button, .primary-action { border-radius: 0; }
+.auth-visual { background: radial-gradient(circle, rgba(0,255,102,.13), transparent 54%); }
+.auth-core { border-radius: 50%; }
+@media (max-width: 360px) { .sketch-vault-grid { gap-inline: 4px; } .sketch-vault-token .nox-avatar, .sketch-item-token { width: 58px; height: 58px; } .sketch-loadout__slot > button { width: 78px; } }

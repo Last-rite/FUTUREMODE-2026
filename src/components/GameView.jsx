@@ -4,7 +4,7 @@ import { sound } from '../game/audio.js';
 import { TEAM_SIZE, W, H, SHOW_BOSS_BAR } from '../game/constants.js';
 import {
   Volume2, VolumeX, RotateCcw, HelpCircle,
-  Trophy, Skull, X, Shield, Swords, ArrowLeft, Gift, MapPin
+  Skull, X, Shield, Swords, ArrowLeft, Gift, MapPin
 } from 'lucide-react';
 
 function SquarcleBall({ char, isCurrent, isPlayer }) {
@@ -351,44 +351,17 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
           </div>
         </footer>
 
-        {/* ── Victory / Defeat Modal ── */}
+        {/* ── Settlement screen, based on docs/game-design/settlement_screen_example.jpg ── */}
         {gameOver && (
-          <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="w-full max-w-xs bg-[#0b121a] border border-[#00ff66]/40 rounded-2xl p-6 text-center shadow-[0_0_30px_rgba(0,0,0,0.8)] flex flex-col items-center animate-in fade-in zoom-in duration-200">
-              <div className="p-3 rounded-full mb-3 bg-[#111c29] border border-slate-700/50">
-                {gameOver.winner === 'PLAYER' ? (
-                  <Trophy size={48} className="text-[#00ff66] animate-bounce drop-shadow-[0_0_12px_rgba(0,255,102,0.8)]" />
-                ) : (
-                  <Skull size={48} className="text-[#ff2a55] animate-pulse drop-shadow-[0_0_12px_rgba(255,42,85,0.8)]" />
-                )}
-              </div>
-
-              <h2 className="text-2xl font-black tracking-wider mb-1 font-mono">
-                {gameOver.winner === 'PLAYER' ? (
-                  <span className="text-[#00ff66] drop-shadow-[0_0_10px_rgba(0,255,102,0.5)]">VICTORY!</span>
-                ) : (
-                  <span className="text-[#ff2a55] drop-shadow-[0_0_10px_rgba(255,42,85,0.5)]">DEFEAT!</span>
-                )}
-              </h2>
-
-              <p className="text-xs text-slate-400 mb-5 font-mono">
-                {gameOver.winner === 'PLAYER'
-                  ? `All AI liquid orbs shattered in Round ${gameOver.round}!`
-                  : `All your capsules shattered in Round ${gameOver.round}!`}
-              </p>
-
-              <div className="battle-result-assets">
-                <div><Gift size={17} /><span>{gameOver.winner === 'PLAYER' ? '測試獎勵已寫入' : '本局沒有取得獎勵'}</span></div>
-                <div><MapPin size={17} /><span>{dungeon?.name || '零號資料井'}</span></div>
-              </div>
-
-              <button
-                onClick={onExitToLobby}
-                className="w-full py-3 rounded-xl bg-[#00ff66] hover:bg-[#10e86b] text-black font-black text-sm tracking-wider uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(0,255,102,0.4)] cursor-pointer font-mono"
-              >
-                返回主畫面
-              </button>
+          <div className={`battle-settlement ${gameOver.winner === 'PLAYER' ? 'is-victory' : 'is-defeat'}`}>
+            <div className="battle-settlement__lines" aria-hidden="true"><i /><i /><i /></div>
+            <p>ROUND {gameOver.round} · {dungeon?.name || '零號資料井'}</p>
+            <h2><span>〈</span>{gameOver.winner === 'PLAYER' ? 'VICTORY' : 'DEFEAT'}<span>〉</span></h2>
+            <div className="battle-settlement__assets">
+              <div className="is-gain"><span>{gameOver.winner === 'PLAYER' ? <Gift size={28} /> : <Skull size={28} />}</span><strong>{gameOver.winner === 'PLAYER' ? '+ LOOT' : 'NO LOOT'}</strong></div>
+              <div className="is-place"><span><MapPin size={28} /></span><strong>STAGE {dungeon?.chapter || '01'}</strong></div>
             </div>
+            <button onClick={onExitToLobby}>點擊離開</button>
           </div>
         )}
 

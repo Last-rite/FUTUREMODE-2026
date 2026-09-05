@@ -9,10 +9,10 @@ const ITEMS = [
 
 export default function BottomNav({ active, onNavigate }) {
   return (
-    <nav className="bottom-nav" aria-label="主要導覽">
+    <nav className="bottom-nav sketch-bottom-nav" aria-label="主要導覽">
       {ITEMS.map(({ id, label, icon: Icon }) => (
         <button key={id} className={active === id ? 'is-active' : ''} onClick={() => onNavigate(id)} aria-current={active === id ? 'page' : undefined}>
-          <span><Icon size={20} /></span><small>{label}</small>
+          <span className="sketch-bottom-nav__icon"><Icon size={23} strokeWidth={2.2} /></span><small>{label}</small>
         </button>
       ))}
     </nav>
