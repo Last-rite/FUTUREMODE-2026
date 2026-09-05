@@ -31,6 +31,7 @@ export class GameEngine {
 
     // Gold reward & Fleet tracking
     this.goldEarned = 0;
+    this.battleGains = { pegs: [], items: [], claimedAssets: [] };
     this.initialEnemyFleetMaxHp = 0;
     this.initialPlayerFleetMaxHp = 0;
 
@@ -239,6 +240,8 @@ export class GameEngine {
       return;
     }
 
+    this.currentTurnOwner = ball.owner;
+
     if (ball.owner === 1) {
       this.state = 'PLAYER_AIM';
       this.emitLog(`👉 Your turn: Drag and launch peg ${ball.label}!`);
@@ -327,9 +330,37 @@ export class GameEngine {
     const gains = [];
     const losses = [];
 
-    // 1. GAINS (獲得): order: pegs, equipments, gold
-    // Pegs gains: (none for now)
-    // Equipment gains: (none for now)
+    // 1. GAINS (獲得): strictly ordered: pegs, equipments, gold
+    // Pegs gains:
+    for (const pet of (this.battleGains?.pegs || [])) {
+      gains.push({
+        id: `gain-peg-${pet.id || Math.random()}`,
+        category: 'gain',
+        kind: 'peg',
+        type: 'cat',
+        variant: 'gain',
+        label: pet.name || 'NOXCAT',
+        code: pet.code || '01',
+        pet,
+      });
+    }
+
+    // Equipment gains:
+    for (const item of (this.battleGains?.items || [])) {
+      const isBlade = item.type === 'WEAPON' || item.name?.includes('劍');
+      const isShield = item.type === 'GEAR' || item.name?.includes('盾');
+      const eqType = isBlade ? 'sword' : isShield ? 'shield' : 'gem';
+      gains.push({
+        id: `gain-item-${item.id || Math.random()}`,
+        category: 'gain',
+        kind: 'equipment',
+        type: eqType,
+        variant: 'gain',
+        label: item.name || '裝備',
+        item,
+      });
+    }
+
     // Gold gains:
     if (this.goldEarned > 0) {
       gains.push({
@@ -407,6 +438,9 @@ export class GameEngine {
       allResults: [...gains, ...losses],
       lostPegIds: lostPegs.map(p => p.petId).filter(Boolean),
       lostItemIds: lostEquipments.map(e => e.itemId).filter(Boolean),
+      gainedPets: this.battleGains?.pegs || [],
+      gainedItems: this.battleGains?.items || [],
+      claimedAssets: this.battleGains?.claimedAssets || [],
       goldEarned: this.goldEarned,
     };
   }
@@ -437,6 +471,30 @@ export class GameEngine {
     }
   }
 
+  triggerEnemyDefeatLoot(ball) {
+    if (!this.callbacks.onEnemyDefeated) return;
+    try {
+      const loot = this.callbacks.onEnemyDefeated(ball);
+      if (loot) {
+        if (loot.gainedPets?.length) this.battleGains.pegs.push(...loot.gainedPets);
+        if (loot.gainedItems?.length) this.battleGains.items.push(...loot.gainedItems);
+        if (loot.claimedAssets?.length) this.battleGains.claimedAssets.push(...loot.claimedAssets);
+        if (loot.goldGained) {
+          this.goldEarned += loot.goldGained;
+        }
+        if (loot.logMessages?.length) {
+          loot.logMessages.forEach((msg) => {
+            if (!msg.includes('走失池為空') && !msg.includes('獎勵池為空') && !msg.includes('未成功')) {
+              this.emitLog(msg);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error rolling enemy defeat loot:', e);
+    }
+  }
+
   // ── DEBUG BACKDOORS: Instant kill methods for reward / settlement screen testing ──
   debugKillOpponents() {
     if (this.aiTimer) clearTimeout(this.aiTimer);
@@ -446,6 +504,10 @@ export class GameEngine {
         b.alive = false;
         b.vx = 0;
         b.vy = 0;
+        if (!b.lootRolled) {
+          b.lootRolled = true;
+          this.triggerEnemyDefeatLoot(b);
+        }
       }
     }
     this.checkWinCondition();
@@ -806,13 +868,28 @@ export class GameEngine {
       return;
     }
 
+    const activeOwner = this.currentTurnOwner ?? this.activeBall?.owner ?? null;
     for (const ball of movingBalls) {
-      const events = ball.updatePhysics(this.balls);
+      const events = ball.updatePhysics(this.balls, activeOwner);
       for (const ev of events) {
         if (ev.type === 'bounce') {
           sound.playBounce(ev.speed, true);
           this.shake = Math.max(this.shake, Math.min(9, ev.speed * 0.4));
           this.impactRings.push(new ImpactRing(ev.x, ev.y, COLORS.WHITE));
+        } else if (ev.type === 'heal') {
+          this.dmgNums.push(new DmgNum(
+            ev.x,
+            ev.y - BALL_R - 14,
+            ev.amount,
+            false,
+            true
+          ));
+          this.impactRings.push(new ImpactRing(ev.x, ev.y, '#00ff66'));
+          for (let p = 0; p < 6; p++) {
+            this.particles.push(new Particle(ev.x, ev.y, '#00ff66'));
+          }
+          this.emitLog(`💚 ${ev.healer.label} healed teammate ${ev.target.label} (+${ev.amount} HP)!`);
+          this.sendSnapshot();
         } else if (ev.type === 'wall') {
           sound.playBounce(ev.speed, false);
           this.shake = Math.max(this.shake, Math.min(6, ev.speed * 0.35));
@@ -836,13 +913,10 @@ export class GameEngine {
             ev.x,
             ev.y - BALL_R - 14,
             ev.damage,
-            ev.bonusDamage > 0
+            false
           ));
           this.impactRings.push(new ImpactRing(ev.x, ev.y, ev.attacker.color));
 
-          if (ev.bonusDamage > 0) {
-            this.emitLog(`⏩ ${ev.attacker.label} consumed FUTURE charge for +${ev.bonusDamage} damage!`);
-          }
           if (ev.knockback) {
             this.emitLog(`💨 ${ev.attacker.label} knocked ${ev.defender.label} back!`);
           }
@@ -873,6 +947,13 @@ export class GameEngine {
           this.impactRings.push(new ImpactRing(ev.x, ev.y, COLORS.WHITE));
 
           this.emitLog(`💀 ${ev.ball.label} was shattered and eliminated!`);
+
+          // Roll loot reward from dungeon loot table when an enemy peg is defeated
+          if (ev.ball.owner === 2 && !ev.ball.lootRolled) {
+            ev.ball.lootRolled = true;
+            this.triggerEnemyDefeatLoot(ev.ball);
+          }
+
           this.sendSnapshot();
         }
       }

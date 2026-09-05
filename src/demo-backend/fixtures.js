@@ -7,7 +7,7 @@ import levelRemnantImg from '../../assets/level_remnant.png';
 /**
  * Generates the full initial roster of 6 NOXCATs and 3 equipment items for any player.
  * - 3 Core NOXCATs (Core 1: Protected; Core 2, 3: Tradable/Droppable)
- * - FUTURE NOXCAT (Tech: 時空衝擊)
+ * - FUTURE NOXCAT (Tech: 時空修復)
  * - COOL NOXCAT (Rush: 疾風推進)
  * - HARD NOXCAT (Tank: 堅毅立場)
  * - 3 starter equipments (像素劍 +2 ATK, 資料盾 +1 DEF, 回家石 +5 HP / 防止掉落)
@@ -89,7 +89,7 @@ export function createStarterRosterForPlayer(playerId) {
       selected: false,
       accent: '#00ff66',
       quote: 'Tomorrow already happened.',
-      skill: '時空衝擊：撞牆後，本次移動的下一次攻擊 +2 傷害；命中後重置。',
+      skill: '時空修復：主動回合每次撞擊隊友為該隊友 +5 HP。',
       equipped: null,
       ownerId: pId,
     },
@@ -100,9 +100,9 @@ export function createStarterRosterForPlayer(playerId) {
       name: 'COOL NOXCAT',
       className: 'RUSH',
       level: 11,
-      hp: 130,
+      hp: 100,
       atk: 8,
-      def: 3,
+      def: 2,
       spd: 120,
       protected: false,
       selected: false,
@@ -119,7 +119,7 @@ export function createStarterRosterForPlayer(playerId) {
       name: 'HARD NOXCAT',
       className: 'TANK',
       level: 8,
-      hp: 100,
+      hp: 130,
       atk: 10,
       def: 3,
       spd: 80,
@@ -224,6 +224,16 @@ export const DEMO_PLAYERS = [
   },
 ];
 
+export const DEFAULT_DUNGEON_LOOT_TABLE = [
+  { id: 'loot_futurecat', type: 'pet', code: '02', name: 'FUTURE NOXCAT', weight: 1 },
+  { id: 'loot_coolcat', type: 'pet', code: '03', name: 'COOL NOXCAT', weight: 1 },
+  { id: 'loot_hardcat', type: 'pet', code: '04', name: 'HARD NOXCAT', weight: 1 },
+  { id: 'loot_sword', type: 'item', itemType: 'WEAPON', name: '像素劍', weight: 5 },
+  { id: 'loot_shield', type: 'item', itemType: 'GEAR', name: '資料盾', weight: 5 },
+  { id: 'loot_homestone', type: 'item', itemType: 'TREASURE', name: '回家石', weight: 5 },
+  { id: 'loot_claim_losts', type: 'claim_losts', name: 'claim losts', weight: 82 },
+];
+
 export const DEMO_DUNGEONS = [
   {
     id: 'dungeon-zero',
@@ -235,6 +245,7 @@ export const DEMO_DUNGEONS = [
     loot: 3,
     tone: '#00ff66',
     image: levelCityImg,
+    lootTable: DEFAULT_DUNGEON_LOOT_TABLE.map((item) => ({ ...item })),
   },
   {
     id: 'dungeon-ash',
@@ -246,6 +257,7 @@ export const DEMO_DUNGEONS = [
     loot: 7,
     tone: '#ff5f3d',
     image: levelRemnantImg,
+    lootTable: DEFAULT_DUNGEON_LOOT_TABLE.map((item) => ({ ...item })),
   },
 ];
 

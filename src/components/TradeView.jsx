@@ -88,6 +88,7 @@ function isPetTrade(trade) {
 
 export default function TradeView({ data, currentUser, onCreateTrade, onResolveTrade, onMessage }) {
   const [tab, setTab] = useState('market'); // 'market' | 'lost'
+  const [selectedDungeonId, setSelectedDungeonId] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
   const transferableUnits = (data.pets || []).filter((pet) => !pet.protected);
   const equippedItemIds = new Set((data.pets || []).map((pet) => pet.equipped).filter(Boolean));
@@ -374,68 +375,149 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
           </button>
         </section>
       ) : (
-        /* MOURN / LOST VIEW: 2-Column Grid matching mourn_example.jpg */
-        <section className="sketch-mourn-grid" aria-label="走失資產名錄">
-          {(data.lostAssets || []).map((asset) => {
-            const isPet = asset.type === 'pet' || (!asset.type && asset.code);
-            const itemMeta = !isPet ? getItemMeta(asset.name, asset.type) : null;
-            const petObj = {
-              code: asset.code || '07',
-              name: asset.name,
-              accent: asset.status === 'claimed' ? '#35d9ff' : '#ff2a55',
-            };
+        /* MOURN / LOST VIEW: 2-Column Grid matching mourn_example.jpg with Dungeon filter tabs */
+        <div className="flex flex-col gap-3 w-full pb-8">
+          {/* Dungeon Filter Sub-Tabs */}
+          <div className="flex items-center gap-1.5 px-1 py-1 overflow-x-auto no-scrollbar border-b border-[#1f3144]/60">
+            <button
+              type="button"
+              onClick={() => setSelectedDungeonId('all')}
+              className={`px-3 py-1 text-xs rounded-md font-mono whitespace-nowrap transition-all ${
+                selectedDungeonId === 'all'
+                  ? 'bg-[#00ff66]/20 text-[#00ff66] border border-[#00ff66]/60 font-bold shadow-[0_0_8px_rgba(0,255,102,0.25)]'
+                  : 'text-white/60 hover:text-white bg-[#0c141d] border border-transparent'
+              }`}
+            >
+              全部地城 ({data.lostAssets?.length || 0})
+            </button>
+            {(data.dungeons || []).map((d) => {
+              const dPoolCount = (data.lostAssets || []).filter(
+                (a) => a.status === 'in_pool' && (a.dungeonId === d.id || a.location?.includes(d.name))
+              ).length;
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setSelectedDungeonId(d.id)}
+                  className={`px-3 py-1 text-xs rounded-md font-mono whitespace-nowrap transition-all ${
+                    selectedDungeonId === d.id
+                      ? 'bg-[#00e5ff]/20 text-[#00e5ff] border border-[#00e5ff]/60 font-bold shadow-[0_0_8px_rgba(0,229,255,0.25)]'
+                      : 'text-white/60 hover:text-white bg-[#0c141d] border border-transparent'
+                  }`}
+                >
+                  {d.name} ({dPoolCount} 遺失)
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Dungeon Pool Stats Banner */}
+          {(() => {
+            const dungeons = data.dungeons || [];
+            const allLost = data.lostAssets || [];
+            const filteredLost = selectedDungeonId === 'all'
+              ? allLost
+              : allLost.filter(
+                  (a) =>
+                    a.dungeonId === selectedDungeonId ||
+                    a.location?.includes(dungeons.find((d) => d.id === selectedDungeonId)?.name)
+                );
+            const activeDungeon = dungeons.find((d) => d.id === selectedDungeonId);
+            const inPoolCount = filteredLost.filter((a) => a.status === 'in_pool').length;
+            const rescueChance = inPoolCount > 0
+              ? ((inPoolCount / (inPoolCount + 100)) * 100).toFixed(1)
+              : '0.0';
 
             return (
-              <article className={`sketch-mourn-card is-${asset.status}`} key={asset.id}>
-                {/* Top Trio: [ Asset (Pet/Item) ]  [ † Tombstone ]  [ User / Pool Disc ] */}
-                <div className="sketch-mourn-trio">
-                  {/* Left: Lost asset */}
-                  <div className="sketch-mourn-disc sketch-mourn-disc--asset">
-                    {isPet ? (
-                      <NoxPlaceholder pet={petObj} size="sm" muted />
-                    ) : (
-                      <div className="sketch-mourn-weapon-icon" title={asset.name}>
-                        <img
-                          src={itemMeta.src}
-                          alt={asset.name}
-                          className="w-8 h-8 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.3)]"
-                        />
-                      </div>
-                    )}
+              <>
+                <div className="px-3 py-2 rounded-lg bg-[#0c141d] border border-[#1f3144] flex flex-col gap-1 text-xs font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/80 font-bold">
+                      {selectedDungeonId === 'all' ? '🌐 全域走失資料庫' : `📍 ${activeDungeon?.name || '地城'} 走失遺物池`}
+                    </span>
+                    <span className="text-red-400 font-bold">
+                      {inPoolCount} 件待打撈
+                    </span>
                   </div>
-
-                  {/* Middle: Tombstone Cross † */}
-                  <div className="sketch-mourn-tombstone" title="走失/陣亡">
-                    <TombstoneIcon size={20} />
-                  </div>
-
-                  {/* Right: Where it is (Player or Pool) */}
-                  <div
-                    className={`sketch-mourn-disc sketch-mourn-disc--dest is-${asset.status}`}
-                    title={asset.status === 'claimed' ? `被玩家拾獲: #${asset.claimedBy}` : `滯留於: ${asset.location}`}
-                  >
-                    {asset.status === 'claimed' ? (
-                      <UserRound size={22} />
-                    ) : (
-                      <Waves size={22} />
-                    )}
+                  <div className="flex items-center justify-between text-[11px] text-white/50">
+                    <span>擊敗敵方彈珠時 82% 機率發動打撈</span>
+                    <span className="text-[#00e5ff] font-semibold">
+                      當前成功率: {rescueChance}% (連續抽取)
+                    </span>
                   </div>
                 </div>
 
-                {/* Bottom Details */}
-                <div className="sketch-mourn-info">
-                  <h4 className="sketch-mourn-title" title={asset.name}>
-                    {asset.name}
-                  </h4>
-                  <p className="sketch-mourn-dest-label">
-                    {asset.status === 'claimed' ? `拾獲: #${asset.claimedBy}` : `池中: ${asset.location}`}
-                  </p>
-                  <small className="sketch-mourn-time">{asset.lostAt}</small>
-                </div>
-              </article>
+                {filteredLost.length === 0 ? (
+                  <div className="py-12 text-center text-xs font-mono text-white/40">
+                    此地城目前無走失彈珠或裝備記錄
+                  </div>
+                ) : (
+                  <section className="sketch-mourn-grid" aria-label="走失資產名錄">
+                    {filteredLost.map((asset) => {
+                      const isPet = asset.type === 'pet' || (!asset.type && asset.code);
+                      const itemMeta = !isPet ? getItemMeta(asset.name, asset.type) : null;
+                      const petObj = {
+                        code: asset.code || '07',
+                        name: asset.name,
+                        accent: asset.status === 'claimed' ? '#35d9ff' : '#ff2a55',
+                      };
+
+                      return (
+                        <article className={`sketch-mourn-card is-${asset.status}`} key={asset.id}>
+                          {/* Top Trio: [ Asset (Pet/Item) ]  [ † Tombstone ]  [ User / Pool Disc ] */}
+                          <div className="sketch-mourn-trio">
+                            {/* Left: Lost asset */}
+                            <div className="sketch-mourn-disc sketch-mourn-disc--asset">
+                              {isPet ? (
+                                <NoxPlaceholder pet={petObj} size="sm" muted />
+                              ) : (
+                                <div className="sketch-mourn-weapon-icon" title={asset.name}>
+                                  <img
+                                    src={itemMeta.src}
+                                    alt={asset.name}
+                                    className="w-8 h-8 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.3)]"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Middle: Tombstone Cross † */}
+                            <div className="sketch-mourn-tombstone" title="走失/陣亡">
+                              <TombstoneIcon size={20} />
+                            </div>
+
+                            {/* Right: Where it is (Player or Pool) */}
+                            <div
+                              className={`sketch-mourn-disc sketch-mourn-disc--dest is-${asset.status}`}
+                              title={asset.status === 'claimed' ? `被玩家拾獲: #${asset.claimedBy}` : `滯留於: ${asset.location}`}
+                            >
+                              {asset.status === 'claimed' ? (
+                                <UserRound size={22} />
+                              ) : (
+                                <Waves size={22} />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Bottom Details */}
+                          <div className="sketch-mourn-info">
+                            <h4 className="sketch-mourn-title" title={asset.name}>
+                              {asset.name}
+                            </h4>
+                            <p className="sketch-mourn-dest-label">
+                              {asset.status === 'claimed' ? `拾獲: #${asset.claimedBy}` : `池中: ${asset.location}`}
+                            </p>
+                            <small className="sketch-mourn-time">{asset.lostAt}</small>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </section>
+                )}
+              </>
             );
-          })}
-        </section>
+          })()}
+        </div>
       )}
 
       {/* Create Trade Modal Sheet */}

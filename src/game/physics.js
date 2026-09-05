@@ -73,7 +73,7 @@ export class SimBall {
     this.moving = true;
   }
 
-  step(allBalls) {
+  step(allBalls, activeOwner = null) {
     if (!this.moving || !this.alive) return [];
 
     this.x += this.vx;
@@ -110,11 +110,20 @@ export class SimBall {
         const ny = d > 0 ? (this.y - other.y) / d : 0.0;
         const overlap = diameter - d;
 
+        const isThisFriendly = activeOwner != null ? this.owner === activeOwner : true;
+        const isOtherFriendly = activeOwner != null ? other.owner === activeOwner : other.owner === this.owner;
+        const isEnemyHittingStationaryFriendly = !isThisFriendly && isOtherFriendly && !other.moving;
+
         // Position separation
-        this.x += nx * overlap * 0.5;
-        this.y += ny * overlap * 0.5;
-        other.x -= nx * overlap * 0.5;
-        other.y -= ny * overlap * 0.5;
+        if (isEnemyHittingStationaryFriendly) {
+          this.x += nx * overlap;
+          this.y += ny * overlap;
+        } else {
+          this.x += nx * overlap * 0.5;
+          this.y += ny * overlap * 0.5;
+          other.x -= nx * overlap * 0.5;
+          other.y -= ny * overlap * 0.5;
+        }
 
         // Elastic momentum reflection
         const dot = this.vx * nx + this.vy * ny;
@@ -123,13 +132,27 @@ export class SimBall {
 
         // Damage calculation: Attacker ATK - Defender DEF
         if (other.owner !== this.owner) {
-          const dmg = Math.max(1, this.atk - other.def);
-          const effectiveDmg = Math.min(dmg, other.hp);
-          other.hp = Math.max(0, other.hp - dmg);
-          if (other.hp <= 0) {
-            other.alive = false;
+          if (isThisFriendly && !isOtherFriendly) {
+            const dmg = Math.max(1, this.atk - other.def);
+            const effectiveDmg = Math.min(dmg, other.hp);
+            other.hp = Math.max(0, other.hp - dmg);
+            if (other.hp <= 0) {
+              other.alive = false;
+            }
+            events.push({ hit: other, dmg: effectiveDmg });
+          } else if (isEnemyHittingStationaryFriendly) {
+            const dmg = Math.max(1, other.atk - this.def);
+            const effectiveDmg = Math.min(dmg, this.hp);
+            this.hp = Math.max(0, this.hp - dmg);
+            if (this.hp <= 0) {
+              this.alive = false;
+              this.moving = false;
+              this.vx = 0;
+              this.vy = 0;
+            }
+            events.push({ hit: this, dmg: effectiveDmg });
+            if (!this.alive) break;
           }
-          events.push({ hit: other, dmg: effectiveDmg });
         }
       }
     }
@@ -167,7 +190,7 @@ export function simulateBoard(snapshot, shooterLabel, power, theta) {
   for (let step = 0; step < MAX_SIM_STEPS; step++) {
     if (!shooter.moving) break;
 
-    const events = shooter.step(simBalls);
+    const events = shooter.step(simBalls, shooter.owner);
     for (const ev of events) {
       if (ev.hit.owner === 1) {
         playerDmg += ev.dmg;

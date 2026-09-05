@@ -3,7 +3,7 @@ import { GameEngine } from '../game/Engine.js';
 import { sound } from '../game/audio.js';
 import { TEAM_SIZE, W, H, SHOW_TOP_BAR, SETTLEMENT_REWARD_COUNT } from '../game/constants.js';
 import {
-  HelpCircle,
+  Volume2, VolumeX, HelpCircle,
   Skull, X, Shield, Swords, Coins, Gift, MapPin,
   Cat, ShieldPlus
 } from 'lucide-react';
@@ -11,7 +11,9 @@ import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
 import { getBallImage } from '../game/sprites.js';
+import { getPetAvatar } from './NoxPlaceholder.jsx';
 import { hexToRgba, lerpColor } from '../game/physics.js';
+import { demoApi } from '../demo-backend/api.js';
 
 /**
  * Dynamic HP bar gradient:
@@ -316,12 +318,44 @@ function distributeRewardsToColumns(rewards) {
   return columns;
 }
 
+function getItemCategory(item) {
+  const t = String(item.type || '').toLowerCase();
+  const label = String(item.label || item.name || '').toLowerCase();
+
+  if (t === 'gold' || t.includes('gold') || label.includes('g') || item.amount !== undefined) {
+    return 'gold';
+  }
+  if (t.includes('shield') || label.includes('盾')) {
+    return 'shield';
+  }
+  if (t.includes('sword') || t.includes('blade') || label.includes('劍') || label.includes('刃')) {
+    return 'sword';
+  }
+  if (t.includes('gem') || t.includes('stone') || label.includes('石')) {
+    return 'gem';
+  }
+  if (t.includes('cat') || item.pet || item.ball || item.code) {
+    return 'cat';
+  }
+  return t;
+}
+
 function SettlementHexToken({ item }) {
   const isGain = item.variant === 'gain';
   const color = isGain ? '#00ff66' : '#ff2a55';
-  const type = item.type;
+  const category = getItemCategory(item);
 
-  const ballImg = item.ball ? getBallImage(item.ball) : null;
+  let petImgSrc = null;
+  if (category === 'cat') {
+    if (item.pet) {
+      petImgSrc = getPetAvatar(item.pet, 'md');
+    } else if (item.ball) {
+      const bImg = getBallImage(item.ball);
+      petImgSrc = bImg?.src || getPetAvatar(item.ball, 'md');
+    } else if (item.code) {
+      petImgSrc = getPetAvatar({ code: item.code, name: item.label }, 'md');
+    }
+  }
 
   return (
     <div className={`settlement-hex-item is-${item.variant}`}>
@@ -336,49 +370,49 @@ function SettlementHexToken({ item }) {
           />
         </svg>
         <div className="settlement-hex-icon" style={{ color }}>
-          {ballImg && ballImg.src ? (
+          {category === 'cat' && (
+            petImgSrc ? (
+              <img
+                src={petImgSrc}
+                alt={item.label || 'NOXCAT'}
+                className="w-10 h-10 object-contain pixelated"
+                style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+              />
+            ) : (
+              <Cat size={26} strokeWidth={2.2} />
+            )
+          )}
+          {category === 'sword' && (
             <img
-              src={ballImg.src}
-              alt={item.label}
-              className="w-10 h-10 object-contain pixelated"
+              src={swordImg}
+              alt={item.label || '武器'}
+              className="w-9 h-9 object-contain pixelated"
               style={{ filter: `drop-shadow(0 0 8px ${color})` }}
             />
-          ) : (
-            <>
-              {(type === 'cat' || type === 'lost-cat') && <Cat size={26} strokeWidth={2.2} />}
-              {type === 'sword' && (
-                <img
-                  src={swordImg}
-                  alt="武器"
-                  className="w-9 h-9 object-contain pixelated"
-                  style={{ filter: `drop-shadow(0 0 8px ${color})` }}
-                />
-              )}
-              {type === 'shield' && (
-                <img
-                  src={shieldImg}
-                  alt="防具"
-                  className="w-9 h-9 object-contain pixelated"
-                  style={{ filter: `drop-shadow(0 0 8px ${color})` }}
-                />
-              )}
-              {type === 'gem' && (
-                <img
-                  src={gemImg}
-                  alt="回家石"
-                  className="w-9 h-9 object-contain pixelated"
-                  style={{ filter: `drop-shadow(0 0 8px ${color})` }}
-                />
-              )}
-              {type === 'gold' && (
-                <Coins
-                  size={26}
-                  strokeWidth={2.2}
-                  className="text-[#00ff66]"
-                  style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,102,0.7))' }}
-                />
-              )}
-            </>
+          )}
+          {category === 'shield' && (
+            <img
+              src={shieldImg}
+              alt={item.label || '防具'}
+              className="w-9 h-9 object-contain pixelated"
+              style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+            />
+          )}
+          {category === 'gem' && (
+            <img
+              src={gemImg}
+              alt={item.label || '回家石'}
+              className="w-9 h-9 object-contain pixelated"
+              style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+            />
+          )}
+          {category === 'gold' && (
+            <Coins
+              size={26}
+              strokeWidth={2.2}
+              className="text-[#00ff66]"
+              style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,102,0.7))' }}
+            />
           )}
         </div>
       </div>
@@ -422,7 +456,7 @@ function getRackScale(queueLength, availableWidth) {
   return { scale: minScale, gap: Math.round(baseGap * minScale * 10) / 10 };
 }
 
-export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBattleComplete }) {
+export default function GameView({ user, dungeon, playerTeam = [], onExitToLobby, onBattleComplete }) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
 
@@ -483,6 +517,9 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
       onSnapshot: (snap) => {
         setSnapshot(snap);
       },
+      onEnemyDefeated: (enemyBall) => {
+        return demoApi.rollDungeonLoot(dungeon?.id, user?.id);
+      },
       onGameOver: (result) => {
         setGameOver(result);
         onBattleComplete?.(result);
@@ -495,8 +532,15 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
     return () => {
       engine.destroy();
     };
-  }, [playerTeam, dungeon]);
+  }, [playerTeam, dungeon, user?.id]);
 
+
+  const [isMuted, setIsMuted] = useState(() => sound.muted);
+
+  const handleToggleMute = () => {
+    const muted = sound.toggleMute();
+    setIsMuted(muted);
+  };
 
   const handleDebugKillOpponents = () => {
     engineRef.current?.debugKillOpponents();
@@ -733,6 +777,15 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
                 className="px-1.5 py-1 text-[10px] font-black font-mono tracking-tight bg-[#ffff00] hover:bg-[#ffe600] active:scale-95 text-black border-2 border-[#b8860b] rounded shadow-[0_0_8px_rgba(255,255,0,0.85)] cursor-pointer select-none leading-none"
               >
                 KILL ME
+              </button>
+
+              <button
+                onClick={handleToggleMute}
+                aria-label="Mute / Unmute"
+                title={isMuted ? 'Unmute' : 'Mute'}
+                className="p-1.5 rounded-lg bg-[#0e1620] hover:bg-[#162232] text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60 cursor-pointer"
+              >
+                {isMuted ? <VolumeX size={15} className="text-[#ff2a55]" /> : <Volume2 size={15} className="text-[#00ff66]" />}
               </button>
 
               <button

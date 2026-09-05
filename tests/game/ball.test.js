@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Ball } from '../../src/game/Ball.js';
 import {
-  BALL_R, W, H, FUTURE_WALL_DAMAGE_BONUS,
+  BALL_R, W, H, FUTURE_TEAMMATE_HEAL,
   HARD_EXTRA_SLOW_MULTIPLIER, COOL_MIN_KNOCKBACK_SPEED,
 } from '../../src/game/constants.js';
 
@@ -96,23 +96,18 @@ describe('Ball Entity & Combat Attributes', () => {
     expect(ball2.hp).toBe(85);
   });
 
-  it('FUTURE: wall bounce grants +2 to the next hit in the same movement and then resets', () => {
-    const future = new Ball('1a', 1, BALL_R - 1, 200, 10, 2, 100, 100, { code: '02' });
+  it('FUTURE: heals teammate +5 HP on collision during its active turn', () => {
+    const future = new Ball('1a', 1, 100, 200, 10, 2, 100, 100, { code: '02' });
+    const teammate = new Ball('1b', 1, 100 + BALL_R, 200, 10, 2, 80, 100);
     future.moving = true;
-    future.vx = -4;
+    future.vx = 5;
 
-    future.updatePhysics([future]);
-    expect(future.futureDamageBonus).toBe(FUTURE_WALL_DAMAGE_BONUS);
+    const events = future.updatePhysics([future, teammate], 1);
+    const healEvent = events.find((e) => e.type === 'heal');
 
-    const enemy = new Ball('2a', 2, future.x + BALL_R, 200, 10, 2, 100, 100);
-    future.moving = true;
-    future.vx = 4;
-    const events = future.updatePhysics([future, enemy]);
-    const damage = events.find((event) => event.type === 'damage');
-
-    expect(damage.bonusDamage).toBe(2);
-    expect(damage.damage).toBe(10);
-    expect(future.futureDamageBonus).toBe(0);
+    expect(healEvent).toBeDefined();
+    expect(healEvent.amount).toBe(FUTURE_TEAMMATE_HEAL);
+    expect(teammate.hp).toBe(85);
   });
 
   it('COOL: knocks a surviving enemy away on contact', () => {
@@ -149,5 +144,33 @@ describe('Ball Entity & Combat Attributes', () => {
       normalSpeed * HARD_EXTRA_SLOW_MULTIPLIER,
       5
     );
+  });
+
+  it('knocked enemy colliding with stationary friendly unit triggers stationary friendly counter attack and does not knock friendly back', () => {
+    const activeOwner = 1; // Player's turn
+    const friendlyUnit = new Ball('1a', 1, 200, 200, 15, 5, 100, 100);
+    const knockedEnemy = new Ball('2a', 2, 200 - BALL_R, 200, 20, 3, 100, 100);
+
+    knockedEnemy.moving = true;
+    knockedEnemy.vx = 8; // Knocked enemy flying into friendly unit
+    knockedEnemy.vy = 0;
+
+    const events = knockedEnemy.updatePhysics([knockedEnemy, friendlyUnit], activeOwner);
+    const bounceEvent = events.find((e) => e.type === 'bounce');
+    const damageEvent = events.find((e) => e.type === 'damage');
+
+    // Bounce happens physically
+    expect(bounceEvent).toBeDefined();
+
+    // Damage is dealt BY friendly unit TO enemy unit
+    expect(damageEvent).toBeDefined();
+    expect(damageEvent.attacker).toBe(friendlyUnit);
+    expect(damageEvent.defender).toBe(knockedEnemy);
+    expect(damageEvent.damage).toBe(12); // friendly.atk(15) - enemy.def(3)
+    expect(knockedEnemy.hp).toBe(88); // 100 - 12
+
+    // Friendly unit takes zero damage and is NOT knocked back
+    expect(friendlyUnit.hp).toBe(100);
+    expect(friendlyUnit.moving).toBe(false);
   });
 });
