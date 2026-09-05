@@ -198,19 +198,19 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-loadout-tabs { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 14px; }
 
 /* The Big Circle + Small Overlapping Circle Mode Switcher */
-.sketch-circle-switcher { position: relative; width: 52px; height: 44px; padding: 0 !important; border: 1px solid #29332c !important; background: #070c08 !important; overflow: hidden; cursor: pointer; flex-shrink: 0; }
+.sketch-circle-switcher { position: relative; width: 48px; height: 44px; padding: 0 !important; border: none !important; background: transparent !important; overflow: visible; cursor: pointer; flex-shrink: 0; }
 .sketch-circle-switcher:active { transform: scale(.94); }
 .sketch-circle-switcher .circle-node { position: absolute; display: grid; place-items: center; border-radius: 50%; transition: width .32s cubic-bezier(0.34, 1.56, 0.64, 1), height .32s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .sketch-circle-switcher .circle-node--pet { border: 2px solid var(--green); background: #08150d; color: var(--green); bottom: 4px; left: 4px; transform-origin: bottom left; }
-.sketch-circle-switcher .circle-node--item { border: 2px solid #35d9ff; background: #081720; color: #35d9ff; bottom: 4px; right: 4px; transform-origin: bottom right; }
+.sketch-circle-switcher .circle-node--item { border: 2px solid #35d9ff; background: #081720; color: #35d9ff; bottom: 6px; right: 6px; transform-origin: bottom right; }
 
 /* In Pet Mode: Pet circle is large from bottom-left; Weapon circle is small at bottom-right */
 .sketch-circle-switcher.is-pets-active .circle-node--pet { width: 32px; height: 32px; z-index: 2; box-shadow: 0 0 10px rgba(0,255,102,.45); }
-.sketch-circle-switcher.is-pets-active .circle-node--item { width: 18px; height: 18px; z-index: 3; box-shadow: 0 0 0 2px #070c08; }
+.sketch-circle-switcher.is-pets-active .circle-node--item { width: 18px; height: 18px; z-index: 3; box-shadow: 0 0 0 2px #050705; }
 
 /* In Weapon Mode: Weapon circle is large from bottom-right; Pet circle is small at bottom-left */
 .sketch-circle-switcher.is-weapons-active .circle-node--item { width: 32px; height: 32px; z-index: 2; box-shadow: 0 0 10px rgba(53,217,255,.45); }
-.sketch-circle-switcher.is-weapons-active .circle-node--pet { width: 18px; height: 18px; z-index: 3; box-shadow: 0 0 0 2px #070c08; }
+.sketch-circle-switcher.is-weapons-active .circle-node--pet { width: 18px; height: 18px; z-index: 3; box-shadow: 0 0 0 2px #050705; }
 
 /* Angled Tabs for Loadouts 1 2 3 4 5 (Inactive tabs have NO borders) */
 .sketch-tabs-strip { display: flex; align-items: flex-end; justify-content: space-around; flex: 1; height: 44px; border-bottom: 2px solid #233027; }
@@ -527,6 +527,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 }
 
 /* Offer Group (Pet + Weapon) */
+/* Offer Group (Pet + Weapon) - Directly rendered without extra border circles */
 .sketch-trade-offer-group {
   display: flex;
   flex-direction: column;
@@ -535,16 +536,18 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   min-width: 0;
 }
 .sketch-trade-offer-visuals {
-  position: relative;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 .sketch-trade-pet-avatar {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid #2f3e34;
-  background: #040805;
+  border: none;
+  background: transparent;
 }
 .sketch-trade-pet-avatar .nox-avatar {
   width: 100%;
@@ -554,18 +557,10 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   display: none;
 }
 .sketch-trade-weapon-badge {
-  position: absolute;
-  bottom: -4px;
-  right: -6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #081720;
-  border: 1.5px solid #35d9ff;
   color: #35d9ff;
   display: grid;
   place-items: center;
-  box-shadow: 0 0 6px rgba(53,217,255,0.4);
+  filter: drop-shadow(0 0 5px rgba(53,217,255,0.6));
 }
 
 /* Center Arrow <=> */
@@ -573,13 +568,13 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   display: grid;
   place-items: center;
   color: var(--green);
-  padding: 0 2px;
+  padding: 0 4px;
 }
 .sketch-trade-arrow-icon {
   filter: drop-shadow(0 0 6px rgba(0,255,102,0.4));
 }
 
-/* Request Group (Item x Quantity) */
+/* Request Group (Item x Quantity) - Directly rendered without extra border circles */
 .sketch-trade-req-group {
   display: flex;
   flex-direction: column;
@@ -588,29 +583,22 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   min-width: 0;
 }
 .sketch-trade-req-visuals {
-  position: relative;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 .sketch-trade-gem-disc {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: #081512;
-  border: 2px solid #2e4d3c;
   color: var(--green);
   display: grid;
   place-items: center;
+  filter: drop-shadow(0 0 6px rgba(0,255,102,0.4));
 }
 .sketch-trade-qty-pill {
-  position: absolute;
-  bottom: -4px;
-  right: -8px;
-  padding: 1px 5px;
-  border-radius: 10px;
-  background: #00ff66;
-  color: #030804;
-  font: 900 9px/1.1 ui-monospace, monospace;
-  box-shadow: 0 0 6px rgba(0,255,102,0.5);
+  color: #00ff66;
+  font: 900 13px/1 ui-monospace, monospace;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 6px rgba(0,255,102,0.6);
 }
 
 /* Labels below discs */
@@ -636,44 +624,42 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   text-overflow: ellipsis;
 }
 
-/* Pending actions */
+/* Pending actions - Clean borderless actions without cutting the card with lines */
 .sketch-trade-card__actions {
   grid-column: 1 / -1;
   display: flex;
   gap: 8px;
-  margin-top: 6px;
-  padding-top: 8px;
-  border-top: 1px solid #1a261e;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: none;
 }
 .sketch-trade-btn {
   flex: 1;
-  height: 32px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 6px;
-  border: 1px solid #324437;
-  background: #0b120d;
+  border-radius: 8px;
+  border: none;
+  background: #0d1711;
   font: 850 10px/1 ui-monospace, monospace;
   cursor: pointer;
   transition: all 0.15s;
 }
 .sketch-trade-btn--reject {
   color: #ff5f7a;
-  border-color: rgba(255,42,85,0.4);
+  background: rgba(255,42,85,0.12);
 }
 .sketch-trade-btn--reject:hover {
-  background: rgba(255,42,85,0.15);
-  border-color: #ff2a55;
+  background: rgba(255,42,85,0.22);
 }
 .sketch-trade-btn--accept {
   color: var(--green);
-  border-color: rgba(0,255,102,0.4);
+  background: rgba(0,255,102,0.12);
 }
 .sketch-trade-btn--accept:hover {
-  background: rgba(0,255,102,0.15);
-  border-color: #00ff66;
+  background: rgba(0,255,102,0.22);
 }
 
 /* 3D Isometric Raised FAB (+) matching trade_example.jpg bottom right */
@@ -766,14 +752,18 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-mourn-disc {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
   display: grid;
   place-items: center;
-  border: 2px solid #334438;
-  background: #050806;
 }
 .sketch-mourn-disc--asset {
+  border: none;
+  background: transparent;
   overflow: hidden;
+}
+.sketch-mourn-disc--dest {
+  border-radius: 50%;
+  border: 2px solid #334438;
+  background: #050806;
 }
 .sketch-mourn-disc--asset .nox-avatar {
   width: 100%;
