@@ -30,8 +30,37 @@ export const demoApi = {
     await wait(320);
     const db = readDb();
     const base = db.players.find((player) => player.username === username.trim().toLowerCase());
-    if (!base || password !== DEMO_PASSWORD) throw new Error('帳號或密碼錯誤');
+    if (!base) throw new Error('本帳號不存在或密碼不正確');
+    const isValid = base.password ? base.password === password : (password === DEMO_PASSWORD || password === 'demo1234' || !base.password);
+    if (!isValid) throw new Error('本帳號不存在或密碼不正確');
     return { ...base, isDemo: true };
+  },
+  async register(username, password, displayName) {
+    await wait(320);
+    const db = readDb();
+    const cleanUser = username.trim().toLowerCase();
+    if (!cleanUser) throw new Error('請輸入帳號');
+    if (db.players.some((player) => player.username === cleanUser)) {
+      throw new Error('此帳號已存在');
+    }
+    const cleanDisplayName = (displayName || '').replace(/[^\p{Script=Han}a-zA-Z0-9]/gu, '').trim().slice(0, 16);
+    if (!cleanDisplayName) {
+      throw new Error('玩家暱稱僅限中文、英文字母或數字');
+    }
+    const newPlayer = {
+      id: `player-${Date.now()}`,
+      username: cleanUser,
+      gameId: cleanUser.toUpperCase(),
+      displayName: cleanDisplayName,
+      password,
+      level: 1,
+      rank: 'Bronze I',
+      nox: 1000,
+      streak: 0,
+    };
+    db.players.push(newPlayer);
+    writeDb(db);
+    return { ...newPlayer, isDemo: true };
   },
   async getGameData() { await wait(); return readDb(); },
   async togglePartyMember(petId) {

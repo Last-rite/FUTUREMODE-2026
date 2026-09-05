@@ -3,7 +3,7 @@ import { GameEngine } from '../game/Engine.js';
 import { sound } from '../game/audio.js';
 import { TEAM_SIZE, W, H, SHOW_TOP_BAR } from '../game/constants.js';
 import {
-  Volume2, VolumeX, RotateCcw, HelpCircle,
+  Volume2, VolumeX, HelpCircle,
   Skull, X, Shield, Swords, Coins, Gift, MapPin,
   Cat, ShieldPlus
 } from 'lucide-react';
@@ -313,10 +313,6 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
     };
   }, []);
 
-  const handleRestart = () => {
-    setGameOver(null);
-    engineRef.current?.resetGame();
-  };
 
   const handleToggleMute = () => {
     const muted = sound.toggleMute();
@@ -496,14 +492,6 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
             {/* Action Buttons */}
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setShowHelp(true)}
-                aria-label="Info & Rules"
-                title="Game Rules"
-                className="p-1.5 rounded-lg bg-[#0e1620] hover:bg-[#162232] text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60 cursor-pointer"
-              >
-                <HelpCircle size={15} />
-              </button>
-              <button
                 onClick={handleToggleMute}
                 aria-label="Mute / Unmute"
                 title={isMuted ? 'Unmute' : 'Mute'}
@@ -512,12 +500,12 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
                 {isMuted ? <VolumeX size={15} className="text-[#ff2a55]" /> : <Volume2 size={15} className="text-[#00ff66]" />}
               </button>
               <button
-                onClick={handleRestart}
-                aria-label="Restart Match"
-                title="Restart"
+                onClick={() => setShowHelp(true)}
+                aria-label="Info & Rules"
+                title="Game Rules"
                 className="p-1.5 rounded-lg bg-[#0e1620] hover:bg-[#162232] text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60 cursor-pointer"
               >
-                <RotateCcw size={15} />
+                <HelpCircle size={15} />
               </button>
             </div>
           </div>

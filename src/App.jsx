@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import AuthModal from './components/AuthModal.jsx';
 import LobbyView from './components/LobbyView.jsx';
 import CollectionView from './components/CollectionView.jsx';
@@ -17,6 +17,12 @@ export default function App() {
   const [activeDungeon, setActiveDungeon] = useState(null);
   const [isEnteringBattle, setIsEnteringBattle] = useState(false);
   const [toast, setToast] = useState(null);
+  const transitionTimeoutsRef = useRef([]);
+
+  const clearTransitionTimeouts = () => {
+    transitionTimeoutsRef.current.forEach((id) => clearTimeout(id));
+    transitionTimeoutsRef.current = [];
+  };
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -28,8 +34,11 @@ export default function App() {
     bootstrap();
   }, []);
 
-  const handleLoginSuccess = async ({ username, password }) => {
-    const [user, gameData] = await Promise.all([demoApi.login(username, password), demoApi.getGameData()]);
+  const handleLoginSuccess = async ({ mode, username, password, displayName }) => {
+    const user = mode === 'register'
+      ? await demoApi.register(username, password, displayName)
+      : await demoApi.login(username, password);
+    const gameData = await demoApi.getGameData();
     setAuthCookie(user); setCurrentUser(user); setData(gameData); setView('home');
   };
   const handleSignOut = () => { clearAuthCookie(); setCurrentUser(null); setView('auth'); };
@@ -63,16 +72,27 @@ export default function App() {
   };
 
   const handleStartGame = (dungeon) => {
+    clearTransitionTimeouts();
     setActiveDungeon(dungeon);
     setIsEnteringBattle(true);
-    // Switch to game screen mid-transition (220ms) behind closed shutters
-    setTimeout(() => {
+    // Switch to game screen mid-transition (450ms) behind closed shutters
+    const t1 = setTimeout(() => {
       setView('game');
-    }, 220);
-    // Complete 0.5s transition cleanly
-    setTimeout(() => {
+    }, 450);
+    // Shutters open at 1.0s; text banner floats atop combat field until 1.8s
+    const t2 = setTimeout(() => {
       setIsEnteringBattle(false);
-    }, 500);
+    }, 1800);
+    transitionTimeoutsRef.current = [t1, t2];
+  };
+
+  const handleDismissTransition = () => {
+    clearTransitionTimeouts();
+    setView('game');
+    const t = setTimeout(() => {
+      setIsEnteringBattle(false);
+    }, 200);
+    transitionTimeoutsRef.current = [t];
   };
 
   if (view === 'loading') return <div className="boot-screen"><span className="boot-logo">FM</span><span>LOADING LOCAL NODE</span><div className="boot-line"><i /></div></div>;
@@ -123,7 +143,12 @@ export default function App() {
           </div>
         </div>
       )}
-      {isEnteringBattle && <BattleTransitionOverlay dungeon={activeDungeon} />}
+      {isEnteringBattle && (
+        <BattleTransitionOverlay
+          dungeon={activeDungeon}
+          onDismiss={handleDismissTransition}
+        />
+      )}
     </>
   );
 }

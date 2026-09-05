@@ -32,9 +32,12 @@ export class GameEngine {
     this.initialEnemyFleetMaxHp = 0;
     this.initialPlayerFleetMaxHp = 0;
 
-    // Hit counter & pulse effect for background arena watermark
+    // Hit counter & pulse effect for arena watermark / floating combo meter
     this.hitCount = 0;
     this.hitPulse = 0;
+    this.hitTimer = 0;
+    this.hitAlpha = 0;
+    this.comboTeamColor = COLORS.P_COL;
 
     // Backdoor: Enemy agent inaccuracy (default 10 degrees and power variation)
     this.enemy_agent_inaccuracy = ENEMY_AGENT_INACCURACY;
@@ -122,6 +125,9 @@ export class GameEngine {
     this.turnIndex = 0;
     this.hitCount = 0;
     this.hitPulse = 0;
+    this.hitTimer = 0;
+    this.hitAlpha = 0;
+    this.comboTeamColor = COLORS.P_COL;
     this.aiAimPreview = null;
     this.dragStart = null;
     this.aimPt = null;
@@ -240,7 +246,10 @@ export class GameEngine {
 
         sound.playLaunch(Math.min(1.0, finalPower / DRAG_MAX));
         this.hitCount = 0;
-        this.hitPulse = 0;
+        this.hitPulse = 0.4;
+        this.hitTimer = 1.0;
+        this.hitAlpha = 1.0;
+        this.comboTeamColor = ball.color || COLORS.A_COL;
         ball.launch(vx, vy);
         this.state = 'ROLLING';
         this.emitLog(`⚡ AI launches peg ${ball.label}!`);
@@ -464,7 +473,10 @@ export class GameEngine {
 
         sound.playLaunch(clampedPull / DRAG_MAX);
         this.hitCount = 0;
-        this.hitPulse = 0;
+        this.hitPulse = 0.4;
+        this.hitTimer = 1.0;
+        this.hitAlpha = 1.0;
+        this.comboTeamColor = ball.color || COLORS.P_COL;
         ball.launch(pvx, pvy);
         this.shake = 4;
         this.state = 'ROLLING';
@@ -617,12 +629,16 @@ export class GameEngine {
           sound.playDamage();
           this.hitCount++;
           this.hitPulse = 1.0;
+          this.hitTimer = 1.0;
+          this.hitAlpha = 1.0;
+          this.comboTeamColor = ev.attacker.color || this.comboTeamColor;
           this.shake = Math.max(this.shake, 11 + ev.damage * 0.65);
           if (navigator.vibrate) navigator.vibrate([25]);
 
-          // Award 1 gold per point of damage dealt to enemy pegs
+          // Award 1 gold per point of actual HP lost by enemy pegs
           if (ev.attacker.owner === 1 && ev.defender.owner === 2) {
-            this.goldEarned += ev.damage;
+            const actualHpLoss = ev.hpLost !== undefined ? ev.hpLost : (ev.effectiveDmg !== undefined ? ev.effectiveDmg : Math.min(ev.damage, Math.max(0, ev.defender.hp + ev.damage)));
+            this.goldEarned += actualHpLoss;
           }
 
           this.dmgNums.push(new DmgNum(ev.x, ev.y - BALL_R - 14, ev.damage));
@@ -705,6 +721,15 @@ export class GameEngine {
       if (this.hitPulse < 0.01) this.hitPulse = 0;
     }
 
+    // Manage 1-second combo display timer and smooth fade-out
+    if (this.hitTimer > 0) {
+      this.hitTimer -= delta;
+      if (this.hitTimer < 0) this.hitTimer = 0;
+    } else if (this.hitAlpha > 0) {
+      this.hitAlpha -= delta * 2.5; // Smoothly fades out over ~0.4s
+      if (this.hitAlpha < 0) this.hitAlpha = 0;
+    }
+
     this.render();
     requestAnimationFrame(this.loop);
   }
@@ -730,17 +755,8 @@ export class GameEngine {
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // 2. Cyber Territory Grid & Dividing Line
+    // 2. Subtle arena grid accents (without central dividing line)
     ctx.save();
-    ctx.strokeStyle = COLORS.DIVIDER;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.moveTo(0, H / 2);
-    ctx.lineTo(W, H / 2);
-    ctx.stroke();
-
-    // Subtle arena grid accents
     ctx.strokeStyle = 'rgba(23, 35, 49, 0.35)';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 12]);
@@ -751,38 +767,12 @@ export class GameEngine {
       ctx.lineTo(W, gy);
       ctx.stroke();
     }
-
     ctx.restore();
 
-    // ── Solid Dark Gray Arena Hit Counter (Pure color, enlarged, matching HP font) ──
-    if (this.hitCount > 0) {
-      ctx.save();
-      const cx = W / 2;
-      const cy = 385;
+    // ── Solid Dark Gray Arena Hit Counter (Floor layer for < 3 hits) ──
+    if (this.hitAlpha > 0 && this.hitCount < 3) {
       const scale = 1.0 + (this.hitPulse || 0) * 0.10;
-
-      ctx.translate(cx, cy);
-      ctx.scale(scale, scale);
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // Pure solid dark gray (no extra border or outline colors)
-      ctx.fillStyle = '#2d3947';
-
-      // 1. Large Hit Number (Enlarged to 200px, identical font to HP numbers)
-      ctx.font = 'italic 900 200px "Chakra Petch", "Oxanium", Arial, sans-serif';
-      ctx.fillText(`${this.hitCount}`, 0, -45);
-
-      // 2. 'HITS' Sub-label
-      ctx.font = 'italic 900 46px "Chakra Petch", "Oxanium", Arial, sans-serif';
-      if ('letterSpacing' in ctx) {
-        ctx.letterSpacing = '12px';
-      }
-      const labelText = ('letterSpacing' in ctx) ? 'HITS' : 'H I T S';
-      ctx.fillText(labelText, 0, 75);
-
-      ctx.restore();
+      this.drawComboMeter(ctx, this.hitCount, this.comboTeamColor, this.hitAlpha, scale);
     }
 
     // 3. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow)
@@ -811,6 +801,131 @@ export class GameEngine {
 
     // 8. Floating Damage Numbers
     for (const d of this.dmgNums) d.draw(ctx);
+
+    // 9. Floating Combo Meter (Floats on top of the entire battlefield when exceeding 3 hits)
+    if (this.hitAlpha > 0 && this.hitCount >= 3) {
+      const scale = 1.0 + (this.hitPulse || 0) * 0.10;
+      this.drawComboMeter(ctx, this.hitCount, this.comboTeamColor, this.hitAlpha, scale);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Unified Combo Meter Drawing (Used for both background floor & top-layer clone) ──
+  drawComboMeter(ctx, count, teamColor, alpha, scale = 1.0) {
+    if (alpha <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+    const cx = W / 2;
+    const cy = 385;
+
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const currentTeamColor = teamColor || COLORS.P_COL;
+
+    // Base interior fill: solid dark gray
+    ctx.fillStyle = '#2d3947';
+
+    const numFont = 'italic 900 200px "Chakra Petch", "Oxanium", Arial, sans-serif';
+    const labelFont = 'italic 900 46px "Chakra Petch", "Oxanium", Arial, sans-serif';
+    const word = count <= 1 ? 'HIT' : 'HITS';
+    const labelText = ('letterSpacing' in ctx) ? word : word.split('').join(' ');
+
+    // 1. Large Hit Number (Enlarged to 200px, matching HP font style)
+    ctx.font = numFont;
+
+    if (count >= 5) {
+      // Brighter border for 5+ hits: adds +4 lineWidth per extra combo over 5
+      const extraLineWidth = (count - 5) * 4;
+      const strokeW = Math.min(60, 9 + extraLineWidth);
+      const innerStrokeW = Math.min(26, 4 + Math.floor(extraLineWidth * 0.4));
+      const glowBlur = Math.min(70, 32 + (count - 5) * 3);
+
+      ctx.save();
+      ctx.strokeStyle = currentTeamColor;
+      ctx.lineWidth = strokeW;
+      ctx.lineJoin = 'miter';
+      ctx.miterLimit = 3;
+      ctx.shadowColor = currentTeamColor;
+      ctx.shadowBlur = glowBlur;
+      ctx.strokeText(`${count}`, 0, -45);
+      ctx.lineWidth = innerStrokeW;
+      ctx.shadowBlur = Math.floor(glowBlur * 0.5);
+      ctx.strokeText(`${count}`, 0, -45);
+      ctx.restore();
+      ctx.fillText(`${count}`, 0, -45);
+    } else if (count === 4) {
+      // Combo 4 gets 1 extra width (5 + 1 = 6)
+      ctx.save();
+      ctx.strokeStyle = currentTeamColor;
+      ctx.lineWidth = 6;
+      ctx.lineJoin = 'miter';
+      ctx.miterLimit = 3;
+      ctx.shadowColor = currentTeamColor;
+      ctx.shadowBlur = 18;
+      ctx.strokeText(`${count}`, 0, -45);
+      ctx.restore();
+      ctx.fillText(`${count}`, 0, -45);
+    } else if (count >= 3) {
+      // Soft glowing border of respective team color for 3 hits (lineWidth = 5)
+      ctx.save();
+      ctx.strokeStyle = currentTeamColor;
+      ctx.lineWidth = 5;
+      ctx.lineJoin = 'miter';
+      ctx.miterLimit = 3;
+      ctx.shadowColor = currentTeamColor;
+      ctx.shadowBlur = 14;
+      ctx.strokeText(`${count}`, 0, -45);
+      ctx.restore();
+      ctx.fillText(`${count}`, 0, -45);
+    } else {
+      // Pure solid dark gray (< 3 hits)
+      ctx.fillText(`${count}`, 0, -45);
+    }
+
+    // 2. 'HITS' Sub-label
+    ctx.font = labelFont;
+    if ('letterSpacing' in ctx) {
+      ctx.letterSpacing = '12px';
+    }
+
+    if (count >= 5) {
+      const extraLabelW = (count - 5) * 1.5;
+      ctx.save();
+      ctx.strokeStyle = currentTeamColor;
+      ctx.lineWidth = Math.min(18, 4 + extraLabelW);
+      ctx.shadowColor = currentTeamColor;
+      ctx.shadowBlur = Math.min(42, 24 + (count - 5) * 2);
+      ctx.strokeText(labelText, 0, 75);
+      ctx.restore();
+      ctx.fillText(labelText, 0, 75);
+    } else if (count === 4) {
+      ctx.save();
+      ctx.strokeStyle = currentTeamColor;
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = currentTeamColor;
+      ctx.shadowBlur = 15;
+      ctx.strokeText(labelText, 0, 75);
+      ctx.restore();
+      ctx.fillText(labelText, 0, 75);
+    } else if (count >= 3) {
+      ctx.save();
+      ctx.strokeStyle = currentTeamColor;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = currentTeamColor;
+      ctx.shadowBlur = 12;
+      ctx.strokeText(labelText, 0, 75);
+      ctx.restore();
+      ctx.fillText(labelText, 0, 75);
+    } else {
+      ctx.fillText(labelText, 0, 75);
+    }
 
     ctx.restore();
   }

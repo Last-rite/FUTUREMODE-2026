@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function BattleTransitionOverlay({ dungeon }) {
+export default function BattleTransitionOverlay({ onDismiss }) {
+  const [isDismissing, setIsDismissing] = useState(false);
+
+  const handleClick = () => {
+    if (isDismissing) return;
+    setIsDismissing(true);
+    if (onDismiss) {
+      onDismiss();
+    }
+  };
+
   return (
-    <div className="battle-transition-overlay" aria-hidden="true">
+    <div
+      className={`battle-transition-overlay ${isDismissing ? 'is-dismissing' : ''}`}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-label="Skip combat transition"
+    >
       {/* Top Shutter */}
       <div className="battle-shutter battle-shutter--top">
         <div className="battle-shutter-stripe" />
@@ -25,11 +41,7 @@ export default function BattleTransitionOverlay({ dungeon }) {
       <div className="battle-transition-center">
         <div className="battle-hud-bracket battle-hud-bracket--left" />
         <div className="battle-hud-content">
-          <div className="battle-hud-sub">SYSTEM ALERT // ENGAGING ENEMY</div>
-          <div className="battle-hud-title">COMBAT ENGAGED</div>
-          <div className="battle-hud-target">
-            SECTOR: <span className="text-[#35d9ff]">{dungeon?.name || 'ZONE 01'}</span>
-          </div>
+          <div className="battle-hud-title">COMBAT</div>
         </div>
         <div className="battle-hud-bracket battle-hud-bracket--right" />
       </div>

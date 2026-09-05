@@ -152,10 +152,10 @@ export class Ball {
           y: contactY,
         });
 
-        // Damage calculation: Attacker ATK - Defender DEF
+        // Damage calculation: Attacker ATK - Defender DEF (always minimum 1 damage)
         if (other.owner !== this.owner) {
           const rawDmg = Math.max(1, this.atk - other.def);
-          const effectiveDmg = Math.min(rawDmg, other.hp);
+          const hpLost = Math.min(rawDmg, Math.max(0, other.hp));
           other.hp = Math.max(0, other.hp - rawDmg);
 
           // Heavy wave jolt on damaged ball (stacks if already shaking!)
@@ -166,7 +166,8 @@ export class Ball {
             attacker: this,
             defender: other,
             damage: rawDmg,
-            effectiveDmg,
+            effectiveDmg: hpLost,
+            hpLost,
             x: contactX,
             y: contactY,
           });
