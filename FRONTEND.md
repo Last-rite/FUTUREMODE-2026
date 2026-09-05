@@ -115,12 +115,16 @@ When a peg reaches 0 HP:
 
 ## Slingshot Mechanics & Visuals
 
-- **Drag Direction**: Reverse pull (pull backward to launch forward, matching standard slingshot mechanics).
-- **Aim Visualizer**:
-  - **Monster Strike Phantom Chevrons**: Successive ghosted arrowheads aligned along the trajectory vector.
-  - Spacing, scale, and opacity fade create an intuitive path forecast.
-  - Clamped to maximum launch velocity (`MAX_DRAG = 140px`, max speed = 25).
-  - No circular charge rings cluttering the view.
+- **Player Slingshot (Neon Green)**:
+  - Reverse pull (drag backwards to launch forwards).
+  - Trailing ghosted chevron arrowheads pointing forward with finger tether line.
+  - Arrow length dynamically scales with pull distance (`BALL_R + pull * 1.35`).
+- **Enemy AI Aiming (Cyber Crimson Red)**:
+  - During AI turn planning, displays the same Monster Strike phantom chevron arrow in red (`#ff2a55`), pointing directly at the intended target.
+  - Length scales dynamically with the enemy's calculated launch power.
+- **Power-Modulated Glow Cycle Rate**:
+  - The animated wave of light pulsing through the chevrons runs at full speed (8.0 cycles/sec) at **100% power**.
+  - At lower power, the pulse speed decelerates proportionally ($\text{speed} = 8.0 \times \text{powerPct}$), giving an intuitive tactile sensation of low charge vs. full-power charge.
 
 ---
 

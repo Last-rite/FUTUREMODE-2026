@@ -35,6 +35,7 @@ export class GameEngine {
     this.activePointerId = null;
     this.dragStart = null;
     this.aimPt = null;
+    this.aimPulseProgress = 0; // Continuous aim glow cycle progress
 
     // AI timing
     this.aiTimer = null;
@@ -181,10 +182,13 @@ export class GameEngine {
       const snapshot = this.getSnapshot();
       const move = this.agent.chooseMove(snapshot, ball.label);
 
-      // AI phantom aim preview
-      const ex = ball.x + Math.cos(move.theta) * 75;
-      const ey = ball.y + Math.sin(move.theta) * 75;
-      this.aiAimPreview = { ox: ball.x, oy: ball.y, ex, ey };
+      // AI phantom aim preview with intended angle and power
+      this.aiAimPreview = {
+        ox: ball.x,
+        oy: ball.y,
+        theta: move.theta,
+        power: move.power,
+      };
 
       this.aiTimer = setTimeout(() => {
         if (this.state !== 'AI_AIM') return;
@@ -193,11 +197,11 @@ export class GameEngine {
         const vx = Math.cos(move.theta) * move.power * SPEED_SCALE;
         const vy = Math.sin(move.theta) * move.power * SPEED_SCALE;
 
-        sound.playLaunch(1.0);
+        sound.playLaunch(Math.min(1.0, move.power / DRAG_MAX));
         ball.launch(vx, vy);
         this.state = 'ROLLING';
         this.emitLog(`⚡ AI launches peg ${ball.label}!`);
-      }, 450);
+      }, 700);
     }, 550);
   }
 
@@ -562,6 +566,18 @@ export class GameEngine {
     }
   }
 
+  getActiveAimPowerPct() {
+    if (this.state === 'PLAYER_AIM' && this.dragStart && this.aimPt) {
+      const dx = this.aimPt.x - this.dragStart.x;
+      const dy = this.aimPt.y - this.dragStart.y;
+      return Math.max(0.08, Math.min(1.0, Math.hypot(dx, dy) / DRAG_MAX));
+    }
+    if (this.aiAimPreview && this.aiAimPreview.power) {
+      return Math.max(0.08, Math.min(1.0, this.aiAimPreview.power / DRAG_MAX));
+    }
+    return 1.0;
+  }
+
   // ── Render & Game Loop ──
   loop(now) {
     if (!this.running) return;
@@ -569,6 +585,11 @@ export class GameEngine {
     const delta = Math.min((now - this.lastTime) / 1000, 0.1);
     this.lastTime = now;
     this.accumulator += delta;
+
+    // Advance aiming arrow glow pulse:
+    // Keeps current speed (8.0 cycles/sec) at 100% power, slows down proportionally at lower power
+    const aimPowerPct = this.getActiveAimPowerPct();
+    this.aimPulseProgress = (this.aimPulseProgress + delta * 8.0 * aimPowerPct) % 1000.0;
 
     while (this.accumulator >= this.fixedDt) {
       this.stepPhysics();
@@ -667,40 +688,34 @@ export class GameEngine {
     ctx.restore();
   }
 
-  // ── Monster Strike Style Ghosted Phantom Arrow (No Circles) ──
-  drawSlingshot(ctx, start, current) {
-    const dx = current.x - start.x;
-    const dy = current.y - start.y;
-    const pull = Math.min(Math.hypot(dx, dy), DRAG_MAX);
-    const n = Math.hypot(dx, dy) || 1;
-
-    // Launch trajectory direction (forward, opposite of drag)
-    const nx = -(dx / n);
-    const ny = -(dy / n);
+  // ── Monster Strike Style Ghosted Phantom Arrow (Unified for Player & AI) ──
+  drawAimArrow(ctx, startX, startY, nx, ny, pull, color, glowColor, tetherPt = null) {
     const px = -ny;
     const py = nx;
+    const pct = Math.max(0.08, Math.min(1.0, pull / DRAG_MAX));
 
     ctx.save();
 
-    // 1. Subtle tether line to finger
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(current.x, current.y);
-    ctx.stroke();
+    // 1. Subtle tether line to finger (player only)
+    if (tetherPt) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(tetherPt.x, tetherPt.y);
+      ctx.stroke();
+    }
 
     // 2. Trailing Ghosted Phantom Arrow Silhouettes along the trajectory
-    const pct = pull / DRAG_MAX;
     const arrowLength = BALL_R + pull * 1.35;
     const numGhosts = Math.max(3, Math.min(7, Math.floor(pull / 22)));
-    const animPulse = (Date.now() * 0.008) % 1.0;
+    const animPulse = this.aimPulseProgress % 1.0;
 
     for (let i = 1; i <= numGhosts; i++) {
       const t = i / numGhosts;
-      const gx = start.x + nx * (BALL_R * 0.8 + t * (arrowLength - BALL_R * 0.8));
-      const gy = start.y + ny * (BALL_R * 0.8 + t * (arrowLength - BALL_R * 0.8));
+      const gx = startX + nx * (BALL_R * 0.8 + t * (arrowLength - BALL_R * 0.8));
+      const gy = startY + ny * (BALL_R * 0.8 + t * (arrowLength - BALL_R * 0.8));
 
       const wave = Math.sin((t - animPulse) * Math.PI * 2);
       const alpha = Math.max(0.15, Math.min(0.95, t * 0.7 + 0.3 * wave * pct));
@@ -708,7 +723,7 @@ export class GameEngine {
 
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = COLORS.P_COL;
+      ctx.fillStyle = color;
       ctx.strokeStyle = COLORS.WHITE;
       ctx.lineWidth = 2;
 
@@ -735,21 +750,23 @@ export class GameEngine {
     }
 
     // 3. Glowing Phantom Arrowhead at the tip
-    const tipX = start.x + nx * arrowLength;
-    const tipY = start.y + ny * arrowLength;
+    const tipX = startX + nx * arrowLength;
+    const tipY = startY + ny * arrowLength;
     const headSize = 18 + pct * 6;
 
     ctx.save();
-    const tipGlow = ctx.createRadialGradient(tipX, tipY, 2, tipX, tipY, headSize * 1.5);
-    tipGlow.addColorStop(0, COLORS.P_COL_GLOW);
+    // Tip glow pulse (cycle speed scales with current power)
+    const glowPulse = 1.0 + 0.25 * Math.sin(this.aimPulseProgress * Math.PI * 2);
+    const tipGlow = ctx.createRadialGradient(tipX, tipY, 2, tipX, tipY, headSize * 1.5 * glowPulse);
+    tipGlow.addColorStop(0, glowColor);
     tipGlow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = tipGlow;
     ctx.beginPath();
-    ctx.arc(tipX, tipY, headSize * 1.5, 0, Math.PI * 2);
+    ctx.arc(tipX, tipY, headSize * 1.5 * glowPulse, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = COLORS.WHITE;
-    ctx.strokeStyle = COLORS.P_COL;
+    ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(tipX + nx * (headSize * 0.8), tipY + ny * (headSize * 0.8));
@@ -764,21 +781,41 @@ export class GameEngine {
     ctx.restore();
   }
 
-  drawAiAimPreview(ctx, preview) {
-    ctx.save();
-    ctx.strokeStyle = COLORS.A_COL;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(preview.ox, preview.oy);
-    ctx.lineTo(preview.ex, preview.ey);
-    ctx.stroke();
+  drawSlingshot(ctx, start, current) {
+    const dx = current.x - start.x;
+    const dy = current.y - start.y;
+    const pull = Math.min(Math.hypot(dx, dy), DRAG_MAX);
+    const n = Math.hypot(dx, dy) || 1;
 
-    ctx.fillStyle = COLORS.A_COL;
-    ctx.beginPath();
-    ctx.arc(preview.ex, preview.ey, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    // Launch trajectory direction (forward, opposite of drag)
+    const nx = -(dx / n);
+    const ny = -(dy / n);
+
+    this.drawAimArrow(
+      ctx,
+      start.x, start.y,
+      nx, ny,
+      pull,
+      COLORS.P_COL,
+      COLORS.P_COL_GLOW,
+      current
+    );
+  }
+
+  drawAiAimPreview(ctx, preview) {
+    const nx = Math.cos(preview.theta);
+    const ny = Math.sin(preview.theta);
+    const pull = Math.min(preview.power || DRAG_MAX, DRAG_MAX);
+
+    this.drawAimArrow(
+      ctx,
+      preview.ox, preview.oy,
+      nx, ny,
+      pull,
+      COLORS.A_COL,
+      COLORS.A_COL_GLOW,
+      null
+    );
   }
 
   destroy() {
