@@ -15,6 +15,7 @@ export class Ball {
     this.vy = 0;
     
     // Identification & Equipment
+    this.petId = options.petId || null;
     this.idString = options.idString || (owner === 1 ? 'peg_player' : 'peg_enemy');
     this.name = options.name || label;
     this.code = options.code || '';

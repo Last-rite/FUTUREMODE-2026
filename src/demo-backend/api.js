@@ -281,6 +281,29 @@ export const demoApi = {
     await wait(140);
     const db = readDb();
     const activePlayerId = playerId || getAuthCookie()?.id || null;
+
+    // 1. Add gold earned to player wallet
+    if (result.goldEarned && result.goldEarned > 0) {
+      if (!db.wallet) db.wallet = { gold: 0, gem: 0, chip: 0 };
+      db.wallet.gold = (Number(db.wallet.gold) || 0) + result.goldEarned;
+    }
+
+    // 2. Remove lost equipment from items
+    if (result.lostItemIds && result.lostItemIds.length > 0) {
+      const lostSet = new Set(result.lostItemIds);
+      db.items = (db.items || []).filter(item => !lostSet.has(item.id) && !lostSet.has(item.idString));
+      if (db.pets) {
+        db.pets.forEach(p => {
+          if (lostSet.has(p.equipped)) p.equipped = null;
+        });
+      }
+    }
+
+    // 3. Remove lost pets from collection
+    if (result.lostPegIds && result.lostPegIds.length > 0) {
+      const lostPetSet = new Set(result.lostPegIds);
+      db.pets = (db.pets || []).filter(pet => !lostPetSet.has(pet.id) && !lostPetSet.has(pet.idString));
+    }
     db.lastBattle = { ...result, dungeonId, settledAt: Date.now(), testOnly: true };
     if (activePlayerId && dungeonId && result?.winner === 'PLAYER') {
       db.dungeonProgress ||= {};

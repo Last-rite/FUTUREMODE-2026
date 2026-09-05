@@ -1181,6 +1181,9 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   transition: transform 0.2s ease-out;
 }
 /* Snake Up / Down pattern: col-2 & col-4 (even rows) lowered to achieve exact even honeycomb spacing */
+.settlement-hex-col.col-single {
+  transform: none;
+}
 .settlement-hex-col.col-1,
 .settlement-hex-col.col-3 {
   transform: translateY(-22px);

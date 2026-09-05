@@ -160,6 +160,7 @@ export class GameEngine {
         const spd = pet.spd ?? DEFAULT_SPD;
 
         const options = {
+          petId: pet.id,
           idString: pet.idString || `peg_${pet.id || 'player'}`,
           name: pet.name || pLabel,
           code: pet.code || '',
@@ -319,6 +320,97 @@ export class GameEngine {
     this.startTurn();
   }
 
+  getSettlementResults(winner) {
+    const isVictory = winner === 'PLAYER';
+    const playerBalls = this.balls.filter(b => b.owner === 1);
+    
+    const gains = [];
+    const losses = [];
+
+    // 1. GAINS (獲得): order: pegs, equipments, gold
+    // Pegs gains: (none for now)
+    // Equipment gains: (none for now)
+    // Gold gains:
+    if (this.goldEarned > 0) {
+      gains.push({
+        id: 'gain-gold',
+        category: 'gain',
+        kind: 'gold',
+        type: 'gold',
+        variant: 'gain',
+        label: `+${this.goldEarned} G`,
+        amount: this.goldEarned,
+      });
+    }
+
+    // 2. LOSSES (失去): order: pegs, equipments, gold
+    const deadPlayerBalls = playerBalls.filter(b => !b.alive || b.hp <= 0);
+    const lostPegs = [];
+    const lostEquipments = [];
+
+    for (const b of deadPlayerBalls) {
+      const isNxc01 = b.code === '01' ||
+                      b.idString?.includes('core') ||
+                      b.idString?.includes('nxc_1') ||
+                      (b.name?.includes('NOXCAT') && !b.name?.includes('FUTURE') && !b.name?.includes('COOL') && !b.name?.includes('HARD'));
+
+      const hasHomeStone = Boolean(b.equipment && (
+        b.equipment.name?.includes('回家') ||
+        b.equipment.idString?.includes('return_stone') ||
+        b.equipment.idString?.includes('home') ||
+        b.equipment.type === 'TREASURE'
+      ));
+
+      const canReturnHome = isNxc01 || hasHomeStone;
+
+      if (!canReturnHome) {
+        // Peg gets lost (lose them even if we win the fight)
+        lostPegs.push({
+          id: `lost-peg-${b.petId || b.idString || b.label}`,
+          category: 'lost',
+          kind: 'peg',
+          type: 'lost-cat',
+          variant: 'lost',
+          label: b.name || 'NOXCAT',
+          petId: b.petId || b.idString,
+          code: b.code,
+          ball: b,
+        });
+      }
+
+      if (b.equipment) {
+        // Equipment is lost!
+        const eq = b.equipment;
+        const isBlade = eq.type === 'WEAPON' || eq.idString?.includes('blade') || eq.name?.includes('劍');
+        const isShield = eq.type === 'GEAR' || eq.idString?.includes('shield') || eq.name?.includes('盾');
+        const eqType = isBlade ? 'sword' : (isShield ? 'shield' : 'gem');
+
+        lostEquipments.push({
+          id: `lost-eq-${eq.id || eq.idString || b.label}`,
+          category: 'lost',
+          kind: 'equipment',
+          type: eqType,
+          variant: 'lost',
+          label: eq.name,
+          itemId: eq.id || eq.idString,
+          equipment: eq,
+        });
+      }
+    }
+
+    // Both categories strictly ordered: pegs, equipments, gold
+    losses.push(...lostPegs, ...lostEquipments);
+
+    return {
+      gains,
+      losses,
+      allResults: [...gains, ...losses],
+      lostPegIds: lostPegs.map(p => p.petId).filter(Boolean),
+      lostItemIds: lostEquipments.map(e => e.itemId).filter(Boolean),
+      goldEarned: this.goldEarned,
+    };
+  }
+
   checkWinCondition() {
     const playerAlive = this.balls.some(b => b.owner === 1 && b.alive);
     const aiAlive = this.balls.some(b => b.owner === 2 && b.alive);
@@ -332,8 +424,14 @@ export class GameEngine {
         sound.playDefeat();
       }
       this.emitLog(`🏆 GAME OVER! ${winner} WINS!`);
+      const settlement = this.getSettlementResults(winner);
       if (this.callbacks.onGameOver) {
-        this.callbacks.onGameOver({ winner, round: this.round });
+        this.callbacks.onGameOver({
+          winner,
+          round: this.round,
+          goldEarned: this.goldEarned,
+          ...settlement,
+        });
       }
       this.sendSnapshot();
     }

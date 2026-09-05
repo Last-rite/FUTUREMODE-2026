@@ -292,47 +292,23 @@ function SettlementRail({ type = 'top', color = '#00ff66' }) {
   );
 }
 
-const BASE_REWARD_TEMPLATES = [
-  { type: 'cat', variant: 'gain', label: 'NOXCAT' },
-  { type: 'sword', variant: 'gain', label: '武器' },
-  { type: 'shield', variant: 'gain', label: '道具' },
-  { type: 'lost-cat', variant: 'lost', label: '走失' },
-  { type: 'cat', variant: 'gain', label: 'NOXCAT' },
-  { type: 'sword', variant: 'gain', label: '武器' },
-  { type: 'shield', variant: 'gain', label: '道具' },
-  { type: 'cat', variant: 'gain', label: 'NOXCAT' },
-];
-
-function getSettlementRewards(count = SETTLEMENT_REWARD_COUNT, isVictory = true) {
-  const list = [];
-  for (let i = 0; i < count; i++) {
-    const template = BASE_REWARD_TEMPLATES[i % BASE_REWARD_TEMPLATES.length];
-    const variant = !isVictory && i === 3 ? 'lost' : (isVictory && template.variant === 'lost' ? 'gain' : template.variant);
-    list.push({
-      id: `reward-${i + 1}`,
-      type: template.type === 'lost-cat' && isVictory ? 'cat' : template.type,
-      variant,
-      label: template.label,
-    });
-  }
-  return list;
-}
-
 /**
- * Distributes rewards into 4 columns:
- * - Row 1 (first 1~4 rewards): left to right (columns 1, 2, 3, 4)
- * - Row 2 and onward: 1, 3, 2, 4 pattern to minimize height gain
+ * Distributes rewards into columns (max 4):
+ * - If rewards <= 4: uses exact count of columns so it stays centered
+ * - If rewards > 4: 4 columns with 1, 3, 2, 4 honeycomb distribution
  */
 function distributeRewardsToColumns(rewards) {
-  const columns = [[], [], [], []];
-  const colOrderRow2 = [0, 2, 1, 3]; // 1, 3, 2, 4 in 0-based column indices
+  if (!rewards || rewards.length === 0) return [];
+  const numCols = Math.min(4, Math.max(1, rewards.length));
+  const columns = Array.from({ length: numCols }, () => []);
+  const colOrderRow2 = [0, 2, 1, 3];
 
   rewards.forEach((reward, index) => {
-    if (index < 4) {
+    if (index < numCols) {
       columns[index].push(reward);
     } else {
-      const offset = index - 4;
-      const targetCol = colOrderRow2[offset % 4];
+      const offset = index - numCols;
+      const targetCol = numCols === 4 ? colOrderRow2[offset % 4] : (index % numCols);
       columns[targetCol].push(reward);
     }
   });
@@ -340,12 +316,15 @@ function distributeRewardsToColumns(rewards) {
   return columns;
 }
 
-function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
-  const isGain = variant === 'gain';
+function SettlementHexToken({ item }) {
+  const isGain = item.variant === 'gain';
   const color = isGain ? '#00ff66' : '#ff2a55';
+  const type = item.type;
+
+  const ballImg = item.ball ? getBallImage(item.ball) : null;
 
   return (
-    <div className={`settlement-hex-item is-${variant}`}>
+    <div className={`settlement-hex-item is-${item.variant}`}>
       <div className="settlement-hex-shape">
         <svg viewBox="0 0 70 62" className="settlement-hex-svg">
           <polygon
@@ -357,27 +336,60 @@ function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
           />
         </svg>
         <div className="settlement-hex-icon" style={{ color }}>
-          {type === 'cat' && <Cat size={26} strokeWidth={2.2} />}
-          {type === 'sword' && (
+          {ballImg && ballImg.src ? (
             <img
-              src={swordImg}
-              alt="武器"
-              className="w-9 h-9 object-contain pixelated drop-shadow-[0_0_10px_rgba(0,255,102,0.65)]"
+              src={ballImg.src}
+              alt={item.label}
+              className="w-10 h-10 object-contain pixelated"
+              style={{ filter: `drop-shadow(0 0 8px ${color})` }}
             />
+          ) : (
+            <>
+              {(type === 'cat' || type === 'lost-cat') && <Cat size={26} strokeWidth={2.2} />}
+              {type === 'sword' && (
+                <img
+                  src={swordImg}
+                  alt="武器"
+                  className="w-9 h-9 object-contain pixelated"
+                  style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+                />
+              )}
+              {type === 'shield' && (
+                <img
+                  src={shieldImg}
+                  alt="防具"
+                  className="w-9 h-9 object-contain pixelated"
+                  style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+                />
+              )}
+              {type === 'gem' && (
+                <img
+                  src={gemImg}
+                  alt="回家石"
+                  className="w-9 h-9 object-contain pixelated"
+                  style={{ filter: `drop-shadow(0 0 8px ${color})` }}
+                />
+              )}
+              {type === 'gold' && (
+                <Coins
+                  size={26}
+                  strokeWidth={2.2}
+                  className="text-[#00ff66]"
+                  style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,102,0.7))' }}
+                />
+              )}
+            </>
           )}
-          {type === 'shield' && (
-            <img
-              src={shieldImg}
-              alt="防具"
-              className="w-9 h-9 object-contain pixelated drop-shadow-[0_0_10px_rgba(0,255,102,0.65)]"
-            />
-          )}
-          {type === 'lost-cat' && <Cat size={26} strokeWidth={2.2} />}
         </div>
       </div>
       <span className="settlement-hex-tag" style={{ color }}>
         {isGain ? '獲得' : '失去'}
       </span>
+      {item.label && (
+        <span className="text-[10px] font-mono font-black text-slate-200 max-w-[76px] truncate text-center mt-0.5 tracking-tight drop-shadow-sm leading-tight">
+          {item.label}
+        </span>
+      )}
     </div>
   );
 }
@@ -791,20 +803,30 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
                 color={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
               />
 
-              {/* Hexagon Asset Tokens (4 Columns with Snake Up/Down Wave & 1,3,2,4 row distribution) */}
+              {/* Hexagon Asset Tokens (Honeycomb Wave with Gains & Losses) */}
               <div className="settlement-hex-grid">
-                {distributeRewardsToColumns(getSettlementRewards(SETTLEMENT_REWARD_COUNT, gameOver.winner === 'PLAYER')).map((colItems, colIdx) => (
-                  <div key={`col-${colIdx}`} className={`settlement-hex-col col-${colIdx + 1}`}>
+                {distributeRewardsToColumns(
+                  (gameOver.allResults && gameOver.allResults.length > 0)
+                    ? gameOver.allResults
+                    : [{ id: 'gold-zero', type: 'gold', variant: 'gain', label: `+${gameOver.goldEarned || 0} G` }]
+                ).map((colItems, colIdx, allCols) => (
+                  <div
+                    key={`col-${colIdx}`}
+                    className={`settlement-hex-col ${allCols.length > 1 ? `col-${colIdx + 1}` : 'col-single'}`}
+                  >
                     {colItems.map((item) => (
                       <SettlementHexToken
                         key={item.id}
-                        type={item.type}
-                        variant={item.variant}
-                        label={item.label}
+                        item={item}
                       />
                     ))}
                   </div>
                 ))}
+              </div>
+
+              {/* Tap to leave prompt */}
+              <div className="settlement-tap-prompt">
+                Tap to leave
               </div>
             </div>
           </div>
