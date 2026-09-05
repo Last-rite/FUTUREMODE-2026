@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BatteryCharging, ChevronLeft, ChevronRight, Coins, LogOut, Play, RotateCcw } from 'lucide-react';
-import DemoBadge from './DemoBadge.jsx';
+import { BatteryCharging, ChevronLeft, ChevronRight, Coins, LogOut, RotateCcw } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
 
 export default function LobbyView({ user, data, onStartGame, onSignOut, onReset }) {
@@ -14,14 +13,10 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
   return (
     <main className="screen-scroll sketch-home">
       <header className="sketch-brandbar">
-        <div className="sketch-brand">
-          <span className="sketch-brand__mark"><i>FM</i></span>
-          <span><strong>FUTUREMODE</strong><small>NOXCAT</small></span>
-        </div>
+        <h1 className="sketch-main-title">戰役部署</h1>
         <div className="sketch-brandbar__actions">
-          <DemoBadge compact />
-          <button className="sketch-icon-button" onClick={onReset} aria-label="重置測試資料"><RotateCcw size={17} /></button>
-          <button className="sketch-icon-button" onClick={onSignOut} aria-label="登出"><LogOut size={17} /></button>
+          <button className="sketch-icon-button" onClick={onReset} aria-label="重置測試資料"><RotateCcw size={18} /></button>
+          <button className="sketch-icon-button" onClick={onSignOut} aria-label="登出"><LogOut size={18} /></button>
         </div>
       </header>
 
@@ -37,15 +32,33 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
           <small>{dungeon.difficulty} · 掉落 {dungeon.loot}</small>
         </div>
         <div className="sketch-mission__field">
-          <span className="sketch-field-line sketch-field-line--one" />
-          <span className="sketch-field-line sketch-field-line--two" />
-          <span className="sketch-field-line sketch-field-line--three" />
-          <div className="sketch-mission__node" aria-label="關卡圖像 placeholder">
-            <BatteryCharging size={50} />
-            <span>STAGE PLACEHOLDER</span>
+          {/* Hand-drawn terrain aesthetic matching sketch ("一個地形") */}
+          <svg className="sketch-terrain-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="terrainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="var(--dungeon-tone)" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="var(--dungeon-tone)" stopOpacity="0.01" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 0 180 Q 80 120, 140 100 T 260 50 T 360 110 L 400 180 Z"
+              fill="url(#terrainGrad)"
+            />
+            <path
+              d="M 0 180 Q 80 120, 140 100 T 260 50 T 360 110 L 400 180"
+              fill="none"
+              stroke="var(--dungeon-tone)"
+              strokeWidth="2"
+              strokeDasharray="6 8"
+              opacity="0.38"
+            />
+          </svg>
+          <div className="sketch-mission__node" aria-label="關卡圖像">
+            <BatteryCharging size={46} />
+            <span>STAGE</span>
           </div>
-          <button className="sketch-stage-arrow sketch-stage-arrow--left" onClick={() => cycleDungeon(-1)} aria-label="上一個關卡"><ChevronLeft /></button>
-          <button className="sketch-stage-arrow sketch-stage-arrow--right" onClick={() => cycleDungeon(1)} aria-label="下一個關卡"><ChevronRight /></button>
+          <button className="sketch-stage-arrow sketch-stage-arrow--left" onClick={() => cycleDungeon(-1)} aria-label="上一個關卡"><ChevronLeft size={28} /></button>
+          <button className="sketch-stage-arrow sketch-stage-arrow--right" onClick={() => cycleDungeon(1)} aria-label="下一個關卡"><ChevronRight size={28} /></button>
           <div className="sketch-party" aria-label="目前出戰隊伍">
             {team.map((pet, index) => (
               <div className="sketch-party__member" key={pet.id} style={{ '--pet-accent': pet.accent }}>
@@ -58,7 +71,10 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
       </section>
 
       <button className="sketch-start" onClick={() => onStartGame(dungeon)} disabled={team.length !== 3}>
-        <Play size={21} fill="currentColor" /><span>START</span><small>-{dungeon.cost}</small>
+        <span className="sketch-start-chevron">《</span>
+        <span className="sketch-start-label">START</span>
+        <small className="sketch-start-cost">-{dungeon.cost}</small>
+        <span className="sketch-start-chevron">》</span>
       </button>
     </main>
   );

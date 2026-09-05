@@ -22,7 +22,7 @@ body {
   overflow: hidden;
   background: #020304;
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Chakra Petch', 'Noto Sans TC', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -31,10 +31,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 button:disabled { cursor: not-allowed; opacity: .45; }
 
 .combat-hp-num {
-  font-family: 'Chakra Petch', 'Oxanium', monospace, sans-serif;
+  font-family: 'Chakra Petch', 'Noto Sans TC', 'Oxanium', monospace, sans-serif;
   font-style: italic;
   font-weight: 900;
   letter-spacing: 0.04em;
+}
+
+.font-tech {
+  font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif;
+  font-style: italic;
+  font-weight: 900;
 }
 
 .app-viewport, .auth-screen { width: 100%; height: 100dvh; display: grid; place-items: center; background: radial-gradient(circle at 50% -10%, rgba(0,255,102,.12), transparent 36%), linear-gradient(145deg, #020304, #07100c 55%, #020304); }
@@ -148,54 +154,46 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
 
 /* Hand-drawn game-design alignment */
-.sketch-home { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px; padding: var(--safe-top) 14px calc(var(--safe-bottom) + 94px); overflow: hidden; background: #050705; }
-.sketch-brandbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; }
-.sketch-brandbar__actions { display: flex; align-items: center; gap: 6px; }
-.sketch-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.sketch-brand__mark { display: grid; place-items: center; width: 35px; height: 35px; border: 2px solid var(--green); color: var(--green); transform: rotate(45deg); }
-.sketch-brand__mark i { font: 950 10px/1 ui-monospace, monospace; font-style: normal; transform: rotate(-45deg); }
-.sketch-brand > span:last-child { display: grid; line-height: 1; }
-.sketch-brand strong { font: 950 13px/1 ui-monospace, monospace; letter-spacing: .02em; }
-.sketch-brand small { margin-top: 4px; color: var(--green); font: 800 7px/1 ui-monospace, monospace; letter-spacing: .18em; }
-.sketch-icon-button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid #25302a; border-radius: 0; background: #090d0a; color: #8d9b91; cursor: pointer; }
-.sketch-icon-button:active { transform: scale(.92); color: var(--green); border-color: var(--green); }
-.sketch-playerbar { display: flex; align-items: center; justify-content: space-between; min-height: 33px; padding: 0 10px; border-block: 1px solid #273028; color: #aab5ad; font: 750 9px/1 ui-monospace, monospace; }
-.sketch-playerbar strong { display: flex; align-items: center; gap: 5px; color: var(--green); font-size: 10px; }
-.sketch-mission { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 2px solid #2d362f; background: #070a08; }
-.sketch-mission__heading { position: relative; z-index: 2; min-height: 77px; display: grid; place-items: center; align-content: center; border-bottom: 1px solid #2d362f; text-align: center; background: #090d0a; }
-.sketch-mission__heading span { color: var(--dungeon-tone); font: 800 8px/1 ui-monospace, monospace; letter-spacing: .16em; }
-.sketch-mission__heading h1 { margin: 5px 0 4px; font-size: clamp(20px, 6vw, 26px); line-height: 1; letter-spacing: -.04em; }
-.sketch-mission__heading small { color: #758078; font: 700 8px/1 ui-monospace, monospace; }
-.sketch-mission__field { position: relative; min-height: 0; overflow: hidden; background: linear-gradient(transparent 49%, rgba(0,255,102,.04) 50%), repeating-linear-gradient(90deg, transparent 0 39px, rgba(0,255,102,.025) 40px), #050705; }
-.sketch-mission__field::after { content: ''; position: absolute; inset: auto 8% 7% 8%; height: 45%; border: 1px solid color-mix(in srgb, var(--dungeon-tone) 25%, transparent); border-bottom: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); opacity: .55; }
-.sketch-field-line { position: absolute; display: block; height: 1px; background: color-mix(in srgb, var(--dungeon-tone) 35%, transparent); transform-origin: left center; }
-.sketch-field-line--one { width: 44%; left: 0; top: 35%; transform: rotate(12deg); }
-.sketch-field-line--two { width: 34%; right: 0; top: 26%; transform: rotate(-18deg); }
-.sketch-field-line--three { width: 46%; left: 30%; top: 61%; transform: rotate(-7deg); }
-.sketch-mission__node { position: absolute; z-index: 2; left: 50%; top: 38%; display: grid; place-items: center; width: min(42vw, 170px); aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid var(--dungeon-tone); border-radius: 50%; color: var(--dungeon-tone); background: radial-gradient(circle, color-mix(in srgb, var(--dungeon-tone) 13%, #050705), #050705 65%); box-shadow: 0 0 0 8px #050705, 0 0 0 9px color-mix(in srgb, var(--dungeon-tone) 30%, transparent), 0 0 38px color-mix(in srgb, var(--dungeon-tone) 18%, transparent); animation: sketchNode 2.8s ease-in-out infinite; }
-.sketch-mission__node::before { content: ''; position: absolute; inset: 11px; border: 1px dashed color-mix(in srgb, var(--dungeon-tone) 55%, transparent); border-radius: 50%; }
-.sketch-mission__node span { position: absolute; bottom: 23px; color: #6f7e73; font: 800 6px/1 ui-monospace, monospace; letter-spacing: .1em; }
+.sketch-home { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px; padding: var(--safe-top) 14px calc(var(--safe-bottom) + 94px); overflow: hidden; background: #050705; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; }
+.sketch-brandbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 4px; }
+.sketch-brandbar__actions { display: flex; align-items: center; gap: 8px; }
+.sketch-main-title { margin: 0; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 22px; letter-spacing: .06em; color: var(--text); }
+.sketch-icon-button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 8px; background: transparent; color: #8d9b91; cursor: pointer; transition: color .15s ease, transform .15s ease; }
+.sketch-icon-button:active { transform: scale(.92); color: var(--green); }
+.sketch-playerbar { display: flex; align-items: center; justify-content: space-between; min-height: 30px; padding: 0 4px; border: none; color: #aab5ad; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .04em; }
+.sketch-playerbar strong { display: flex; align-items: center; gap: 5px; color: var(--green); font-size: 12px; }
+.sketch-mission { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border: none; background: transparent; }
+.sketch-mission__heading { position: relative; z-index: 2; min-height: 70px; display: grid; place-items: center; align-content: center; border: none; text-align: center; background: transparent; }
+.sketch-mission__heading span { color: var(--dungeon-tone); font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 11px; letter-spacing: .16em; }
+.sketch-mission__heading h1 { margin: 4px 0 3px; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: clamp(24px, 7vw, 30px); line-height: 1; letter-spacing: -.02em; }
+.sketch-mission__heading small { color: #88968d; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 11px; }
+.sketch-mission__field { position: relative; min-height: 0; overflow: hidden; background: transparent; }
+.sketch-terrain-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sketch-mission__node { position: absolute; z-index: 2; left: 50%; top: 38%; display: grid; place-items: center; width: min(40vw, 156px); aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid var(--dungeon-tone); border-radius: 50%; color: var(--dungeon-tone); background: radial-gradient(circle, color-mix(in srgb, var(--dungeon-tone) 14%, #050705), #050705 68%); animation: sketchNode 2.8s ease-in-out infinite; }
+.sketch-mission__node span { position: absolute; bottom: 20px; color: #88968d; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 10px; letter-spacing: .14em; }
 @keyframes sketchNode { 50% { transform: translate(-50%, -53%); } }
-.sketch-stage-arrow { position: absolute; z-index: 5; top: 38%; display: grid; place-items: center; width: 44px; height: 58px; transform: translateY(-50%); border: 1px solid #29332c; border-radius: 0; background: rgba(5,7,5,.86); color: #9aa69d; }
-.sketch-stage-arrow:active { color: var(--green); border-color: var(--green); transform: translateY(-50%) scale(.92); }
-.sketch-stage-arrow--left { left: 0; border-left: 0; }
-.sketch-stage-arrow--right { right: 0; border-right: 0; }
+.sketch-stage-arrow { position: absolute; z-index: 5; top: 38%; display: grid; place-items: center; width: 44px; height: 58px; transform: translateY(-50%); border: none; background: transparent; color: #9aa69d; cursor: pointer; transition: color .15s ease, transform .15s ease; }
+.sketch-stage-arrow:active { color: var(--green); transform: translateY(-50%) scale(.92); }
+.sketch-stage-arrow--left { left: 0; }
+.sketch-stage-arrow--right { right: 0; }
 .sketch-party { position: absolute; z-index: 4; left: 8%; right: 8%; bottom: 5%; display: grid; grid-template-columns: repeat(3, 1fr); align-items: end; justify-items: center; }
 .sketch-party__member { position: relative; display: grid; place-items: center; }
 .sketch-party__member:nth-child(2) { transform: translateY(-18px); }
-.sketch-party__member .nox-avatar { width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); border-width: 2px; border-radius: 50%; background: #080c09; box-shadow: 0 0 0 5px #050705, 0 0 0 6px color-mix(in srgb, var(--pet-accent) 35%, transparent); }
-.sketch-party__member > span { position: absolute; right: -5px; bottom: -3px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font: 900 9px/1 ui-monospace, monospace; }
-.sketch-start { justify-self: center; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; width: min(78%, 300px); min-height: 58px; padding: 0 13px; border: 2px solid #001a0a; border-radius: 0; background: var(--green); color: #001407; box-shadow: 5px 5px 0 #0d361b; font: 950 18px/1 ui-monospace, monospace; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-.sketch-start small { justify-self: end; font-size: 9px; }
-.sketch-start:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #0d361b; filter: brightness(.86); }
+.sketch-party__member .nox-avatar { width: clamp(60px, 17vw, 76px); height: clamp(60px, 17vw, 76px); border-width: 2px; border-radius: 50%; background: #080c09; box-shadow: 0 0 16px color-mix(in srgb, var(--pet-accent) 30%, transparent); }
+.sketch-party__member > span { position: absolute; right: -5px; bottom: -3px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 11px; }
+.sketch-start { justify-self: center; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: min(84%, 320px); min-height: 56px; padding: 0 18px; border: none; border-radius: 999px; background: var(--green); color: #001407; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 21px; letter-spacing: .06em; cursor: pointer; box-shadow: 0 0 24px rgba(0,255,102,.32); transition: transform .15s ease, filter .15s ease; }
+.sketch-start:active { transform: scale(.95); filter: brightness(.88); }
+.sketch-start-chevron { font-size: 22px; font-weight: 900; opacity: .85; }
+.sketch-start-label { font-size: 20px; font-weight: 900; letter-spacing: .08em; }
+.sketch-start-cost { font-size: 12px; font-weight: 700; opacity: .75; margin-left: 2px; }
 .sketch-bottom-nav.bottom-nav { left: 0; right: 0; bottom: 0; min-height: calc(72px + env(safe-area-inset-bottom)); padding: 6px 14px max(8px, env(safe-area-inset-bottom)); border: 0; border-top: 2px solid #2a352d; border-radius: 0; background: #080b09; box-shadow: 0 -8px 30px rgba(0,0,0,.65); backdrop-filter: none; }
-.sketch-bottom-nav.bottom-nav button { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 0; color: #667169; }
-.sketch-bottom-nav.bottom-nav button small { font: 850 9px/1 ui-monospace, monospace; letter-spacing: .06em; margin-top: 5px; position: relative; z-index: 2; }
+.sketch-bottom-nav.bottom-nav button { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; border-radius: 0; color: #667169; background: transparent; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-weight: 700; }
+.sketch-bottom-nav.bottom-nav button small { font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .06em; margin-top: 5px; position: relative; z-index: 2; }
 .sketch-bottom-nav.bottom-nav button.is-active { color: var(--green); background: transparent; }
 .sketch-bottom-nav__icon { position: relative; display: grid; place-items: center; width: 36px !important; height: 28px !important; border-radius: 0 !important; }
 .sketch-bottom-nav button.is-active .sketch-bottom-nav__icon { background: transparent !important; box-shadow: none !important; }
 .sketch-bottom-nav button.is-active .sketch-bottom-nav__icon::before { content: ''; position: absolute; inset: -4px -10px 0px -10px; z-index: -1; border: 2px solid var(--green); transform: skewX(-12deg); background: #0b1710; }
-@media (max-height: 700px) { .sketch-home { gap: 6px; } .sketch-brandbar { min-height: 40px; } .sketch-mission__heading { min-height: 62px; } .sketch-mission__node { width: 126px; } .sketch-party__member:nth-child(2) { transform: translateY(-10px); } .sketch-start { min-height: 50px; } }
+@media (max-height: 700px) { .sketch-home { gap: 6px; } .sketch-brandbar { min-height: 40px; } .sketch-mission__heading { min-height: 60px; } .sketch-mission__node { width: 120px; } .sketch-party__member:nth-child(2) { transform: translateY(-10px); } .sketch-start { min-height: 48px; } }
 
 /* Pet screen: collection view starts directly with loadouts */
 .sketch-collection { padding: max(14px, var(--safe-top)) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
