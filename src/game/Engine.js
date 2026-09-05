@@ -16,7 +16,7 @@ export class GameEngine {
     this.ctx = canvas.getContext('2d');
     this.callbacks = callbacks; // onSnapshot, onGameOver, onLog
 
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
     this.agent = new Agent2();
 
     this.balls = [];
@@ -91,10 +91,12 @@ export class GameEngine {
   }
 
   handleResize() {
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.canvas.width = W * this.dpr;
-    this.canvas.height = H * this.dpr;
+    this.dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+    this.canvas.width = Math.round(W * this.dpr);
+    this.canvas.height = Math.round(H * this.dpr);
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
   }
 
   onVisibilityChange() {

@@ -341,32 +341,35 @@ export class Ball {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4.5;
-    ctx.strokeText(this.label, this.x, this.y - 2);
+    ctx.lineWidth = 2.2;
+    const labelX = Math.round(this.x);
+    const labelY = Math.round(this.y - 2);
+    ctx.strokeText(this.label, labelX, labelY);
     ctx.fillStyle = COLORS.WHITE;
-    ctx.fillText(this.label, this.x, this.y - 2);
+    ctx.fillText(this.label, labelX, labelY);
 
     // 6. HP Text positioned exactly on the lower part of the HP ring
     // Minimalist solid color: pure white when healthy, solid crimson when in critical danger
     const hpColor = (hpRatio <= 0.25) ? '#ff2a55' : '#ffffff';
 
-    const hpRingY = this.y + 36.5; // Optical center on lower ring band (between 34px and 44px)
+    const hpRingX = Math.round(this.x);
+    const hpRingY = Math.round(this.y + 36.5); // Optical center on lower ring band (between 34px and 44px)
     ctx.save();
-    ctx.translate(this.x, hpRingY);
-    ctx.font = 'italic 900 23px "Chakra Petch", "Oxanium", Arial, sans-serif';
+    ctx.translate(hpRingX, hpRingY);
+    ctx.font = 'italic 900 24px "Chakra Petch", "Oxanium", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4.5;
+    ctx.lineWidth = 2.2;
 
     // Optical centering to compensate for digit shape asymmetry and canvas baseline droop
     const metrics = ctx.measureText(`${this.hp}`);
     const ox = (metrics.actualBoundingBoxLeft !== undefined && metrics.actualBoundingBoxRight !== undefined)
-      ? (metrics.actualBoundingBoxLeft - metrics.actualBoundingBoxRight) * 0.5
+      ? Math.round((metrics.actualBoundingBoxLeft - metrics.actualBoundingBoxRight) * 0.5)
       : 0;
-    const oy = -1.5;
+    const oy = -1;
 
     ctx.strokeText(`${this.hp}`, ox, oy);
     ctx.fillStyle = hpColor;

@@ -67,8 +67,15 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
     const ctx = canvas.getContext('2d');
     let animId;
 
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+    const size = 58;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     const render = () => {
-      const size = 58;
       const ringW = 9;
       const innerSize = size - ringW * 2; // 40
       const maxHp = char.maxHp || 100;
@@ -149,10 +156,11 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3.5;
-      ctx.strokeText(char.label, size / 2, size / 2);
+      ctx.lineWidth = 2.0;
+      const centerCoord = Math.round(size / 2);
+      ctx.strokeText(char.label, centerCoord, centerCoord);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(char.label, size / 2, size / 2);
+      ctx.fillText(char.label, centerCoord, centerCoord);
 
       ctx.restore();
 
@@ -352,7 +360,7 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
               </div>
 
               {/* Exact HP Numbers */}
-              <span className="absolute right-2 text-[11px] combat-hp-num text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
+              <span className="absolute right-2 text-[12px] sm:text-[13px] combat-hp-num text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10 antialiased font-black tracking-wider">
                 {topBar.hp} / {topBar.maxHp}
               </span>
             </div>
@@ -414,7 +422,7 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
               </div>
 
               {/* Exact HP Numbers */}
-              <span className="absolute right-2 text-[11px] combat-hp-num text-white drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10">
+              <span className="absolute right-2 text-[12px] sm:text-[13px] combat-hp-num text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)] tabular-nums select-none pointer-events-none z-10 antialiased font-black tracking-wider">
                 {playerBar.hp} / {playerBar.maxHp}
               </span>
             </div>
