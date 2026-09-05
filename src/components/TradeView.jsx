@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeftRight, ArrowRight, Cat, Check, ChevronDown, Gem, LockKeyhole, Plus, Swords, UserRound, Waves, X } from 'lucide-react';
+import { ArrowLeftRight, Cat, Check, ChevronDown, Gem, Plus, Send, UserRound, Waves, X } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import BrandLockup from './BrandLockup.jsx';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
@@ -28,20 +29,35 @@ function TombstoneIcon({ size = 20, className = '' }) {
 export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessage }) {
   const [tab, setTab] = useState('market'); // 'market' | 'lost'
   const [showCreate, setShowCreate] = useState(false);
+  const transferableUnits = (data.pets || []).filter((pet) => !pet.protected);
+  const equippedItemIds = new Set((data.pets || []).map((pet) => pet.equipped).filter(Boolean));
+  const transferableTreasures = (data.items || []).filter((item) => !equippedItemIds.has(item.id));
   const [form, setForm] = useState({
-    playerId: 'PIXEL_GHOST',
-    offeredPetId: data.pets[1]?.id || data.pets[0]?.id,
-    requestedItemId: data.items[2]?.id || data.items[0]?.id,
+    toPlayerId: '',
+    assetType: 'unit',
+    assetId: transferableUnits[0]?.id || '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const transferableAssets = form.assetType === 'unit' ? transferableUnits : transferableTreasures;
+  const canSubmit = Boolean(form.toPlayerId.trim() && form.assetId && !submitting);
+
+  const selectAssetType = (assetType) => {
+    const assets = assetType === 'unit' ? transferableUnits : transferableTreasures;
+    setForm((current) => ({ ...current, assetType, assetId: assets[0]?.id || '' }));
+  };
 
   const submitTrade = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     try {
-      await onCreateTrade(form);
+      await onCreateTrade({
+        to_player_id: form.toPlayerId.trim(),
+        ...(form.assetType === 'unit'
+          ? { unit_id: form.assetId }
+          : { treasure_id: form.assetId }),
+      });
       setShowCreate(false);
-      onMessage('測試交易請求已建立');
+      onMessage('交易已送出');
     } finally {
       setSubmitting(false);
     }
@@ -51,9 +67,7 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
     <main className="screen-scroll feature-screen sketch-trade">
       {/* 1. Header: Clean centered Title matching sketch "標題" */}
       <header className="sketch-screen-topbar">
-        <h1 className="sketch-screen-title">
-          {tab === 'market' ? '資產交易所' : '悼念與走失池'}
-        </h1>
+        <BrandLockup compact />
       </header>
 
       {/* 2. Angled Tabs matching sketch: Active has angled border /  \, Inactive has NO border */}
@@ -93,6 +107,7 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
         <section className="sketch-trade-list-container" aria-label="交易請求列表">
           <div className="sketch-trade-rows">
             {data.trades.map((trade) => {
+              const isDirectTransfer = Boolean(trade.to);
               const petObj = {
                 code: trade.offerPetCode || '01',
                 name: trade.offer,
@@ -143,13 +158,13 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
                   <div className="sketch-trade-req-group">
                     <div className="sketch-trade-req-visuals">
                       <div className="sketch-trade-gem-disc">
-                        <Gem size={20} />
+                        {isDirectTransfer ? <UserRound size={20} /> : <Gem size={20} />}
                       </div>
-                      <span className="sketch-trade-qty-pill">×{trade.requestQty || 2}</span>
+                      {!isDirectTransfer && <span className="sketch-trade-qty-pill">×{trade.requestQty || 2}</span>}
                     </div>
                     <div className="sketch-trade-label-group">
-                      <span className="sketch-trade-asset-txt">{trade.request}</span>
-                      <small className="sketch-trade-sub-txt">需求 x{trade.requestQty || 2}</small>
+                      <span className="sketch-trade-asset-txt">{isDirectTransfer ? `#${trade.to}` : trade.request}</span>
+                      <small className="sketch-trade-sub-txt">{isDirectTransfer ? '收件玩家' : `需求 x${trade.requestQty || 2}`}</small>
                     </div>
                   </div>
 
@@ -177,17 +192,13 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
             })}
           </div>
 
-          {/* 3D Raised FAB (+) matching trade_example.jpg bottom right */}
           <button
-            className="sketch-3d-fab-btn"
+            className="sketch-trade-create-btn"
             onClick={() => setShowCreate(true)}
             aria-label="發起交易"
-            title="發起交易 (+)"
           >
-            <span className="sketch-3d-fab-surface">
-              <Plus size={30} strokeWidth={3} />
-            </span>
-            <span className="sketch-3d-fab-shadow" />
+            <Plus size={20} strokeWidth={2.4} />
+            <span>發起交易</span>
           </button>
         </section>
       ) : (
@@ -257,64 +268,70 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
         <div className="sheet-backdrop" onClick={() => setShowCreate(false)}>
           <form
             className="detail-sheet create-trade-sheet sketch-create-trade"
+            aria-label="發起交易"
             onClick={(event) => event.stopPropagation()}
             onSubmit={submitTrade}
           >
-            <button
-              type="button"
-              className="sheet-close"
-              onClick={() => setShowCreate(false)}
-              aria-label="關閉"
-            >
-              <X size={18} />
-            </button>
-            <small>TEST REQUEST</small>
-            <h2>發起測試交易</h2>
-            <p>送出後只會加入本機測試列表，資產不會真的轉移。</p>
+            <header className="trade-form-header">
+              <h2>發起交易</h2>
+              <button
+                type="button"
+                className="sheet-close"
+                onClick={() => setShowCreate(false)}
+                aria-label="關閉"
+              >
+                <X size={18} />
+              </button>
+            </header>
 
             <label>
-              <span>對方玩家 ID</span>
+              <span>收件玩家 ID</span>
               <div className="callsign-input">
-                <span>#</span>
+                <UserRound size={17} />
                 <input
-                  value={form.playerId}
+                  value={form.toPlayerId}
                   onChange={(event) =>
-                    setForm({ ...form, playerId: event.target.value.toUpperCase() })
+                    setForm({ ...form, toPlayerId: event.target.value.trimStart() })
                   }
+                  autoComplete="off"
+                  placeholder="輸入玩家 ID"
                   required
                 />
               </div>
             </label>
 
-            <label>
-              <span>我方提供 (寵物)</span>
-              <div className="select-wrap">
-                <select
-                  value={form.offeredPetId}
-                  onChange={(event) => setForm({ ...form, offeredPetId: event.target.value })}
-                >
-                  {data.pets
-                    .filter((pet) => !pet.protected)
-                    .map((pet) => (
-                      <option key={pet.id} value={pet.id}>
-                        {pet.name} (出戰中)
-                      </option>
-                    ))}
-                </select>
-                <ChevronDown size={16} />
-              </div>
-            </label>
+            <fieldset className="trade-asset-type">
+              <legend>資產類型</legend>
+              <button
+                type="button"
+                className={form.assetType === 'unit' ? 'is-active' : ''}
+                onClick={() => selectAssetType('unit')}
+                aria-pressed={form.assetType === 'unit'}
+              >
+                <Cat size={17} /> NOXCAT
+              </button>
+              <button
+                type="button"
+                className={form.assetType === 'treasure' ? 'is-active' : ''}
+                onClick={() => selectAssetType('treasure')}
+                aria-pressed={form.assetType === 'treasure'}
+              >
+                <Gem size={17} /> 道具
+              </button>
+            </fieldset>
 
             <label>
-              <span>希望取得 (道具)</span>
+              <span>提供資產</span>
               <div className="select-wrap">
                 <select
-                  value={form.requestedItemId}
-                  onChange={(event) => setForm({ ...form, requestedItemId: event.target.value })}
+                  value={form.assetId}
+                  onChange={(event) => setForm({ ...form, assetId: event.target.value })}
+                  disabled={transferableAssets.length === 0}
                 >
-                  {data.items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} · {item.bonus}
+                  {transferableAssets.length === 0 && <option value="">沒有可交易資產</option>}
+                  {transferableAssets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      {asset.name}{form.assetType === 'unit' ? ` · LV.${asset.level}` : ` · ${asset.bonus}`}
                     </option>
                   ))}
                 </select>
@@ -322,14 +339,9 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
               </div>
             </label>
 
-            <div className="inline-note inline-note--danger">
-              <LockKeyhole size={15} />
-              <span>正式版本會由後端鎖定資產；目前僅為測試。</span>
-            </div>
-
-            <button className="primary-action" disabled={submitting}>
-              <span>{submitting ? '建立中…' : '確認送出'}</span>
-              <ArrowRight size={18} />
+            <button className="primary-action" disabled={!canSubmit}>
+              <Send size={18} />
+              <span>{submitting ? '送出中…' : '送出交易'}</span>
             </button>
           </form>
         </div>

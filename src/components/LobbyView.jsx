@@ -1,12 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { BatteryCharging, ChevronLeft, ChevronRight, Coins, LogOut, RotateCcw, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, BatteryCharging, ChevronLeft, ChevronRight, Coins, LockKeyhole, LogOut } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import { ItemIllustration } from './CollectionView.jsx';
+import BrandLockup from './BrandLockup.jsx';
+import levelCityImg from '../assets/level_city.png';
 import { getActiveTeam, getActiveLoadoutIndex } from '../utils/teamStorage.js';
 
-export default function LobbyView({ user, data, onStartGame, onSignOut, onReset }) {
+export default function LobbyView({ user, data, onStartGame, onSignOut }) {
   const [dungeonIndex, setDungeonIndex] = useState(0);
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const dungeon = data.dungeons[dungeonIndex];
+  const solvedDungeonIds = data.solvedDungeonIds || [];
+  const highestSolvedIndex = data.dungeons.reduce((highest, entry, index) => (
+    solvedDungeonIds.includes(entry.id) ? Math.max(highest, index) : highest
+  ), -1);
+  const unlockedThroughIndex = Math.min(highestSolvedIndex + 1, data.dungeons.length - 1);
+  const isDungeonLocked = dungeonIndex > unlockedThroughIndex;
   
   // Retrieve the actual last selected team setup from the setup menu (CollectionView)
   const activeLoadoutIdx = getActiveLoadoutIndex();
@@ -17,7 +26,7 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
   ) % data.dungeons.length);
 
   const handleStartClick = () => {
-    if (team.length === 0) return;
+    if (team.length === 0 || isDungeonLocked) return;
     if (team.length < 3) {
       setShowIncompleteWarning(true);
       return;
@@ -33,9 +42,8 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
   return (
     <main className="screen-scroll sketch-home">
       <header className="sketch-brandbar">
-        <h1 className="sketch-main-title">戰役部署</h1>
+        <BrandLockup compact />
         <div className="sketch-brandbar__actions">
-          <button className="sketch-icon-button" onClick={onReset} aria-label="重置測試資料"><RotateCcw size={18} /></button>
           <button className="sketch-icon-button" onClick={onSignOut} aria-label="登出"><LogOut size={18} /></button>
         </div>
       </header>
@@ -45,37 +53,32 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
         <strong><Coins size={15} /> {user.nox.toLocaleString()}</strong>
       </section>
 
-      <section className="sketch-mission" style={{ '--dungeon-tone': dungeon.tone }}>
+      <section className={`sketch-mission ${isDungeonLocked ? 'is-locked' : ''}`} style={{ '--dungeon-tone': dungeon.tone }}>
         <div className="sketch-mission__heading">
           <span>關卡 {dungeon.chapter}</span>
           <h1>{dungeon.name}</h1>
-          <small>{dungeon.difficulty} · 掉落 {dungeon.loot}</small>
         </div>
         <div className="sketch-mission__field">
-          {/* Hand-drawn terrain aesthetic matching sketch ("一個地形") */}
-          <svg className="sketch-terrain-svg" viewBox="0 0 400 200" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="terrainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="var(--dungeon-tone)" stopOpacity="0.12" />
-                <stop offset="100%" stopColor="var(--dungeon-tone)" stopOpacity="0.01" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M 0 180 Q 80 120, 140 100 T 260 50 T 360 110 L 400 180 Z"
-              fill="url(#terrainGrad)"
-            />
-            <path
-              d="M 0 180 Q 80 120, 140 100 T 260 50 T 360 110 L 400 180"
-              fill="none"
-              stroke="var(--dungeon-tone)"
-              strokeWidth="2"
-              strokeDasharray="6 8"
-              opacity="0.38"
-            />
-          </svg>
-          <div className="sketch-mission__node" aria-label="關卡圖像">
-            <BatteryCharging size={46} />
-            <span>STAGE</span>
+          <div className="sketch-stage-platform" aria-hidden="true" />
+          <div className={`sketch-mission__node ${isDungeonLocked ? 'is-locked' : ''}`} aria-label={isDungeonLocked ? `${dungeon.name}，尚未解鎖` : `${dungeon.name}關卡圖像`} key={dungeon.id}>
+            {dungeon?.image || dungeon?.chapter === '01' ? (
+              <img
+                src={dungeon?.image || levelCityImg}
+                alt={dungeon?.name || '關卡'}
+                className="sketch-mission__node-img pixelated"
+              />
+            ) : (
+              <>
+                <BatteryCharging size={46} />
+                <span>STAGE</span>
+              </>
+            )}
+            {isDungeonLocked && (
+              <div className="sketch-stage-lock" aria-hidden="true">
+                <LockKeyhole size={38} strokeWidth={2.3} />
+                <strong>尚未解鎖</strong>
+              </div>
+            )}
           </div>
           <button className="sketch-stage-arrow sketch-stage-arrow--left" onClick={() => cycleDungeon(-1)} aria-label="上一個關卡"><ChevronLeft size={28} /></button>
           <button className="sketch-stage-arrow sketch-stage-arrow--right" onClick={() => cycleDungeon(1)} aria-label="下一個關卡"><ChevronRight size={28} /></button>
@@ -84,6 +87,16 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
               <div className="sketch-party__member" key={pet.id} style={{ '--pet-accent': pet.accent }}>
                 <NoxPlaceholder pet={pet} size="sm" />
                 <span>{index + 1}</span>
+                <div
+                  className={`sketch-party__weapon ${pet.equipped ? 'is-equipped' : 'is-empty'}`}
+                  aria-label={pet.equipped ? `已裝備 ${data.items.find((item) => item.id === pet.equipped)?.name || '武器'}` : '未裝備武器'}
+                >
+                  {pet.equipped ? (
+                    <ItemIllustration item={data.items.find((item) => item.id === pet.equipped)} size="sm" />
+                  ) : (
+                    <i aria-hidden="true">—</i>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -93,13 +106,10 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
       <button
         className="sketch-start"
         onClick={handleStartClick}
-        disabled={team.length === 0}
-        title={team.length === 0 ? '隊伍目前無出戰角色' : '出擊'}
+        disabled={team.length === 0 || isDungeonLocked}
+        title={isDungeonLocked ? '通關前一關後解鎖' : (team.length === 0 ? '隊伍目前無出戰角色' : '出擊')}
       >
-        <span className="sketch-start-chevron">《</span>
-        <span className="sketch-start-label">START</span>
-        <small className="sketch-start-cost">-{dungeon.cost}</small>
-        <span className="sketch-start-chevron">》</span>
+        <span className="sketch-start-label">{isDungeonLocked ? 'LOCKED' : 'START'}</span>
       </button>
 
       {/* Incomplete Team Warning Dialog */}

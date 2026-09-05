@@ -1,8 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   Cat,
-  ChevronDown,
-  ChevronUp,
   Gem,
   Plus,
   Shield,
@@ -12,6 +10,7 @@ import {
   Zap,
 } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import BrandLockup from './BrandLockup.jsx';
 import swordImg from '../assets/sword_128.png';
 import shieldImg from '../assets/shield_128.png';
 import gemImg from '../assets/noxgem_128.png';
@@ -131,23 +130,147 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     return currentSlots.map((id) => (id ? data.pets.find((p) => p.id === id) || null : null));
   }, [currentSlots, data.pets]);
 
-  // Custom scrollbar state
-  const scrollRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  // Precompute equipped item IDs for O(1) checks (prevents lag/crashing with hundreds of items)
+  const equippedItemIds = useMemo(() => {
+    const set = new Set();
+    (data.pets || []).forEach((p) => {
+      if (p && p.equipped) set.add(p.equipped);
+    });
+    return set;
+  }, [data.pets]);
 
-  const handleScroll = (e) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+  // Custom scrollbar & wheel isolation state
+  const scrollRef = useRef(null);
+  const vaultWrapperRef = useRef(null);
+  const trackRef = useRef(null);
+  const [thumbMetrics, setThumbMetrics] = useState({ heightPercent: 25, topPercent: 0 });
+  const [isDraggingThumb, setIsDraggingThumb] = useState(false);
+  const dragStartYRef = useRef(0);
+  const dragStartScrollTopRef = useRef(0);
+
+  const updateScrollMetrics = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const maxScroll = scrollHeight - clientHeight;
-    if (maxScroll > 0) {
-      setScrollProgress(scrollTop / maxScroll);
-    } else {
-      setScrollProgress(0);
-    }
+    const progress = maxScroll > 0 ? scrollTop / maxScroll : 0;
+    const heightPercent = scrollHeight > clientHeight
+      ? Math.max(14, Math.min(75, (clientHeight / scrollHeight) * 100))
+      : 100;
+    const topPercent = progress * (100 - heightPercent);
+    setThumbMetrics({ heightPercent, topPercent });
+  }, []);
+
+  const handleScroll = () => {
+    updateScrollMetrics();
   };
 
-  const handleScrollStep = (direction) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ top: direction * 120, behavior: 'smooth' });
+  // Recalculate metrics when tab, items change, or viewport resizes
+  useEffect(() => {
+    updateScrollMetrics();
+    const id = setTimeout(updateScrollMetrics, 50);
+    window.addEventListener('resize', updateScrollMetrics);
+
+    let ro;
+    if (scrollRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(updateScrollMetrics);
+      ro.observe(scrollRef.current);
+    }
+
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('resize', updateScrollMetrics);
+      if (ro) ro.disconnect();
+    };
+  }, [tab, data.pets?.length, data.items?.length, updateScrollMetrics]);
+
+  // Isolate wheel scrolling to vault container: prevent outer webpage from scrolling up and down
+  useEffect(() => {
+    const wrapper = vaultWrapperRef.current;
+    if (!wrapper) return;
+
+    const onWheel = (e) => {
+      const scrollEl = scrollRef.current;
+      if (!scrollEl) return;
+      // Stop the webpage from scrolling up and down when mouse wheel is on vault or sidebar
+      e.preventDefault();
+      e.stopPropagation();
+      scrollEl.scrollTop += e.deltaY;
+    };
+
+    wrapper.addEventListener('wheel', onWheel, { passive: false });
+    return () => wrapper.removeEventListener('wheel', onWheel);
+  }, []);
+
+  // Thumb dragging with mouse and touch
+  const handleThumbMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingThumb(true);
+    dragStartYRef.current = e.clientY;
+    dragStartScrollTopRef.current = scrollRef.current ? scrollRef.current.scrollTop : 0;
+  };
+
+  const handleThumbTouchStart = (e) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    dragStartYRef.current = touch.clientY;
+    dragStartScrollTopRef.current = scrollRef.current ? scrollRef.current.scrollTop : 0;
+    setIsDraggingThumb(true);
+  };
+
+  useEffect(() => {
+    if (!isDraggingThumb) return;
+
+    const handleMove = (clientY) => {
+      if (!scrollRef.current || !trackRef.current) return;
+      const deltaY = clientY - dragStartYRef.current;
+      const trackHeight = trackRef.current.clientHeight;
+      const { scrollHeight, clientHeight } = scrollRef.current;
+      const maxScroll = scrollHeight - clientHeight;
+      if (maxScroll <= 0 || trackHeight <= 0) return;
+
+      const thumbHeight = (thumbMetrics.heightPercent / 100) * trackHeight;
+      const maxTravel = trackHeight - thumbHeight;
+      if (maxTravel <= 0) return;
+
+      const scrollRatio = deltaY / maxTravel;
+      scrollRef.current.scrollTop = dragStartScrollTopRef.current + scrollRatio * maxScroll;
+    };
+
+    const onMouseMove = (e) => handleMove(e.clientY);
+    const onMouseUp = () => setIsDraggingThumb(false);
+    const onTouchMove = (e) => {
+      if (e.touches && e.touches[0]) {
+        e.preventDefault();
+        handleMove(e.touches[0].clientY);
+      }
+    };
+    const onTouchEnd = () => setIsDraggingThumb(false);
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDraggingThumb, thumbMetrics.heightPercent]);
+
+  // Clicking on track jumps to position
+  const handleTrackClick = (e) => {
+    if (e.target.closest('.sketch-scroll-thumb')) return;
+    if (!scrollRef.current || !trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
+    const { scrollHeight, clientHeight } = scrollRef.current;
+    const maxScroll = scrollHeight - clientHeight;
+    if (maxScroll > 0) {
+      scrollRef.current.scrollTo({ top: ratio * maxScroll, behavior: 'smooth' });
     }
   };
 
@@ -179,12 +302,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       const prevTarget = nextSlots[targetIndex];
       nextSlots[existingIndex] = prevTarget;
       nextSlots[targetIndex] = petId;
-      onMessage(`已將 ${pet.name} 與第 ${existingIndex + 1} 位對調至第 ${targetIndex + 1} 位！`);
     } else if (existingIndex === targetIndex) {
       return;
     } else {
       nextSlots[targetIndex] = petId;
-      onMessage(`${pet.name} 已指派至出戰位置 ${targetIndex + 1}！`);
     }
 
     const nextLoadouts = { ...loadouts, [loadout]: nextSlots };
@@ -199,14 +320,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   const handleRemovePetFromSlot = async (slotIndex) => {
     const petId = currentSlots[slotIndex];
     if (!petId) return;
-    const pet = data.pets.find((p) => p.id === petId);
     const nextSlots = [...currentSlots];
     nextSlots[slotIndex] = null;
     const nextLoadouts = { ...loadouts, [loadout]: nextSlots };
     saveLoadouts(nextLoadouts);
-    if (pet) {
-      onMessage(`${pet.name} 已從出戰編組 ${loadout} 移出`);
-    }
     if (loadout === 1) {
       syncBackendParty(nextSlots);
     }
@@ -229,9 +346,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     if (!onEquipItem) return;
     try {
       await onEquipItem(petId, itemId);
-      const pet = data.pets.find((p) => p.id === petId);
-      const item = data.items.find((i) => i.id === itemId);
-      onMessage(pet?.equipped === itemId ? `已卸下 ${item?.name}` : `已將 ${item?.name} 裝備給 ${pet?.name}`);
       setSelectedItem(null);
     } catch (error) {
       onMessage(error.message, 'error');
@@ -397,7 +511,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   const isPetMode = tab === 'pets';
 
   return (
-    <main className="screen-scroll feature-screen sketch-collection">
+    <main className="feature-screen sketch-collection">
+      <header className="sketch-collection-brandbar">
+        <BrandLockup compact />
+      </header>
       {/* Loadout Bar: Big/Small Overlapping Circle Switcher + Angled Tabs (No border on inactive tabs!) */}
       <nav className="sketch-loadout-tabs" aria-label="編隊組合與介面切換">
         <button
@@ -437,16 +554,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       <section className={`sketch-loadout ${!isPetMode ? 'sketch-loadout--weapon-mode' : 'sketch-loadout--pet-mode'}`} aria-label={`出戰隊伍 編組 ${loadout}`}>
         <div className="sketch-loadout__indicator">
           <span>{isPetMode ? `編組 ${loadout} · 出戰寵物` : `編組 ${loadout} · 攜帶裝備`}</span>
-          <button
-            className="sketch-anim-swap-btn"
-            onClick={() => setTab((prev) => (prev === 'pets' ? 'items' : 'pets'))}
-            title="動化切換視角"
-          >
-            動化切換 ⇄
-          </button>
-        </div>
-        <div className="sketch-drag-hint">
-          {isPetMode ? '💡 拖曳下方寵物至上方位置出戰（拖回下方即可移出）' : '💡 拖曳下方武器至出戰隊員進行裝備'}
         </div>
 
         <div className="sketch-loadout__slots-grid">
@@ -529,7 +636,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       )}
                     </>
                   ) : (
-                    <Cat size={18} strokeWidth={2.4} />
+                    pet ? (
+                      <NoxPlaceholder pet={pet} size="sm" />
+                    ) : (
+                      <Cat size={18} strokeWidth={2.4} />
+                    )
                   )}
                 </button>
 
@@ -557,7 +668,6 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       ) : (
                         <div className="sketch-slot-empty-weapon">
                           <Plus size={22} />
-                          <small>{pet ? '拖曳裝備' : '未裝備'}</small>
                         </div>
                       )}
                     </>
@@ -589,17 +699,8 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         }}
         onDrop={handleVaultDrop}
       >
-        <div className="sketch-vault-header">
-          <span className="sketch-vault-title">
-            {isPetMode ? 'NOXCAT 收藏庫' : '裝備與道具庫'}
-          </span>
-          <span className="sketch-vault-count">
-            {isPetMode ? `${data.pets.length} 隻持有中` : `${data.items.length} 件持有中`}
-          </span>
-        </div>
-
-        <div className="sketch-vault-wrapper">
-          {/* Scrollable Container (Default scrollbar hidden via CSS) */}
+        <div className="sketch-vault-wrapper" ref={vaultWrapperRef}>
+          {/* Scrollable Container (Default scrollbar hidden via CSS, wheel isolated) */}
           <div
             className="sketch-vault-scroll"
             ref={scrollRef}
@@ -607,14 +708,14 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           >
             {isPetMode ? (
               <div className="sketch-vault-grid" aria-label="寵物收藏列表">
-                {data.pets.map((pet) => {
+                {(data.pets || []).map((pet, index) => {
                   const isInCurrentTeam = activePartyIds.includes(pet.id);
                   const isDragging = draggingItem?.id === pet.id;
                   return (
                     <button
                       type="button"
                       className={`sketch-vault-token ${isInCurrentTeam ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
-                      key={pet.id}
+                      key={pet.id || `pet-${index}`}
                       style={{ '--pet-accent': pet.accent }}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, { type: 'pet', id: pet.id, name: pet.name })}
@@ -623,7 +724,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       onClick={() => setSelectedPet(pet)}
-                      title="點擊查看檔案，或直接拖曳至上方配置出戰"
+                      title="查看詳情"
                     >
                       <NoxPlaceholder pet={pet} size="md" />
                       <strong>{pet.name}</strong>
@@ -631,25 +732,32 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                     </button>
                   );
                 })}
-                {Array.from({ length: Math.max(4, 12 - data.pets.length) }, (_, index) => (
-                  <div className="sketch-vault-token is-empty" key={`empty-${index}`}>
-                    <div className="sketch-vault-empty-circle">
-                      <i>+</i>
-                      <small>EMPTY</small>
+                {Array.from(
+                  { length: (4 - ((data.pets || []).length % 4)) % 4 + 4 },
+                  (_, index) => (
+                    <div
+                      className="sketch-vault-token is-empty"
+                      key={`empty-${index}`}
+                      aria-hidden="true"
+                    >
+                      <div className="sketch-vault-empty-circle">
+                        <i>+</i>
+                        <small>EMPTY</small>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             ) : (
               <div className="sketch-vault-grid" aria-label="裝備收藏列表">
-                {data.items.map((item) => {
-                  const isEquippedAnywhere = data.pets.some((p) => p.equipped === item.id);
+                {(data.items || []).map((item, index) => {
+                  const isEquippedAnywhere = equippedItemIds.has(item.id);
                   const isDragging = draggingItem?.id === item.id;
                   return (
                     <button
                       type="button"
                       className={`sketch-vault-token sketch-vault-token--item ${isEquippedAnywhere ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
-                      key={item.id}
+                      key={item.id || `item-${index}`}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, { type: 'item', id: item.id, name: item.name })}
                       onDragEnd={handleDragEnd}
@@ -657,7 +765,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       onClick={() => setSelectedItem(item)}
-                      title="點擊查看檔案，或直接拖曳至上方隊員進行裝備"
+                      title="查看詳情"
                     >
                       <ItemIllustration item={item} size="md" />
                       <strong>{item.name}</strong>
@@ -665,36 +773,40 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                     </button>
                   );
                 })}
-                {Array.from({ length: Math.max(4, 8 - data.items.length) }, (_, index) => (
-                  <div className="sketch-vault-token is-empty" key={`item-empty-${index}`}>
-                    <div className="sketch-vault-empty-circle">
-                      <i>+</i>
-                      <small>EMPTY</small>
+                {Array.from(
+                  { length: (4 - ((data.items || []).length % 4)) % 4 + 4 },
+                  (_, index) => (
+                    <div
+                      className="sketch-vault-token is-empty"
+                      key={`item-empty-${index}`}
+                      aria-hidden="true"
+                    >
+                      <div className="sketch-vault-empty-circle">
+                        <i>+</i>
+                        <small>EMPTY</small>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             )}
           </div>
 
-          {/* Custom Stylized Cyberpunk Scrollbar Rail (matching the hand-drawn sketch) */}
+          {/* Hand-drawn rail: draggable thumb and tap-to-jump track. */}
           <div className="sketch-custom-scrollbar" aria-hidden="true">
-            <button className="sketch-scroll-arrow" onClick={() => handleScrollStep(-1)} tabIndex={-1}>
-              <ChevronUp size={12} />
-            </button>
-            <div className="sketch-scroll-track">
+            <div className="sketch-scroll-track" ref={trackRef} onClick={handleTrackClick}>
               <div
-                className="sketch-scroll-thumb"
+                className={`sketch-scroll-thumb ${isDraggingThumb ? 'is-dragging' : ''} ${thumbMetrics.heightPercent >= 99 ? 'is-static' : ''}`}
                 style={{
-                  top: `${Math.min(84, Math.max(0, scrollProgress * 84))}%`,
+                  height: `${thumbMetrics.heightPercent}%`,
+                  top: `${thumbMetrics.topPercent}%`,
                 }}
+                onMouseDown={handleThumbMouseDown}
+                onTouchStart={handleThumbTouchStart}
               >
                 <div className="sketch-thumb-grip" />
               </div>
             </div>
-            <button className="sketch-scroll-arrow" onClick={() => handleScrollStep(1)} tabIndex={-1}>
-              <ChevronDown size={12} />
-            </button>
           </div>
         </div>
       </section>
@@ -710,7 +822,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
-            <h1 className="sketch-fs-title">NOXCAT 檔案庫</h1>
+            <BrandLockup className="sketch-fs-brand" compact />
             <button
               className="sketch-fs-close-btn"
               onClick={() => setSelectedPet(null)}
@@ -792,7 +904,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
-            <h1 className="sketch-fs-title">裝備與道具檔案</h1>
+            <BrandLockup className="sketch-fs-brand" compact />
             <button
               className="sketch-fs-close-btn"
               onClick={() => setSelectedItem(null)}

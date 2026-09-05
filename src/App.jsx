@@ -7,6 +7,7 @@ import GameView from './components/GameView.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Toast from './components/Toast.jsx';
 import BattleTransitionOverlay from './components/BattleTransitionOverlay.jsx';
+import BrandLockup from './components/BrandLockup.jsx';
 import { demoApi } from './demo-backend/api.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
 import { getActiveTeam } from './utils/teamStorage.js';
@@ -29,7 +30,7 @@ export default function App() {
     const bootstrap = async () => {
       const session = getAuthCookie();
       if (!session?.id) { setView('auth'); return; }
-      const gameData = await demoApi.getGameData();
+      const gameData = await demoApi.getGameData(session.id);
       setCurrentUser(session); setData(gameData); setView('home');
     };
     bootstrap();
@@ -39,37 +40,43 @@ export default function App() {
     const user = mode === 'register'
       ? await demoApi.register(username, password, displayName)
       : await demoApi.login(username, password);
-    const gameData = await demoApi.getGameData();
+    const gameData = await demoApi.getGameData(user.id);
     setAuthCookie(user); setCurrentUser(user); setData(gameData); setView('home');
   };
   const handleSignOut = () => { clearAuthCookie(); setCurrentUser(null); setView('auth'); };
   const showMessage = (message, tone = 'success') => setToast({ message, tone, key: Date.now() });
 
   const handleToggleParty = async (petId) => {
-    const nextData = await demoApi.togglePartyMember(petId);
+    const nextData = await demoApi.togglePartyMember(petId, currentUser?.id);
     setData(nextData);
   };
 
   const handleEquipItem = async (petId, itemId) => {
-    const nextData = await demoApi.equipItem(petId, itemId);
+    const nextData = await demoApi.equipItem(petId, itemId, currentUser?.id);
     setData(nextData);
   };
 
+  const handleAddPet = async (petData) => {
+    const nextData = await demoApi.addPet(petData, currentUser?.id);
+    setData(nextData);
+    showMessage('成功召喚新 NOXCAT！');
+  };
+
+  const handleAddItem = async (itemData) => {
+    const nextData = await demoApi.addItem(itemData, currentUser?.id);
+    setData(nextData);
+    showMessage('成功鍛造新裝備！');
+  };
+
   const handleCreateTrade = async (trade) => {
-    const nextData = await demoApi.createTrade(trade);
+    const nextData = await demoApi.createTrade({ ...trade, playerId: currentUser?.id });
     setData(nextData);
   };
 
   const handleResolveTrade = async (tradeId, status) => {
-    const nextData = await demoApi.resolveTrade(tradeId, status);
+    const nextData = await demoApi.resolveTrade(tradeId, status, currentUser?.id);
     setData(nextData);
-    showMessage(status === 'accepted' ? '已接受測試交易' : '已拒絕測試交易');
-  };
-
-  const handleReset = async () => {
-    const nextData = await demoApi.reset();
-    setData(nextData);
-    showMessage('測試資料已重置');
+    showMessage(status === 'accepted' ? '已接受交易' : '已拒絕交易');
   };
 
   const handleStartGame = (dungeon) => {
@@ -96,7 +103,12 @@ export default function App() {
     transitionTimeoutsRef.current = [t];
   };
 
-  if (view === 'loading') return <div className="boot-screen"><span className="boot-logo">FM</span><span>LOADING LOCAL NODE</span><div className="boot-line"><i /></div></div>;
+  const handleBattleComplete = async (result) => {
+    const nextData = await demoApi.recordBattleResult(result, activeDungeon?.id, currentUser?.id);
+    setData(nextData);
+  };
+
+  if (view === 'loading') return <div className="boot-screen"><BrandLockup /><div className="boot-line"><i /></div></div>;
   if (!currentUser || view === 'auth') return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   if (!data) return null;
 
@@ -108,7 +120,7 @@ export default function App() {
           dungeon={activeDungeon}
           playerTeam={getActiveTeam(data)}
           onExitToLobby={() => setView('home')}
-          onBattleComplete={(result) => demoApi.recordBattleResult(result, activeDungeon?.id)}
+          onBattleComplete={handleBattleComplete}
         />
       ) : (
         <div className="app-viewport">
@@ -120,7 +132,6 @@ export default function App() {
                   data={data}
                   onStartGame={handleStartGame}
                   onSignOut={handleSignOut}
-                  onReset={handleReset}
                 />
               )}
               {view === 'collection' && (

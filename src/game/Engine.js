@@ -160,9 +160,12 @@ export class GameEngine {
         const spd = pet.spd ?? DEFAULT_SPD;
 
         const options = {
+          petId: pet.id,
           idString: pet.idString || `peg_${pet.id || 'player'}`,
           name: pet.name || pLabel,
           code: pet.code || '',
+          accent: pet.accent || null,
+          image: pet.image || pet.avatar || null,
           equipment: pet.equippedItem ? {
             id: pet.equippedItem.id,
             idString: pet.equippedItem.idString || pet.equippedItem.id,
@@ -195,6 +198,7 @@ export class GameEngine {
         idString: `enemy_drone_${char}`,
         name: `ENEMY ${char.toUpperCase()}`,
         code: char.toUpperCase(),
+        accent: '#ff2a55',
         equipment: null, // Enemies can wear equipment, default to null (no natural equipment spawn)
       };
 
@@ -316,6 +320,97 @@ export class GameEngine {
     this.startTurn();
   }
 
+  getSettlementResults(winner) {
+    const isVictory = winner === 'PLAYER';
+    const playerBalls = this.balls.filter(b => b.owner === 1);
+    
+    const gains = [];
+    const losses = [];
+
+    // 1. GAINS (獲得): order: pegs, equipments, gold
+    // Pegs gains: (none for now)
+    // Equipment gains: (none for now)
+    // Gold gains:
+    if (this.goldEarned > 0) {
+      gains.push({
+        id: 'gain-gold',
+        category: 'gain',
+        kind: 'gold',
+        type: 'gold',
+        variant: 'gain',
+        label: `+${this.goldEarned} G`,
+        amount: this.goldEarned,
+      });
+    }
+
+    // 2. LOSSES (失去): order: pegs, equipments, gold
+    const deadPlayerBalls = playerBalls.filter(b => !b.alive || b.hp <= 0);
+    const lostPegs = [];
+    const lostEquipments = [];
+
+    for (const b of deadPlayerBalls) {
+      const isNxc01 = b.code === '01' ||
+                      b.idString?.includes('core') ||
+                      b.idString?.includes('nxc_1') ||
+                      (b.name?.includes('NOXCAT') && !b.name?.includes('FUTURE') && !b.name?.includes('COOL') && !b.name?.includes('HARD'));
+
+      const hasHomeStone = Boolean(b.equipment && (
+        b.equipment.name?.includes('回家') ||
+        b.equipment.idString?.includes('return_stone') ||
+        b.equipment.idString?.includes('home') ||
+        b.equipment.type === 'TREASURE'
+      ));
+
+      const canReturnHome = isNxc01 || hasHomeStone;
+
+      if (!canReturnHome) {
+        // Peg gets lost (lose them even if we win the fight)
+        lostPegs.push({
+          id: `lost-peg-${b.petId || b.idString || b.label}`,
+          category: 'lost',
+          kind: 'peg',
+          type: 'lost-cat',
+          variant: 'lost',
+          label: b.name || 'NOXCAT',
+          petId: b.petId || b.idString,
+          code: b.code,
+          ball: b,
+        });
+      }
+
+      if (b.equipment) {
+        // Equipment is lost!
+        const eq = b.equipment;
+        const isBlade = eq.type === 'WEAPON' || eq.idString?.includes('blade') || eq.name?.includes('劍');
+        const isShield = eq.type === 'GEAR' || eq.idString?.includes('shield') || eq.name?.includes('盾');
+        const eqType = isBlade ? 'sword' : (isShield ? 'shield' : 'gem');
+
+        lostEquipments.push({
+          id: `lost-eq-${eq.id || eq.idString || b.label}`,
+          category: 'lost',
+          kind: 'equipment',
+          type: eqType,
+          variant: 'lost',
+          label: eq.name,
+          itemId: eq.id || eq.idString,
+          equipment: eq,
+        });
+      }
+    }
+
+    // Both categories strictly ordered: pegs, equipments, gold
+    losses.push(...lostPegs, ...lostEquipments);
+
+    return {
+      gains,
+      losses,
+      allResults: [...gains, ...losses],
+      lostPegIds: lostPegs.map(p => p.petId).filter(Boolean),
+      lostItemIds: lostEquipments.map(e => e.itemId).filter(Boolean),
+      goldEarned: this.goldEarned,
+    };
+  }
+
   checkWinCondition() {
     const playerAlive = this.balls.some(b => b.owner === 1 && b.alive);
     const aiAlive = this.balls.some(b => b.owner === 2 && b.alive);
@@ -329,8 +424,14 @@ export class GameEngine {
         sound.playDefeat();
       }
       this.emitLog(`🏆 GAME OVER! ${winner} WINS!`);
+      const settlement = this.getSettlementResults(winner);
       if (this.callbacks.onGameOver) {
-        this.callbacks.onGameOver({ winner, round: this.round });
+        this.callbacks.onGameOver({
+          winner,
+          round: this.round,
+          goldEarned: this.goldEarned,
+          ...settlement,
+        });
       }
       this.sendSnapshot();
     }
@@ -419,6 +520,7 @@ export class GameEngine {
         idString: b.idString,
         name: b.name,
         code: b.code,
+        accent: b.accent || (b.owner === 2 ? '#ff2a55' : '#00ff66'),
         equipment: b.equipment,
         hp: b.hp,
         maxHp: b.maxHp,
@@ -864,22 +966,22 @@ export class GameEngine {
       this.drawComboMeter(ctx, this.hitCount, this.comboTeamColor, this.hitAlpha, scale);
     }
 
-    // 3. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow)
-    if (this.state === 'PLAYER_AIM' && this.dragStart && this.aimPt && this.activeBall) {
-      this.drawSlingshot(ctx, this.dragStart, this.aimPt);
-    }
-
-    // 4. AI Aim Preview
-    if (this.aiAimPreview) {
-      this.drawAiAimPreview(ctx, this.aiAimPreview);
-    }
-
-    // 5. Draw Balls (Circular Glass Capsules with Sloshing Liquid)
+    // 3. Draw Balls (Circular Glass Capsules with Sloshing Liquid)
     const active = this.activeBall;
     for (const ball of this.balls) {
       if (ball.alive) {
         ball.draw(ctx, ball === active);
       }
+    }
+
+    // 4. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow) - Layered on top of balls
+    if (this.state === 'PLAYER_AIM' && this.dragStart && this.aimPt && this.activeBall) {
+      this.drawSlingshot(ctx, this.dragStart, this.aimPt);
+    }
+
+    // 5. AI Aim Preview - Layered on top of balls
+    if (this.aiAimPreview) {
+      this.drawAiAimPreview(ctx, this.aiAimPreview);
     }
 
     // 6. Impact Rings (Shockwaves)
