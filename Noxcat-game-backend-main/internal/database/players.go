@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-const playerColumns = `id, username, password_hash, role, money, status, is_banned, created_at`
+const playerColumns = `id, username, password_hash, role, money, status, is_banned, active_loadout_slot, created_at`
 
 // CreatePlayer creates the player and all starting units atomically.
 func (s *Store) CreatePlayer(ctx context.Context, input domain.NewPlayer) (domain.Player, error) {
@@ -42,18 +42,43 @@ func (s *Store) CreatePlayer(ctx context.Context, input domain.NewPlayer) (domai
 		return domain.Player{}, fmt.Errorf("insert player: %w", usernameError(err))
 	}
 
+	equippedUnitIDs := make([]string, 0, maxBattleLoadout)
 	for _, unit := range input.StartingUnits {
 		baseStats, err := marshalStats(unit.BaseStats)
 		if err != nil {
 			return domain.Player{}, err
 		}
-		if _, err := tx.Exec(ctx, `
+		var unitID string
+		if err := tx.QueryRow(ctx, `
 			INSERT INTO units (
 				owner_id, species, base_stats, current_stats, is_permanent, is_equipped
-			) VALUES ($1, $2, $3, $3, $4, $5)`,
+			) VALUES ($1, $2, $3, $3, $4, $5)
+			RETURNING id`,
 			player.ID, unit.Species, baseStats, unit.IsPermanent, unit.IsEquipped,
-		); err != nil {
+		).Scan(&unitID); err != nil {
 			return domain.Player{}, fmt.Errorf("insert starting unit: %w", err)
+		}
+		if unit.IsEquipped {
+			equippedUnitIDs = append(equippedUnitIDs, unitID)
+		}
+	}
+
+	loadoutIDs := make([]string, maxLoadoutSlots)
+	for slot := 1; slot <= maxLoadoutSlots; slot++ {
+		if err := tx.QueryRow(ctx, `
+			INSERT INTO player_loadouts (player_id, slot, name)
+			VALUES ($1, $2, $3)
+			RETURNING id`, player.ID, slot, fmt.Sprintf("Loadout %d", slot),
+		).Scan(&loadoutIDs[slot-1]); err != nil {
+			return domain.Player{}, fmt.Errorf("insert player loadout: %w", err)
+		}
+	}
+	for position, unitID := range equippedUnitIDs {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO player_loadout_units (loadout_id, position, unit_id)
+			VALUES ($1, $2, $3)`, loadoutIDs[0], position+1, unitID,
+		); err != nil {
+			return domain.Player{}, fmt.Errorf("insert starting loadout unit: %w", err)
 		}
 	}
 
@@ -166,7 +191,7 @@ func (s *Store) ListPlayerDungeonProgress(ctx context.Context, playerID string) 
 // GET /players/:id/dungeons rather than exposing join-table details.
 func (s *Store) ListSolvedDungeons(ctx context.Context, playerID string) ([]domain.Dungeon, error) {
 	rows, err := s.db.Query(ctx, `
-		SELECT d.id, d.name, d.enemy_config, d.reward_money, d.reward_drops
+		SELECT d.id, d.name, d.sort_order, d.enemy_config, d.reward_money, d.reward_drops
 		FROM dungeons d
 		JOIN player_dungeon_progress p ON p.dungeon_id = d.id
 		WHERE p.player_id = $1 AND p.solved = true

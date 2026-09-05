@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/Ian747-tw/noxcat_game_backend/internal/domain"
 )
@@ -42,6 +43,27 @@ func (s *Server) equipTreasure(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) unequipTreasure(w http.ResponseWriter, r *http.Request) {
+	treasureID := r.PathValue("treasure_id")
+	if !isUUID(treasureID) {
+		s.writeValidationError(w, r, map[string]string{"treasure_id": "must be a canonical UUID"})
+		return
+	}
+	principal, ok := s.requirePrincipal(w, r)
+	if !ok {
+		return
+	}
+	if s.store == nil {
+		s.writeInternalError(w, r, "unequip_treasure", unexpectedNil("store"))
+		return
+	}
+	if err := s.store.UnequipTreasure(r.Context(), principal.PlayerID, treasureID); err != nil {
+		s.writeStoreError(w, r, opEquip, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) listTrades(w http.ResponseWriter, r *http.Request) {
 	principal, ok := s.requirePrincipal(w, r)
 	if !ok {
@@ -50,8 +72,8 @@ func (s *Server) listTrades(w http.ResponseWriter, r *http.Request) {
 	var status *domain.TradeStatus
 	if rawStatus := r.URL.Query().Get("status"); rawStatus != "" {
 		parsed := domain.TradeStatus(rawStatus)
-		if parsed != domain.TradeStatusPending && parsed != domain.TradeStatusAccepted && parsed != domain.TradeStatusRejected {
-			s.writeValidationError(w, r, map[string]string{"status": "must be pending, accepted, or rejected"})
+		if parsed != domain.TradeStatusPending && parsed != domain.TradeStatusAccepted && parsed != domain.TradeStatusRejected && parsed != domain.TradeStatusCancelled {
+			s.writeValidationError(w, r, map[string]string{"status": "must be pending, accepted, rejected, or cancelled"})
 			return
 		}
 		status = &parsed
@@ -73,7 +95,13 @@ func (s *Server) listTrades(w http.ResponseWriter, r *http.Request) {
 }
 
 type createTradeRequest struct {
-	ToPlayerID string  `json:"to_player_id"`
+	ToPlayerID      string                    `json:"to_player_id"`
+	UnitID          *string                   `json:"unit_id"`
+	TreasureID      *string                   `json:"treasure_id"`
+	RequestedAssets []createTradeAssetRequest `json:"requested_assets"`
+}
+
+type createTradeAssetRequest struct {
 	UnitID     *string `json:"unit_id"`
 	TreasureID *string `json:"treasure_id"`
 }
@@ -94,6 +122,40 @@ func (s *Server) createTrade(w http.ResponseWriter, r *http.Request) {
 	} else if request.TreasureID != nil && !isUUID(*request.TreasureID) {
 		fields["treasure_id"] = "must be a canonical UUID"
 	}
+	requestedAssets := make([]domain.TradeAsset, len(request.RequestedAssets))
+	requestedUnitCount := 0
+	requestedTreasureCount := 0
+	requestedIDs := make(map[string]struct{}, len(request.RequestedAssets))
+	if len(request.RequestedAssets) > 10 {
+		fields["requested_assets"] = "must contain at most 10 assets"
+	}
+	for index, asset := range request.RequestedAssets {
+		key := "requested_assets[" + strconv.Itoa(index) + "]"
+		if (asset.UnitID == nil) == (asset.TreasureID == nil) {
+			fields[key] = "exactly one of unit_id and treasure_id is required"
+			continue
+		}
+		var id string
+		if asset.UnitID != nil {
+			requestedUnitCount++
+			id = *asset.UnitID
+		} else {
+			requestedTreasureCount++
+			id = *asset.TreasureID
+		}
+		if !isUUID(id) {
+			fields[key] = "asset id must be a canonical UUID"
+			continue
+		}
+		if _, duplicate := requestedIDs[id]; duplicate {
+			fields[key] = "asset id must be unique"
+		}
+		requestedIDs[id] = struct{}{}
+		requestedAssets[index] = domain.TradeAsset{UnitID: asset.UnitID, TreasureID: asset.TreasureID}
+	}
+	if requestedUnitCount > 1 || (requestedUnitCount > 0 && requestedTreasureCount > 0) {
+		fields["requested_assets"] = "must be one unit or up to 10 treasures"
+	}
 	if len(fields) > 0 {
 		s.writeValidationError(w, r, fields)
 		return
@@ -111,10 +173,11 @@ func (s *Server) createTrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	trade, err := s.store.CreateTrade(r.Context(), domain.NewTrade{
-		FromPlayerID: principal.PlayerID,
-		ToPlayerID:   request.ToPlayerID,
-		UnitID:       request.UnitID,
-		TreasureID:   request.TreasureID,
+		FromPlayerID:    principal.PlayerID,
+		ToPlayerID:      request.ToPlayerID,
+		UnitID:          request.UnitID,
+		TreasureID:      request.TreasureID,
+		RequestedAssets: requestedAssets,
 	})
 	if err != nil {
 		s.writeStoreError(w, r, opCreateTrade, err)
@@ -130,6 +193,58 @@ func (s *Server) acceptTrade(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) rejectTrade(w http.ResponseWriter, r *http.Request) {
 	s.changeTradeStatus(w, r, false)
+}
+
+func (s *Server) cancelTrade(w http.ResponseWriter, r *http.Request) {
+	principal, ok := s.requirePrincipal(w, r)
+	if !ok {
+		return
+	}
+	tradeID := r.PathValue("trade_id")
+	if !isUUID(tradeID) {
+		s.writeValidationError(w, r, map[string]string{"trade_id": "must be a canonical UUID"})
+		return
+	}
+	if s.store == nil {
+		s.writeInternalError(w, r, "cancel_trade", unexpectedNil("store"))
+		return
+	}
+	trade, err := s.store.CancelTrade(r.Context(), tradeID, principal.PlayerID)
+	if err != nil {
+		s.writeStoreError(w, r, opDefault, err)
+		return
+	}
+	s.notifyTrade(trade.ToPlayerID, TradeCancelled, trade)
+	s.writeJSON(w, http.StatusOK, map[string]any{"trade": toTradeResponse(trade)})
+}
+
+func (s *Server) listTradeAssets(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requirePrincipal(w, r); !ok {
+		return
+	}
+	playerID := r.PathValue("player_id")
+	if !isUUID(playerID) {
+		s.writeValidationError(w, r, map[string]string{"player_id": "must be a canonical UUID"})
+		return
+	}
+	if s.store == nil {
+		s.writeInternalError(w, r, "list_trade_assets", unexpectedNil("store"))
+		return
+	}
+	inventory, err := s.store.ListTradeAssets(r.Context(), playerID)
+	if err != nil {
+		s.writeStoreError(w, r, opDefault, err)
+		return
+	}
+	units := make([]unitResponse, len(inventory.Units))
+	for index, unit := range inventory.Units {
+		units[index] = toUnitResponse(unit)
+	}
+	treasures := make([]treasureResponse, len(inventory.Treasures))
+	for index, treasure := range inventory.Treasures {
+		treasures[index] = toTreasureResponse(treasure)
+	}
+	s.writeJSON(w, http.StatusOK, map[string]any{"units": units, "treasures": treasures})
 }
 
 func (s *Server) changeTradeStatus(w http.ResponseWriter, r *http.Request, accept bool) {

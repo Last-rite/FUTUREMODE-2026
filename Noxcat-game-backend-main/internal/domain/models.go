@@ -34,9 +34,10 @@ const (
 type TradeStatus string
 
 const (
-	TradeStatusPending  TradeStatus = "pending"
-	TradeStatusAccepted TradeStatus = "accepted"
-	TradeStatusRejected TradeStatus = "rejected"
+	TradeStatusPending   TradeStatus = "pending"
+	TradeStatusAccepted  TradeStatus = "accepted"
+	TradeStatusRejected  TradeStatus = "rejected"
+	TradeStatusCancelled TradeStatus = "cancelled"
 )
 
 type Stats struct {
@@ -47,14 +48,15 @@ type Stats struct {
 }
 
 type Player struct {
-	ID           string
-	Username     string
-	PasswordHash string
-	Role         PlayerRole
-	Money        int
-	Status       PlayerStatus
-	IsBanned     bool
-	CreatedAt    time.Time
+	ID                string
+	Username          string
+	PasswordHash      string
+	Role              PlayerRole
+	Money             int
+	Status            PlayerStatus
+	IsBanned          bool
+	ActiveLoadoutSlot int
+	CreatedAt         time.Time
 }
 
 type NewPlayer struct {
@@ -101,18 +103,47 @@ type UnitSettlement struct {
 type Treasure struct {
 	ID               string
 	OwnerID          string
+	Code             string
+	Name             string
+	TreasureType     string
+	Rarity           string
 	DamageBonus      int
+	HealthBonus      int
+	DefenseBonus     int
+	SpeedBonus       int
+	EffectCode       *string
+	Charges          *int
 	EquippedByUnitID *string
 	CreatedAt        time.Time
 }
 
 type NewTreasure struct {
-	DamageBonus int `json:"damage_bonus"`
+	Code         string  `json:"code"`
+	Name         string  `json:"name"`
+	TreasureType string  `json:"treasure_type"`
+	Rarity       string  `json:"rarity"`
+	DamageBonus  int     `json:"damage_bonus"`
+	HealthBonus  int     `json:"health_bonus"`
+	DefenseBonus int     `json:"defense_bonus"`
+	SpeedBonus   int     `json:"speed_bonus"`
+	EffectCode   *string `json:"effect_code"`
+	Charges      *int    `json:"charges"`
+}
+
+type PlayerLoadout struct {
+	ID        string
+	PlayerID  string
+	Slot      int
+	Name      string
+	UnitIDs   []string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Dungeon struct {
 	ID          string
 	Name        string
+	SortOrder   int
 	EnemyConfig json.RawMessage
 	RewardMoney int
 	RewardDrops json.RawMessage
@@ -169,18 +200,30 @@ type BattleSubmission struct {
 }
 
 type Trade struct {
-	ID           string
-	FromPlayerID string
-	ToPlayerID   string
-	UnitID       *string
-	TreasureID   *string
-	Status       TradeStatus
-	CreatedAt    time.Time
+	ID              string
+	FromPlayerID    string
+	ToPlayerID      string
+	UnitID          *string
+	TreasureID      *string
+	RequestedAssets []TradeAsset
+	Status          TradeStatus
+	CreatedAt       time.Time
 }
 
 type NewTrade struct {
-	FromPlayerID string
-	ToPlayerID   string
-	UnitID       *string
-	TreasureID   *string
+	FromPlayerID    string
+	ToPlayerID      string
+	UnitID          *string
+	TreasureID      *string
+	RequestedAssets []TradeAsset
+}
+
+type TradeAsset struct {
+	UnitID     *string
+	TreasureID *string
+}
+
+type TradeInventory struct {
+	Units     []Unit
+	Treasures []Treasure
 }

@@ -177,11 +177,55 @@ func TestEquipTreasureUpdatesBothSidesAndStats(t *testing.T) {
 	}
 }
 
+func TestExpandedTreasureStatsAndUnequipRoundTrip(t *testing.T) {
+	store := newStoreTest(t)
+	player := createPlayer(t, store, "expanded-treasure-player", 1)
+	units, _ := store.ListPlayerUnits(context.Background(), player.ID)
+	var treasureID string
+	if err := testPool.QueryRow(context.Background(), `
+		INSERT INTO treasures (
+			owner_id, code, name, treasure_type, rarity, damage_bonus,
+			health_bonus, defense_bonus, speed_bonus, effect_code, charges
+		) VALUES ($1, 'home-stone', '回家石', 'utility', 'epic', 2, 5, 3, 4, 'home_stone', 1)
+		RETURNING id`, player.ID).Scan(&treasureID); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EquipTreasure(context.Background(), player.ID, treasureID, units[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	loadedUnits, _ := store.ListPlayerUnits(context.Background(), player.ID)
+	wantStats := domain.Stats{
+		Attack: defaultStats.Attack + 2, Health: defaultStats.Health + 5,
+		Defense: defaultStats.Defense + 3, Speed: defaultStats.Speed + 4,
+	}
+	if loadedUnits[0].CurrentStats != wantStats {
+		t.Fatalf("equipped stats = %+v, want %+v", loadedUnits[0].CurrentStats, wantStats)
+	}
+	treasures, err := store.ListPlayerTreasures(context.Background(), player.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(treasures) != 1 || treasures[0].Code != "home-stone" || treasures[0].EffectCode == nil || *treasures[0].EffectCode != "home_stone" {
+		t.Fatalf("expanded treasure = %+v", treasures)
+	}
+	if err := store.UnequipTreasure(context.Background(), player.ID, treasureID); err != nil {
+		t.Fatal(err)
+	}
+	loadedUnits, _ = store.ListPlayerUnits(context.Background(), player.ID)
+	if loadedUnits[0].EquippedTreasureID != nil || loadedUnits[0].CurrentStats != defaultStats {
+		t.Fatalf("unequipped unit = %+v", loadedUnits[0])
+	}
+	if err := store.UnequipTreasure(context.Background(), player.ID, treasureID); err != nil {
+		t.Fatalf("idempotent UnequipTreasure() error = %v", err)
+	}
+}
+
 func TestTradeLifecycle(t *testing.T) {
 	store := newStoreTest(t)
 	sender := createPlayer(t, store, "trade-sender", 1)
 	recipient := createPlayer(t, store, "trade-recipient", 0)
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+	makeUnitTradeable(t, units[0].ID)
 
 	trade, err := store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: sender.ID,

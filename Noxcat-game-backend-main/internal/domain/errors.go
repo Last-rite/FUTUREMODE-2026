@@ -24,6 +24,8 @@ const (
 	CodeNotInCombat        ErrorCode = "player_not_in_combat"
 	CodeTradeRecipient     ErrorCode = "invalid_trade_recipient"
 	CodeInvalidTrade       ErrorCode = "invalid_trade_asset"
+	CodeAssetReserved      ErrorCode = "asset_reserved"
+	CodeTradeSender        ErrorCode = "invalid_trade_sender"
 	CodeAlreadyEquipped    ErrorCode = "already_equipped"
 	CodeLoadoutFull        ErrorCode = "battle_loadout_full"
 	CodeUnitUnavailable    ErrorCode = "unit_unavailable"
@@ -53,6 +55,8 @@ var (
 	ErrTradeRecipient        = errors.New("player is not the trade recipient")
 	ErrAssetNotOwned         = errors.New("asset is not owned by player")
 	ErrInvalidTradeAsset     = errors.New("trade must contain exactly one asset")
+	ErrAssetReserved         = errors.New("asset is reserved by a pending trade")
+	ErrTradeSender           = errors.New("player is not the trade sender")
 	ErrAlreadyEquipped       = errors.New("treasure is equipped to another unit")
 	ErrBattleLoadoutFull     = errors.New("battle loadout already has three units")
 	ErrUnitUnavailable       = errors.New("unit is not alive and available")

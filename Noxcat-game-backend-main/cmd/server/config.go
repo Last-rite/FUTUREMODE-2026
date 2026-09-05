@@ -12,6 +12,7 @@ type config struct {
 	jwtSecret        []byte
 	jwtIssuer        string
 	httpAddress      string
+	staticDir        string
 	battleSessionTTL time.Duration
 	cleanupInterval  time.Duration
 	cleanupBatch     int
@@ -38,6 +39,7 @@ func loadConfig(lookup environmentLookup) (config, error) {
 	result := config{databaseURL: databaseURL, jwtSecret: []byte(secret)}
 	result.jwtIssuer = stringValue(lookup, "JWT_ISSUER", "noxcat")
 	result.httpAddress = stringValue(lookup, "HTTP_ADDRESS", ":8080")
+	result.staticDir = stringValue(lookup, "STATIC_DIR", "")
 	var err error
 	if result.battleSessionTTL, err = durationValue(lookup, "BATTLE_SESSION_TTL", 2*time.Hour); err != nil {
 		return config{}, err

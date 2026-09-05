@@ -99,6 +99,8 @@ shown; they must not be collapsed into `500`.
 | `ErrPlayerNotInCombat` | `409` | `player_not_in_combat` | `player is not in combat` |
 | `ErrTradeNotPending` | `409` | `trade_not_pending` | `trade is not pending` |
 | `ErrTradeRecipient` | `403` | `invalid_trade_recipient` | `player is not the trade recipient` |
+| `ErrTradeSender` | `403` | `invalid_trade_sender` | `player is not the trade sender` |
+| `ErrAssetReserved` | `409` | `asset_reserved` | `asset is reserved by a pending trade` |
 | `ErrAlreadyEquipped` | `409` | `already_equipped` | `treasure is equipped to another unit` |
 | `ErrBattleLoadoutFull` | `409` | `battle_loadout_full` | `battle loadout already has three units` |
 | `ErrUnitUnavailable` | `409` | `unit_unavailable` | `unit is not alive and available` |
@@ -120,8 +122,8 @@ required by this contract.
 | `CreateDungeon`, `UpdateDungeon` | `ErrInvalidInput` | `500` | The admin DTO must be validated first. |
 | `SetBattleLoadout` | `ErrInvalidUnitSelection` | `500` | The handler must reject more than three IDs and duplicate IDs. |
 | `SetUnitEquipped`, `EquipTreasure` | `ErrInvalidInput` | `500` | Path/body UUIDs and authenticated player ID must already be valid. |
-| `CreateTrade` | `ErrInvalidTradeAsset` | `500` | The handler must enforce distinct players and exactly one asset. |
-| `AcceptTrade` | `ErrInvalidTradeAsset` | `500` | A persisted trade without exactly one asset violates a database/application invariant. |
+| `CreateTrade` | `ErrInvalidTradeAsset` | `500` | The handler must enforce distinct players, exactly one offered asset, and a valid requested bundle. |
+| `AcceptTrade` | `ErrInvalidTradeAsset` | `500` | Persisted offered/requested assets violate a database/application invariant. |
 | `SettleBattle` | `ErrInvalidInput` | `500` | A trusted battle service constructs the settlement after validating the durable session and bounded final state. |
 
 Bare `ErrNotFound` without a specific resource sentinel is also `500`; store
@@ -162,7 +164,7 @@ Unexpected persistence failures use these mappings:
 | Transaction begin/query/commit failure not classified below | `500` | `internal_error` |
 | PostgreSQL connection unavailable or SQLSTATE connection exception | `503` | `service_unavailable` |
 | Server-side database/request deadline | `504` | `timeout` |
-| PostgreSQL deadlock (`40P01`) after bounded retry is exhausted | `503` | `temporarily_unavailable` |
+| PostgreSQL deadlock (`40P01`) | `503` | `temporarily_unavailable` |
 
 Raw PostgreSQL messages are logged internally and never used as the public
 message. A known state sentinel still takes precedence over these fallback
@@ -285,6 +287,16 @@ For `/players/{player_id}/...`, the authenticated player ID must match the path
 ID unless the caller is an admin. This authorization check happens before the
 store query.
 
+### `GET /players/{player_id}`
+
+Returns the authenticated player's public profile, including money, current
+status, and `active_loadout_slot`. Password data is never returned.
+
+### `GET /dungeons`
+
+Returns all playable dungeons ordered by `sort_order`. A fresh schema includes
+the two initial MVP dungeons. This endpoint is authenticated.
+
 ### `GET /players/{player_id}/units`
 
 Response: `200 OK`
@@ -335,6 +347,26 @@ Errors: `403 asset_not_owned`, `404 unit_not_found`, `409 unit_unavailable`,
 invalid selection after handler validation.
 
 Response: `204 No Content`.
+
+### `GET /players/{player_id}/loadouts`
+
+Returns all five persisted presets. Each resource contains `slot` (1–5) and
+its ordered `unit_ids` array.
+
+### `PUT /players/{player_id}/loadouts/{slot}`
+
+Replaces one preset with zero to three unique, living, owned unit IDs. Editing
+an inactive preset does not alter compatibility `is_equipped` flags.
+
+### `PUT /players/{player_id}/loadouts/active`
+
+Request: `{"slot":2}`. Activates a saved preset and atomically updates the
+legacy unit flags. All preset mutations are rejected during combat.
+
+### `GET /players/{player_id}/treasures`
+
+Returns owned equipment instances with display identity, rarity, type, all
+four stat bonuses, optional `effect_code`/`charges`, and equipment linkage.
 
 ### `GET /players/{player_id}/status`
 
@@ -420,6 +452,11 @@ trusted `player_id`, `money_award`, `treasure_drops`, or dungeon identity.
 The service constructs `domain.BattleResult` from server-held battle-start
 state and the bounded final HP/alive report.
 
+During the settlement transaction, an equipped `home_stone` with a positive
+charge changes a non-permanent unit's fatal result to 1 HP and consumes one
+charge. Settlement locks units and then treasures in UUID order, matching the
+equipment mutation order. A depleted stone does not prevent a later death.
+
 On successful validation and settlement: `204 No Content`.
 
 An unknown, malformed, or foreign token returns the mismatch below without
@@ -469,18 +506,37 @@ Response: `204 No Content`.
 Errors: `404 unit_not_found`, `404 treasure_not_found`, `403 asset_not_owned`,
 `409 already_equipped`, and `409 player_busy` during combat.
 
+### `DELETE /treasures/{treasure_id}/equip`
+
+Idempotently removes the treasure from its current unit and restores that
+unit's current stats to base stats. It uses the same player → units → treasures
+lock order as equip and returns `204 No Content`.
+
 ## Trade endpoints
 
 ### `GET /trades?status=pending`
 
 Lists trades involving the authenticated player. `status` is optional and, if
-present, must be `pending`, `accepted`, or `rejected`.
+present, must be `pending`, `accepted`, `rejected`, or `cancelled`.
 
 Response: `200 OK`
 
 ```json
 {"trades":[]}
 ```
+
+Every trade includes an ordered `requested_assets` array. An empty array is a
+one-way gift; a non-empty array is a bidirectional exchange.
+
+### `GET /players/{player_id}/trade-assets`
+
+Returns only the target player's assets that are currently eligible for a
+trade: living, non-permanent, inactive units without equipment, plus unequipped
+treasures. Assets reserved by another pending offer are omitted. Any
+authenticated player may query this restricted view to select exact asset IDs;
+the endpoint never reserves the target player's inventory.
+
+Response: `200 OK` with `units` and `treasures` arrays.
 
 ### `POST /trades`
 
@@ -489,7 +545,11 @@ Request with a unit:
 ```json
 {
   "to_player_id": "uuid",
-  "unit_id": "uuid"
+  "unit_id": "uuid",
+  "requested_assets": [
+    {"treasure_id": "uuid"},
+    {"treasure_id": "uuid"}
+  ]
 }
 ```
 
@@ -498,7 +558,8 @@ Request with a treasure:
 ```json
 {
   "to_player_id": "uuid",
-  "treasure_id": "uuid"
+  "treasure_id": "uuid",
+  "requested_assets": []
 }
 ```
 
@@ -506,35 +567,58 @@ Handler validation:
 
 - `to_player_id` is a valid UUID and differs from the JWT player ID.
 - Exactly one of `unit_id` and `treasure_id` is present and valid.
+- `requested_assets` is either empty, exactly one unit, or one to ten distinct
+  treasure instances. Unit/treasure mixtures and repeated IDs are rejected.
 - Supplying both or neither returns `400 invalid_request`; it must not reach
   the store as `ErrInvalidTradeAsset`.
 
 Response: `201 Created` with the trade resource.
 
-Creating a pending offer is allowed during combat because it does not reserve
-or transfer the asset. Acceptance performs the authoritative combat check.
+Creation reserves only the authenticated sender's offered asset. The requested
+assets are checked against the recipient's current ownership and availability,
+but are deliberately not reserved; this prevents a malicious sender from
+locking another player's inventory. An offered unit must be living,
+non-permanent, inactive, and carry no treasure. An offered treasure must be
+unequipped. A sender may create a proposal during combat only with a separate
+eligible asset that is not in the active battle loadout.
 
 Errors: `404 player_not_found`, `404 unit_not_found`,
-`404 treasure_not_found`, `403 asset_not_owned`, `409 already_equipped`.
+`404 treasure_not_found`, `403 asset_not_owned`, `409 already_equipped`,
+`409 unit_unavailable`, and `409 asset_reserved`.
 
 ### `POST /trades/{trade_id}/accept`
 
-The recipient ID comes from the JWT. The handler validates only the path UUID;
-the store locks the trade, both players in UUID order, and the asset before
-authoritatively checking the pending state and ownership.
+The recipient ID comes from the JWT. The store locks the trade, both players in
+UUID order, all involved units in UUID order, all involved treasures in UUID
+order, and finally loadout memberships. It revalidates ownership,
+transferability, and all reservations before changing any owner. The offered
+asset and every requested asset transfer in one transaction; any stale asset
+rolls the entire exchange back.
 
 Response: `200 OK` with the accepted trade.
 
 Errors: `404 trade_not_found`, `403 invalid_trade_recipient`,
 `409 trade_not_pending`, `409 trade_asset_unavailable`, and `409 player_busy`
-when either participant is in combat. On rejection, the trade remains pending
-and ownership is unchanged.
+when either participant is in combat, plus `409 asset_reserved` if a requested
+asset has since been offered in another pending trade. A failed acceptance
+leaves the trade pending and preserves the sender's reservation.
 
 ### `POST /trades/{trade_id}/reject`
 
 Response: `200 OK` with the rejected trade.
 
 Errors: `404 trade_not_found`, `403 invalid_trade_recipient`,
+`409 trade_not_pending`.
+
+Rejection atomically changes the status and releases the sender's reservation.
+
+### `POST /trades/{trade_id}/cancel`
+
+Only the authenticated sender may cancel a pending trade. Cancellation changes
+the status to `cancelled`, releases the sender's reservation, and leaves all
+ownership unchanged.
+
+Errors: `404 trade_not_found`, `403 invalid_trade_sender`,
 `409 trade_not_pending`.
 
 Trade WebSocket notifications are sent only after the database transaction
@@ -555,6 +639,7 @@ so separate tabs and devices remain updated. Event types are:
 - `trade.created`, delivered to the recipient after offer creation commits.
 - `trade.accepted`, delivered to the sender after acceptance commits.
 - `trade.rejected`, delivered to the sender after rejection commits.
+- `trade.cancelled`, delivered to the recipient after cancellation commits.
 
 Each message contains the complete current trade resource:
 
@@ -567,6 +652,7 @@ Each message contains the complete current trade resource:
     "to_player_id": "uuid",
     "unit_id": "uuid",
     "treasure_id": null,
+    "requested_assets": [{"treasure_id":"uuid"}],
     "status": "pending",
     "created_at": "2026-09-06T00:00:00Z"
   }

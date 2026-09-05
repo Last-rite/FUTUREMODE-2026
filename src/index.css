@@ -168,6 +168,12 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .sketch-create-trade .select-wrap { min-height: 52px; border-radius: 8px; background: #030604; }
 .sketch-create-trade .select-wrap select { height: 50px; }
 .sketch-create-trade .primary-action { min-height: 52px; border-radius: 8px; box-shadow: none; }
+.trade-counterparty-load { width: 100%; min-height: 38px; margin: -8px 0 15px; border: 1px solid #294137; border-radius: 8px; background: #07110c; color: #35d9ff; font: 800 11px ui-monospace, monospace; cursor: pointer; }
+.trade-counterparty-load:disabled { opacity: .42; cursor: not-allowed; }
+.trade-request-empty { min-height: 52px; display: grid; place-items: center; padding: 10px; border: 1px dashed #28362d; border-radius: 8px; color: #8ea495; font: 700 11px/1.5 ui-monospace, monospace; text-align: center; }
+.sketch-create-trade .trade-request-multi { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; }
+.sketch-create-trade .trade-request-multi select { height: 104px; padding: 8px 10px; appearance: auto; }
+.sketch-create-trade .trade-request-multi small { display: grid; place-items: center; min-width: 54px; padding: 8px; border-left: 1px solid var(--line); color: #35d9ff; font: 800 10px ui-monospace, monospace; }
 
 .toast { position: absolute; z-index: 60; left: 22px; right: 22px; bottom: calc(max(9px, env(safe-area-inset-bottom)) + 75px); display: flex; align-items: center; gap: 9px; min-height: 47px; padding: 10px 13px; border: 1px solid rgba(0,255,102,.3); border-radius: 14px; background: rgba(8,18,13,.96); color: var(--green-soft); box-shadow: 0 12px 34px rgba(0,0,0,.46); backdrop-filter: blur(12px); animation: toastIn .25s ease-out; font-size: 10px; font-weight: 750; }.toast--error { border-color: rgba(255,42,85,.32); background: rgba(28,8,14,.96); color: #ff8ca3; }
 @keyframes toastIn { from { transform: translateY(15px); opacity: 0; } }

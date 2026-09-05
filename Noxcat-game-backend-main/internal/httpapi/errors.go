@@ -67,6 +67,8 @@ func (s *Server) writeStoreError(w http.ResponseWriter, r *http.Request, operati
 		{domain.ErrPlayerNotInCombat, http.StatusConflict, "player_not_in_combat", "player is not in combat"},
 		{domain.ErrTradeNotPending, http.StatusConflict, "trade_not_pending", "trade is not pending"},
 		{domain.ErrTradeRecipient, http.StatusForbidden, "invalid_trade_recipient", "player is not the trade recipient"},
+		{domain.ErrTradeSender, http.StatusForbidden, "invalid_trade_sender", "player is not the trade sender"},
+		{domain.ErrAssetReserved, http.StatusConflict, "asset_reserved", "asset is reserved by a pending trade"},
 		{domain.ErrAlreadyEquipped, http.StatusConflict, "already_equipped", "treasure is equipped to another unit"},
 		{domain.ErrBattleLoadoutFull, http.StatusConflict, "battle_loadout_full", "battle loadout already has three units"},
 		{domain.ErrUnitUnavailable, http.StatusConflict, "unit_unavailable", "unit is not alive and available"},

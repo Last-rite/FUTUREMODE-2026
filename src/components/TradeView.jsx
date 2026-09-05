@@ -86,26 +86,40 @@ function isPetTrade(trade) {
   return false;
 }
 
-export default function TradeView({ data, currentUser, onCreateTrade, onResolveTrade, onMessage }) {
+export default function TradeView({ data, currentUser, onCreateTrade, onResolveTrade, onLoadTradeAssets, onMessage }) {
   const [tab, setTab] = useState('market'); // 'market' | 'lost'
   const [selectedDungeonId, setSelectedDungeonId] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
-  const transferableUnits = (data.pets || []).filter((pet) => !pet.protected);
+  const myPlayerId = String(currentUser?.id || '').toLowerCase();
+  const reservedUnitIds = new Set((data.trades || [])
+    .filter((trade) => trade.status === 'pending' && String(trade.from_player_id || trade.from || '').toLowerCase() === myPlayerId)
+    .map((trade) => trade.unit_id || trade.offeredPetId).filter(Boolean));
+  const reservedTreasureIds = new Set((data.trades || [])
+    .filter((trade) => trade.status === 'pending' && String(trade.from_player_id || trade.from || '').toLowerCase() === myPlayerId)
+    .map((trade) => trade.treasure_id || trade.offeredItemId).filter(Boolean));
+  const transferableUnits = (data.pets || []).filter((pet) => !pet.protected && !pet.selected && !pet.equipped && pet.alive !== false && !reservedUnitIds.has(pet.id));
   const equippedItemIds = new Set((data.pets || []).map((pet) => pet.equipped).filter(Boolean));
-  const transferableTreasures = (data.items || []).filter((item) => !equippedItemIds.has(item.id));
+  const transferableTreasures = (data.items || []).filter((item) => !equippedItemIds.has(item.id) && !reservedTreasureIds.has(item.id));
   const [form, setForm] = useState({
     toPlayerId: '',
     // Offer (我方出資)
     offerType: 'unit',
     offerId: transferableUnits[0]?.id || '',
+    tradeMode: 'exchange',
     // Request (以物易物對方出資)
     requestType: 'treasure',
-    requestName: '回家石',
-    requestQty: 2,
+    requestedIds: [],
   });
   const [submitting, setSubmitting] = useState(false);
+  const [loadingCounterparty, setLoadingCounterparty] = useState(false);
+  const [counterpartyAssets, setCounterpartyAssets] = useState({ playerId: '', pets: [], items: [] });
   const transferableAssets = form.offerType === 'unit' ? transferableUnits : transferableTreasures;
-  const canSubmit = Boolean(form.toPlayerId.trim() && form.offerId && form.requestName.trim() && !submitting);
+  const requestedOptions = form.requestType === 'unit' ? counterpartyAssets.pets : counterpartyAssets.items;
+  const counterpartyLoaded = Boolean(form.toPlayerId.trim() && counterpartyAssets.playerId === form.toPlayerId.trim());
+  const canSubmit = Boolean(
+    form.toPlayerId.trim() && form.offerId && !submitting &&
+    (form.tradeMode === 'gift' || (counterpartyLoaded && form.requestedIds.length > 0))
+  );
 
   const selectOfferType = (offerType) => {
     const assets = offerType === 'unit' ? transferableUnits : transferableTreasures;
@@ -116,22 +130,38 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
     setForm((current) => ({
       ...current,
       requestType,
-      requestName: requestType === 'unit' ? 'FUTURE NOXCAT' : '回家石',
+      requestedIds: [],
     }));
+  };
+
+  const loadCounterpartyAssets = async () => {
+    const playerId = form.toPlayerId.trim();
+    if (!playerId) return;
+    setLoadingCounterparty(true);
+    try {
+      const inventory = await onLoadTradeAssets(playerId);
+      setCounterpartyAssets({ playerId, pets: inventory?.pets || [], items: inventory?.items || [] });
+      setForm((current) => ({ ...current, requestedIds: [] }));
+    } catch (err) {
+      setCounterpartyAssets({ playerId: '', pets: [], items: [] });
+      onMessage(err?.message || '無法讀取對方可交易資產', 'error');
+    } finally {
+      setLoadingCounterparty(false);
+    }
   };
 
   const submitTrade = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     try {
-      await onCreateTrade({
+    await onCreateTrade({
         to_player_id: form.toPlayerId.trim(),
         ...(form.offerType === 'unit'
           ? { unit_id: form.offerId }
           : { treasure_id: form.offerId }),
-        request_asset_type: form.requestType,
-        request: form.requestName.trim(),
-        request_qty: Number(form.requestQty) || 1,
+      requested_assets: form.tradeMode === 'gift'
+        ? []
+        : form.requestedIds.map((id) => form.requestType === 'unit' ? { unit_id: id } : { treasure_id: id }),
       });
       setShowCreate(false);
       onMessage('以物易物請求已送出');
@@ -185,13 +215,14 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
         /* MARKET VIEW: Clean, Minimalist 3-Part Exchange Row */
         <section className="sketch-trade-list-container" aria-label="交易請求列表">
           <div className="sketch-trade-rows">
-            {(data.trades || []).map((trade) => {
-              const isPetOffer = isPetTrade(trade);
-              const isPetRequest = Boolean(
-                trade.request_asset_type === 'unit' ||
-                trade.requestPetCode ||
-                (trade.request && (trade.request.includes('NOXCAT') || trade.request.includes('CAT')))
-              );
+      {(data.trades || []).map((trade) => {
+        const isPetOffer = isPetTrade(trade);
+        const isGift = trade.request_asset_type === 'gift' || (trade.requestedAssets && trade.requestedAssets.length === 0);
+        const isPetRequest = Boolean(
+          !isGift && (trade.request_asset_type === 'unit' ||
+          trade.requestPetCode ||
+          (trade.request && (trade.request.includes('NOXCAT') || trade.request.includes('CAT'))))
+        );
 
               // Offered asset metadata
               const matchedOfferItem = !isPetOffer
@@ -284,14 +315,20 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
                   </div>
 
                   {/* Center: Exchange Arrow <=> */}
-                  <div className="sketch-trade-arrow-col" title="以物易物">
-                    <ArrowLeftRight size={22} strokeWidth={2.6} className="sketch-trade-arrow-icon" />
+          <div className="sketch-trade-arrow-col" title={isGift ? '單向贈與' : '以物易物'}>
+          {isGift
+            ? <Send size={21} strokeWidth={2.6} className="sketch-trade-arrow-icon" />
+            : <ArrowLeftRight size={22} strokeWidth={2.6} className="sketch-trade-arrow-icon" />}
                   </div>
 
                   {/* Middle Right: Requested Asset (Pet OR Item x Quantity) */}
                   <div className="sketch-trade-req-group">
                     <div className="sketch-trade-req-visuals">
-                      {isPetRequest ? (
+            {isGift ? (
+            <div className="sketch-trade-item-disc" title="單向贈與">
+              <Send size={18} />
+            </div>
+            ) : isPetRequest ? (
                         <div className="sketch-trade-pet-avatar">
                           <NoxPlaceholder
                             pet={{
@@ -311,7 +348,7 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
                               className="w-6 h-6 object-contain pixelated"
                             />
                           </div>
-                          <span className="sketch-trade-qty-pill">×{trade.requestQty || 1}</span>
+              <span className="sketch-trade-qty-pill">×{trade.requestQty || 1}</span>
                         </>
                       )}
                     </div>
@@ -320,7 +357,7 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
                         {trade.request}
                       </span>
                       <small className="sketch-trade-sub-txt">
-                        {isPetRequest ? '索求夥伴' : `換取 x${trade.requestQty || 1}`}
+            {isGift ? '對方無需支付' : isPetRequest ? '索求夥伴' : `換取 x${trade.requestQty || 1}`}
                       </small>
                     </div>
                   </div>
@@ -365,14 +402,16 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
             })}
           </div>
 
-          <button
-            className="sketch-trade-create-btn"
-            onClick={() => setShowCreate(true)}
-            aria-label="發起交易"
-          >
-            <Plus size={20} strokeWidth={2.4} />
-            <span>發起交易</span>
-          </button>
+      {!showCreate && (
+      <button
+        className="sketch-trade-create-btn"
+        onClick={() => setShowCreate(true)}
+        aria-label="發起交易"
+      >
+        <Plus size={20} strokeWidth={2.4} />
+        <span>發起交易</span>
+      </button>
+      )}
         </section>
       ) : (
         /* MOURN / LOST VIEW: 2-Column Grid matching mourn_example.jpg with Dungeon filter tabs */
@@ -536,9 +575,9 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
           >
             <header className="trade-form-header">
               <div>
-                <h2 id="create-trade-title">以物易物</h2>
-                <small className="text-[#7da087] font-mono text-[11px] block mt-1">
-                  雙方確認後自動互換資產
+        <h2 id="create-trade-title">以物易物</h2>
+        <small className="text-[#7da087] font-mono text-[11px] block mt-1">
+          {form.tradeMode === 'gift' ? '對方接受後完成單向移交' : '雙方確認後自動互換資產'}
                 </small>
               </div>
               <button
@@ -557,17 +596,28 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
               <span>指定對象玩家 ID</span>
               <div className="callsign-input">
                 <UserRound size={17} />
-                <input
-                  value={form.toPlayerId}
-                  onChange={(event) =>
-                    setForm({ ...form, toPlayerId: event.target.value.trimStart() })
-                  }
+        <input
+          value={form.toPlayerId}
+          onChange={(event) => {
+          setForm({ ...form, toPlayerId: event.target.value.trimStart(), requestedIds: [] });
+          setCounterpartyAssets({ playerId: '', pets: [], items: [] });
+          }}
                   autoComplete="off"
-                  placeholder="輸入對方玩家 ID，如 CYBER_PUP"
+          placeholder="輸入對方 UUID"
                   required
-                />
-              </div>
-            </label>
+        />
+        </div>
+      </label>
+      {form.tradeMode === 'exchange' && (
+        <button
+          type="button"
+          className="trade-counterparty-load"
+          onClick={loadCounterpartyAssets}
+          disabled={!form.toPlayerId.trim() || loadingCounterparty}
+        >
+          {loadingCounterparty ? '讀取中…' : counterpartyLoaded ? '重新讀取對方資產' : '讀取對方可交易資產'}
+        </button>
+      )}
 
             {/* Section 1: Offer Asset (我方出資) */}
             <div className="border border-[#28362d] rounded-xl p-3 mb-3 bg-[#050906]">
@@ -612,83 +662,101 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
               </label>
             </div>
 
-            {/* Section 2: Requested Asset (對方出資 / 索求) */}
-            <div className="border border-[#28362d] rounded-xl p-3 mb-3 bg-[#050906]">
-              <span className="text-[#35d9ff] font-mono text-[11px] font-bold block mb-2">
-                ② 換取對方物品 (YOU REQUEST)
-              </span>
-              <fieldset className="trade-asset-type !mb-2">
-                <button
-                  type="button"
-                  className={form.requestType === 'treasure' ? 'is-active' : ''}
-                  onClick={() => selectRequestType('treasure')}
-                  aria-pressed={form.requestType === 'treasure'}
-                >
-                  <Gem size={17} /> 道具裝備
-                </button>
-                <button
-                  type="button"
-                  className={form.requestType === 'unit' ? 'is-active' : ''}
-                  onClick={() => selectRequestType('unit')}
-                  aria-pressed={form.requestType === 'unit'}
-                >
-                  <Cat size={17} /> NOXCAT
-                </button>
-              </fieldset>
+      {/* Section 2: Requested Asset (對方出資 / 索求) */}
+      <div className="border border-[#28362d] rounded-xl p-3 mb-3 bg-[#050906]">
+        <span className="text-[#35d9ff] font-mono text-[11px] font-bold block mb-2">
+        ② 對方是否支付資產
+        </span>
+        <fieldset className="trade-asset-type !mb-2">
+        <button
+          type="button"
+          className={form.tradeMode === 'exchange' ? 'is-active' : ''}
+          onClick={() => setForm((current) => ({ ...current, tradeMode: 'exchange', requestedIds: [] }))}
+          aria-pressed={form.tradeMode === 'exchange'}
+        >
+          <ArrowLeftRight size={17} /> 雙向交換
+        </button>
+        <button
+          type="button"
+          className={form.tradeMode === 'gift' ? 'is-active' : ''}
+          onClick={() => setForm((current) => ({ ...current, tradeMode: 'gift', requestedIds: [] }))}
+          aria-pressed={form.tradeMode === 'gift'}
+        >
+          <Send size={17} /> 單向贈與
+        </button>
+        </fieldset>
 
-              {form.requestType === 'treasure' ? (
-                <div className="grid grid-cols-[1fr_80px] gap-2">
-                  <div className="select-wrap">
-                    <select
-                      value={form.requestName}
-                      onChange={(event) => setForm({ ...form, requestName: event.target.value })}
-                    >
-                      <option value="回家石">回家石 (防掉落)</option>
-                      <option value="像素劍">像素劍 (ATK +2)</option>
-                      <option value="資料盾">資料盾 (DEF +1)</option>
-                      <option value="能量晶石">能量晶石 (升級素材)</option>
-                      <option value="急救模組">急救模組 (HP +10)</option>
-                      <option value="量子核心">量子核心 (SPD +3)</option>
-                    </select>
-                    <ChevronDown size={16} />
-                  </div>
-                  <div className="select-wrap">
-                    <select
-                      value={form.requestQty}
-                      onChange={(event) => setForm({ ...form, requestQty: Number(event.target.value) })}
-                    >
-                      <option value={1}>× 1</option>
-                      <option value={2}>× 2</option>
-                      <option value={3}>× 3</option>
-                    </select>
-                    <ChevronDown size={16} />
-                  </div>
-                </div>
-              ) : (
-                <div className="select-wrap">
-                  <select
-                    value={form.requestName}
-                    onChange={(event) => setForm({ ...form, requestName: event.target.value })}
-                  >
-                    <option value="FUTURE NOXCAT">FUTURE NOXCAT #01</option>
-                    <option value="SHADOW NOXCAT">SHADOW NOXCAT #03</option>
-                    <option value="EMBER NOXCAT">EMBER NOXCAT #07</option>
-                    <option value="NEO NOXCAT">NEO NOXCAT #02</option>
-                    <option value="GLITCH NOXCAT">GLITCH NOXCAT #08</option>
-                  </select>
-                  <ChevronDown size={16} />
-                </div>
-              )}
+        {form.tradeMode === 'gift' ? (
+        <div className="trade-request-empty">接受後，資產只會移交給對方。</div>
+        ) : !counterpartyLoaded ? (
+        <div className="trade-request-empty">先輸入玩家 ID 並讀取資產，再選擇交換標的。</div>
+        ) : (
+        <>
+          <fieldset className="trade-asset-type !mb-2">
+          <button
+            type="button"
+            className={form.requestType === 'treasure' ? 'is-active' : ''}
+            onClick={() => selectRequestType('treasure')}
+            aria-pressed={form.requestType === 'treasure'}
+          >
+            <Gem size={17} /> 道具裝備
+          </button>
+          <button
+            type="button"
+            className={form.requestType === 'unit' ? 'is-active' : ''}
+            onClick={() => selectRequestType('unit')}
+            aria-pressed={form.requestType === 'unit'}
+          >
+            <Cat size={17} /> NOXCAT
+          </button>
+          </fieldset>
+          {requestedOptions.length === 0 ? (
+          <div className="trade-request-empty">對方目前沒有此類可交易資產。</div>
+          ) : form.requestType === 'unit' ? (
+          <div className="select-wrap">
+            <select
+            value={form.requestedIds[0] || ''}
+            onChange={(event) => setForm({ ...form, requestedIds: event.target.value ? [event.target.value] : [] })}
+            >
+            <option value="">選擇 1 隻 NOXCAT</option>
+            {requestedOptions.map((asset) => (
+              <option key={asset.id} value={asset.id}>{asset.name} · {asset.id.slice(0, 8)}</option>
+            ))}
+            </select>
+            <ChevronDown size={16} />
+          </div>
+          ) : (
+          <div className="select-wrap trade-request-multi">
+            <select
+            multiple
+            value={form.requestedIds}
+            onChange={(event) => {
+              const ids = Array.from(event.target.selectedOptions, (option) => option.value).slice(0, 10);
+              setForm({ ...form, requestedIds: ids });
+            }}
+            aria-label="選擇至多十件對方裝備"
+            >
+            {requestedOptions.map((asset) => (
+              <option key={asset.id} value={asset.id}>{asset.name} · {asset.id.slice(0, 8)}</option>
+            ))}
+            </select>
+            <small>{form.requestedIds.length}/10 件</small>
+          </div>
+          )}
+        </>
+        )}
             </div>
 
-            <div className="text-[10px] text-[#8ea495] font-mono leading-relaxed mb-4 bg-[#09110c] p-2.5 rounded-lg border border-[#1b2b20]">
-              ⓘ 宣告支付的物品會在等待確認期間暫時鎖定；對方同意後，雙方資產將自動對調劃轉，絕非單向送禮。
-            </div>
+      <div className="text-[10px] text-[#8ea495] font-mono leading-relaxed mb-4 bg-[#09110c] p-2.5 rounded-lg border border-[#1b2b20]">
+        {form.tradeMode === 'gift'
+        ? 'ⓘ 我方提供的資產在等待期間會鎖定；對方接受後只移交此資產。'
+        : 'ⓘ 我方提供的資產在等待期間會鎖定；交換標的只在對方接受時再次驗證並一次完成移轉。'}
+      </div>
 
-            <button className="primary-action" disabled={!canSubmit}>
-              <ArrowLeftRight size={18} />
-              <span>{submitting ? '發起中…' : '送出以物易物請求'}</span>
-            </button>
+      <button className="primary-action" disabled={!canSubmit}>
+        {form.tradeMode === 'gift' ? <Send size={18} /> : <ArrowLeftRight size={18} />}
+        <span>{submitting ? '發起中…' : form.tradeMode === 'gift' ? '送出贈與請求' : '送出交換請求'}</span>
+      </button>
           </form>
         </div>
       )}

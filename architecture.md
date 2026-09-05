@@ -1,13 +1,13 @@
 # NOXCAT Backend Structure (MVP — blockchain-ready)
 
-> **Implementation status:** 本文件描述未來正式後端。現在前端所使用的 `src/demo-backend/` 是瀏覽器內的測試替身，不是此架構的實作，也不具備任何安全性或資產權威性。測試方式請見 `docs/TEST_BACKEND.md`。
+> **Implementation status:** 正式 Go/PostgreSQL 後端已可透過 HTTP 模式與同源前端整合；`src/demo-backend/` 仍只供瀏覽器內展示，不具備任何安全性或資產權威性。測試方式請見 `docs/TEST_BACKEND.md`。
 
 ## Stack
 - **Language**: Go
 - **DB**: PostgreSQL (via `pgxpool`)
 - **Auth**: bcrypt password hashing + JWT (HS256)
 - **Realtime**: WebSocket for trade notifications
-- **Async**: in-process goroutines (no message queue at MVP)
+- **Async**: in-process WebSocket hub (no message queue at MVP)
 
 ## Design Principles
 1. Backend is the **single source of truth** for anything that changes ownership or permanently changes stats. Frontend runs pinball physics/battle locally against a locked snapshot; backend validates and commits the result. No mid-battle network calls.
@@ -69,11 +69,23 @@
 | id | uuid | PK |
 | from_player_id | uuid | |
 | to_player_id | uuid | |
-| unit_id / treasure_id | uuid | asset being transferred |
-| status | enum | pending / accepted / rejected |
+| unit_id / treasure_id | uuid | legacy-compatible offered asset reference |
+| status | enum | pending / accepted / rejected / cancelled |
 | created_at | timestamp | |
 | **index** | `(to_player_id, status)` | "pending trades for me" |
 | **index** | `(from_player_id, status)` | same, other direction |
+
+### `trade_assets`
+| column | type | notes |
+|---|---|---|
+| trade_id | uuid | FK → trades.id |
+| side | text | `offered` / `requested` |
+| position | smallint | stable bundle order, 1–10 |
+| unit_id / treasure_id | uuid | exact asset UUID; exactly one is set |
+| reserved | bool | only the sender's offered asset is reserved while pending |
+| **PK** | `(trade_id, side, position)` | |
+| **partial unique index** | `unit_id WHERE reserved` | one pending offer per unit |
+| **partial unique index** | `treasure_id WHERE reserved` | one pending offer per treasure |
 
 ---
 
@@ -130,16 +142,18 @@ func RequireAdmin(next http.Handler) http.Handler  // must run after RequireAuth
 - `POST /treasures/:id/equip` *(RequireAuth)* — enforces 1-per-unit, updates `current_stats`
 
 ### Trading
-- `POST /trades` *(RequireAuth)* — create offer
-- `POST /trades/:id/accept` *(RequireAuth)* — atomic transfer via `TransferUnit()`, pushes WebSocket notification to the other party
-- `POST /trades/:id/reject` *(RequireAuth)*
+- `GET /players/:id/trade-assets` *(RequireAuth)* — return only assets currently eligible for an exact-ID trade
+- `POST /trades` *(RequireAuth)* — offer one unit or treasure; an empty request is a gift, otherwise request one unit or 1–10 treasures
+- `POST /trades/:id/accept` *(recipient only)* — revalidate and atomically transfer both sides
+- `POST /trades/:id/reject` *(recipient only)* — reject and release the offered reservation
+- `POST /trades/:id/cancel` *(sender only)* — cancel and release the offered reservation
 
 ### Admin
 - `POST /admin/dungeons` *(RequireAuth + RequireAdmin)* — create/edit dungeon configs
 - `POST /admin/players/:id/ban` *(RequireAuth + RequireAdmin)*
 
 ### WebSocket
-- `GET /ws` *(RequireAuth on handshake)* — client connects, server keeps `map[playerID]*Connection` (mutex-protected) registry; pushes trade-created/trade-accepted events to the relevant player if online
+- `GET /ws` *(RequireAuth on handshake)* — client connects, server keeps a mutex-protected registry; pushes `trade.created`, `trade.accepted`, `trade.rejected`, and `trade.cancelled` after the database operation succeeds
 
 ---
 
@@ -152,9 +166,10 @@ func RequireAdmin(next http.Handler) http.Handler  // must run after RequireAuth
   -- check ownership, mutate, commit
   COMMIT;
   ```
-- For trade acceptance, lock both unit row and both player rows **in a consistent order** (e.g. lower player_id first) to avoid deadlocks between simultaneous trades.
+- Trade mutation lock order is fixed: trade row → both player rows sorted by UUID → all unit rows sorted by UUID → all treasure rows sorted by UUID → loadout cleanup. Acceptance revalidates ownership and eligibility inside the same transaction; any failure rolls the whole exchange back.
+- Only the sender's offered asset is reserved. Requested assets stay usable until acceptance, preventing unsolicited offers from locking another player's inventory; acceptance fails closed if a requested asset has since changed or become reserved elsewhere.
 - **No dedicated worker pool for requests** — Go's `net/http` already handles each request in its own goroutine; this scales naturally.
-- **Async side-effects** (WebSocket push, logging) fire via goroutine after commit: `go func() { notifyTrade(...) }()`. No message queue needed at MVP scale.
+- **Post-commit side-effects** (WebSocket push, logging) run only after the store call commits. Notification failure does not roll back an already committed trade; no durable delivery guarantee is claimed at MVP scale.
 - **Connection pooling**: `pgxpool`, `MaxConns` ~20-50 to start, tune under load.
 
 ---

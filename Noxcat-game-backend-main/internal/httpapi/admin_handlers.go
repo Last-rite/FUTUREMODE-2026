@@ -11,6 +11,7 @@ import (
 
 type dungeonRequest struct {
 	Name        string          `json:"name"`
+	SortOrder   int             `json:"sort_order"`
 	EnemyConfig json.RawMessage `json:"enemy_config"`
 	RewardMoney int             `json:"reward_money"`
 	RewardDrops json.RawMessage `json:"reward_drops"`
@@ -26,6 +27,9 @@ func validateDungeonRequest(request dungeonRequest) map[string]string {
 	}
 	if request.RewardMoney < 0 {
 		fields["reward_money"] = "must not be negative"
+	}
+	if request.SortOrder < 0 {
+		fields["sort_order"] = "must not be negative"
 	}
 	if len(request.RewardDrops) > 0 && !bytes.Equal(bytes.TrimSpace(request.RewardDrops), []byte("null")) && !validJSONArray(request.RewardDrops, true) {
 		fields["reward_drops"] = "must be null or a JSON array with at most 100 entries"
@@ -46,7 +50,7 @@ func validJSONArray(raw json.RawMessage, allowEmpty bool) bool {
 
 func (request dungeonRequest) domainDungeon(id string) domain.Dungeon {
 	return domain.Dungeon{
-		ID: id, Name: request.Name, EnemyConfig: request.EnemyConfig,
+		ID: id, Name: request.Name, SortOrder: request.SortOrder, EnemyConfig: request.EnemyConfig,
 		RewardMoney: request.RewardMoney, RewardDrops: request.RewardDrops,
 	}
 }

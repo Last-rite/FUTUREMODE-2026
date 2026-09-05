@@ -285,6 +285,13 @@ func TestTradeHandlersNotifyOnlyAfterSuccessfulStoreChange(t *testing.T) {
 			}},
 			wantStatus: http.StatusOK, wantPlayer: otherID, wantEvent: TradeRejected,
 		},
+		{
+			name: "cancel notifies recipient", method: http.MethodPost, path: "/trades/" + tradeID + "/cancel",
+			store: &fakeStore{cancelTrade: func(context.Context, string, string) (domain.Trade, error) {
+				return domain.Trade{ID: tradeID, FromPlayerID: playerID, ToPlayerID: otherID, Status: domain.TradeStatusCancelled}, nil
+			}},
+			wantStatus: http.StatusOK, wantPlayer: otherID, wantEvent: TradeCancelled,
+		},
 	}
 
 	for _, test := range tests {

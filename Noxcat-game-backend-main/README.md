@@ -40,6 +40,12 @@ set +a
 go run ./cmd/server
 ```
 
+To serve the production Vite build from this same process, set `STATIC_DIR` to
+the directory containing `index.html` (for this workspace, the parent
+`dist/` directory). API and WebSocket paths continue to use the same origin;
+unknown GET paths fall back to the SPA entry point. The root `Dockerfile`
+builds this combined deployment with `VITE_BACKEND_MODE=http`.
+
 The process handles `SIGINT` and `SIGTERM`, stops the battle-session cleanup
 worker, lets in-flight HTTP requests complete within `SHUTDOWN_TIMEOUT`, and
 then closes the PostgreSQL pool.

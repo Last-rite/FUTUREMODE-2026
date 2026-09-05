@@ -26,16 +26,25 @@ const (
 
 type fakeStore struct {
 	createPlayer      func(context.Context, domain.NewPlayer) (domain.Player, error)
+	playerByID        func(context.Context, string) (domain.Player, error)
 	playerByUsername  func(context.Context, string) (domain.Player, error)
 	listPlayerUnits   func(context.Context, string) ([]domain.Unit, error)
+	listTreasures     func(context.Context, string) ([]domain.Treasure, error)
+	listLoadouts      func(context.Context, string) ([]domain.PlayerLoadout, error)
 	playerStatus      func(context.Context, string) (domain.PlayerStatus, error)
 	listDungeons      func(context.Context, string) ([]domain.Dungeon, error)
+	listAllDungeons   func(context.Context) ([]domain.Dungeon, error)
 	setLoadout        func(context.Context, string, []string) error
+	setLoadoutSlot    func(context.Context, string, int, []string) error
+	setActiveLoadout  func(context.Context, string, int) error
 	equipTreasure     func(context.Context, string, string, string) error
+	unequipTreasure   func(context.Context, string, string) error
 	listTrades        func(context.Context, string, *domain.TradeStatus) ([]domain.Trade, error)
+	listTradeAssets   func(context.Context, string) (domain.TradeInventory, error)
 	createTrade       func(context.Context, domain.NewTrade) (domain.Trade, error)
 	acceptTrade       func(context.Context, string, string) (domain.Trade, error)
 	rejectTrade       func(context.Context, string, string) (domain.Trade, error)
+	cancelTrade       func(context.Context, string, string) (domain.Trade, error)
 	createDungeon     func(context.Context, domain.Dungeon) (domain.Dungeon, error)
 	updateDungeon     func(context.Context, domain.Dungeon) (domain.Dungeon, error)
 	banPlayer         func(context.Context, string) error
@@ -49,11 +58,29 @@ func (f *fakeStore) CreatePlayer(c context.Context, v domain.NewPlayer) (domain.
 	}
 	return domain.Player{}, unexpected("CreatePlayer")
 }
+func (f *fakeStore) PlayerByID(c context.Context, v string) (domain.Player, error) {
+	if f.playerByID != nil {
+		return f.playerByID(c, v)
+	}
+	return domain.Player{}, unexpected("PlayerByID")
+}
 func (f *fakeStore) PlayerByUsername(c context.Context, v string) (domain.Player, error) {
 	if f.playerByUsername != nil {
 		return f.playerByUsername(c, v)
 	}
 	return domain.Player{}, unexpected("PlayerByUsername")
+}
+func (f *fakeStore) ListPlayerTreasures(c context.Context, v string) ([]domain.Treasure, error) {
+	if f.listTreasures != nil {
+		return f.listTreasures(c, v)
+	}
+	return nil, unexpected("ListPlayerTreasures")
+}
+func (f *fakeStore) ListPlayerLoadouts(c context.Context, v string) ([]domain.PlayerLoadout, error) {
+	if f.listLoadouts != nil {
+		return f.listLoadouts(c, v)
+	}
+	return nil, unexpected("ListPlayerLoadouts")
 }
 func (f *fakeStore) ListPlayerUnits(c context.Context, v string) ([]domain.Unit, error) {
 	if f.listPlayerUnits != nil {
@@ -73,11 +100,29 @@ func (f *fakeStore) ListSolvedDungeons(c context.Context, v string) ([]domain.Du
 	}
 	return nil, unexpected("ListSolvedDungeons")
 }
+func (f *fakeStore) ListDungeons(c context.Context) ([]domain.Dungeon, error) {
+	if f.listAllDungeons != nil {
+		return f.listAllDungeons(c)
+	}
+	return nil, unexpected("ListDungeons")
+}
 func (f *fakeStore) SetBattleLoadout(c context.Context, p string, ids []string) error {
 	if f.setLoadout != nil {
 		return f.setLoadout(c, p, ids)
 	}
 	return unexpected("SetBattleLoadout")
+}
+func (f *fakeStore) SetPlayerLoadout(c context.Context, p string, slot int, ids []string) error {
+	if f.setLoadoutSlot != nil {
+		return f.setLoadoutSlot(c, p, slot, ids)
+	}
+	return unexpected("SetPlayerLoadout")
+}
+func (f *fakeStore) SetActivePlayerLoadout(c context.Context, p string, slot int) error {
+	if f.setActiveLoadout != nil {
+		return f.setActiveLoadout(c, p, slot)
+	}
+	return unexpected("SetActivePlayerLoadout")
 }
 func (f *fakeStore) EquipTreasure(c context.Context, p, tr, u string) error {
 	if f.equipTreasure != nil {
@@ -85,11 +130,23 @@ func (f *fakeStore) EquipTreasure(c context.Context, p, tr, u string) error {
 	}
 	return unexpected("EquipTreasure")
 }
+func (f *fakeStore) UnequipTreasure(c context.Context, p, tr string) error {
+	if f.unequipTreasure != nil {
+		return f.unequipTreasure(c, p, tr)
+	}
+	return unexpected("UnequipTreasure")
+}
 func (f *fakeStore) ListPlayerTrades(c context.Context, p string, s *domain.TradeStatus) ([]domain.Trade, error) {
 	if f.listTrades != nil {
 		return f.listTrades(c, p, s)
 	}
 	return nil, unexpected("ListPlayerTrades")
+}
+func (f *fakeStore) ListTradeAssets(c context.Context, p string) (domain.TradeInventory, error) {
+	if f.listTradeAssets != nil {
+		return f.listTradeAssets(c, p)
+	}
+	return domain.TradeInventory{}, unexpected("ListTradeAssets")
 }
 func (f *fakeStore) CreateTrade(c context.Context, v domain.NewTrade) (domain.Trade, error) {
 	if f.createTrade != nil {
@@ -108,6 +165,12 @@ func (f *fakeStore) RejectTrade(c context.Context, tr, p string) (domain.Trade, 
 		return f.rejectTrade(c, tr, p)
 	}
 	return domain.Trade{}, unexpected("RejectTrade")
+}
+func (f *fakeStore) CancelTrade(c context.Context, tr, p string) (domain.Trade, error) {
+	if f.cancelTrade != nil {
+		return f.cancelTrade(c, tr, p)
+	}
+	return domain.Trade{}, unexpected("CancelTrade")
 }
 func (f *fakeStore) CreateDungeon(c context.Context, v domain.Dungeon) (domain.Dungeon, error) {
 	if f.createDungeon != nil {
@@ -344,6 +407,60 @@ func TestRegisterAndLogin(t *testing.T) {
 }
 
 func TestPlayerEndpoints(t *testing.T) {
+	t.Run("bootstrap resources", func(t *testing.T) {
+		fs := &fakeStore{
+			playerByID: func(_ context.Context, id string) (domain.Player, error) {
+				if id != playerID {
+					t.Fatal("wrong player")
+				}
+				return domain.Player{ID: id, Username: "nox", ActiveLoadoutSlot: 2}, nil
+			},
+			listTreasures: func(_ context.Context, id string) ([]domain.Treasure, error) {
+				effect := "home_stone"
+				return []domain.Treasure{{ID: treasureID, OwnerID: id, Code: "home-stone", EffectCode: &effect}}, nil
+			},
+			listLoadouts: func(_ context.Context, id string) ([]domain.PlayerLoadout, error) {
+				return []domain.PlayerLoadout{{ID: tradeID, PlayerID: id, Slot: 1, UnitIDs: []string{unitID}}}, nil
+			},
+			listAllDungeons: func(context.Context) ([]domain.Dungeon, error) {
+				return []domain.Dungeon{{ID: dungeonID, Name: "Crypt", EnemyConfig: json.RawMessage(`[]`)}}, nil
+			},
+		}
+		for _, path := range []string{
+			"/players/" + playerID,
+			"/players/" + playerID + "/treasures",
+			"/players/" + playerID + "/loadouts",
+			"/dungeons",
+		} {
+			assertResponse(t, request(t, testServer(fs), "GET", path, "", true), 200, "")
+		}
+	})
+
+	t.Run("persisted loadout mutations", func(t *testing.T) {
+		fs := &fakeStore{
+			setLoadoutSlot: func(_ context.Context, id string, slot int, ids []string) error {
+				if id != playerID || slot != 2 || len(ids) != 1 || ids[0] != unitID {
+					t.Fatal("wrong loadout slot mutation")
+				}
+				return nil
+			},
+			setActiveLoadout: func(_ context.Context, id string, slot int) error {
+				if id != playerID || slot != 2 {
+					t.Fatal("wrong active loadout mutation")
+				}
+				return nil
+			},
+		}
+		assertResponse(t, request(t, testServer(fs), "PUT", "/players/"+playerID+"/loadouts/2", `{"unit_ids":["`+unitID+`"]}`, true), 204, "")
+		assertResponse(t, request(t, testServer(fs), "PUT", "/players/"+playerID+"/loadouts/active", `{"slot":2}`, true), 204, "")
+		for _, path := range []string{"/players/" + playerID + "/loadouts/0", "/players/" + playerID + "/loadouts/6", "/players/" + playerID + "/loadouts/not-a-slot"} {
+			assertResponse(t, request(t, testServer(&fakeStore{}), "PUT", path, `{"unit_ids":[]}`, true), 400, "invalid_request")
+		}
+		for _, body := range []string{`{}`, `{"slot":0}`, `{"slot":6}`} {
+			assertResponse(t, request(t, testServer(&fakeStore{}), "PUT", "/players/"+playerID+"/loadouts/active", body, true), 400, "invalid_request")
+		}
+	})
+
 	store := &fakeStore{
 		listPlayerUnits: func(context.Context, string) ([]domain.Unit, error) {
 			return []domain.Unit{{ID: unitID, OwnerID: playerID, IsEquipped: true}}, nil
@@ -475,6 +592,16 @@ func TestTreasureAndTradeEndpoints(t *testing.T) {
 			assertResponse(t, request(t, testServer(fs), "POST", "/treasures/"+treasureID+"/equip", `{"unit_id":"`+unitID+`"}`, true), tc.status, tc.code)
 		}
 	})
+	t.Run("unequip and mappings", func(t *testing.T) {
+		for _, tc := range []struct {
+			err    error
+			status int
+			code   string
+		}{{nil, 204, ""}, {domain.ErrAssetNotOwned, 403, "asset_not_owned"}, {domain.ErrPlayerBusy, 409, "player_busy"}} {
+			fs := &fakeStore{unequipTreasure: func(context.Context, string, string) error { return tc.err }}
+			assertResponse(t, request(t, testServer(fs), "DELETE", "/treasures/"+treasureID+"/equip", "", true), tc.status, tc.code)
+		}
+	})
 	t.Run("list validates status and passes filter", func(t *testing.T) {
 		fs := &fakeStore{listTrades: func(_ context.Context, p string, s *domain.TradeStatus) ([]domain.Trade, error) {
 			if p != playerID || s == nil || *s != domain.TradeStatusPending {
@@ -498,6 +625,55 @@ func TestTreasureAndTradeEndpoints(t *testing.T) {
 			assertResponse(t, request(t, testServer(&fakeStore{}), "POST", "/trades", body, true), 400, "invalid_request")
 		}
 	})
+	t.Run("create accepts exact requested assets", func(t *testing.T) {
+		fs := &fakeStore{createTrade: func(_ context.Context, trade domain.NewTrade) (domain.Trade, error) {
+			if len(trade.RequestedAssets) != 1 || trade.RequestedAssets[0].TreasureID == nil || *trade.RequestedAssets[0].TreasureID != treasureID {
+				t.Fatalf("requested assets = %#v", trade.RequestedAssets)
+			}
+			return domain.Trade{
+				ID: tradeID, FromPlayerID: trade.FromPlayerID, ToPlayerID: trade.ToPlayerID,
+				UnitID: trade.UnitID, RequestedAssets: trade.RequestedAssets, Status: domain.TradeStatusPending,
+			}, nil
+		}}
+		server := testServer(fs)
+		server.maxBodyBytes = 1024
+		response := request(t, server, "POST", "/trades", `{
+			"to_player_id":"`+otherID+`",
+			"unit_id":"`+unitID+`",
+			"requested_assets":[{"treasure_id":"`+treasureID+`"}]
+		}`, true)
+		assertResponse(t, response, 201, "")
+		if !strings.Contains(response.Body.String(), `"requested_assets":[{"treasure_id":"`+treasureID+`"}]`) {
+			t.Fatalf("response body = %s", response.Body.String())
+		}
+	})
+	t.Run("create rejects malformed requested asset bundles", func(t *testing.T) {
+		mixed := `{"to_player_id":"` + otherID + `","unit_id":"` + unitID + `","requested_assets":[{"unit_id":"` + tradeID + `"},{"treasure_id":"` + treasureID + `"}]}`
+		duplicate := `{"to_player_id":"` + otherID + `","unit_id":"` + unitID + `","requested_assets":[{"treasure_id":"` + treasureID + `"},{"treasure_id":"` + treasureID + `"}]}`
+		invalid := `{"to_player_id":"` + otherID + `","unit_id":"` + unitID + `","requested_assets":[{}]}`
+		for _, body := range []string{mixed, duplicate, invalid} {
+			server := testServer(&fakeStore{})
+			server.maxBodyBytes = 1024
+			assertResponse(t, request(t, server, "POST", "/trades", body, true), 400, "invalid_request")
+		}
+	})
+	t.Run("list trade assets allows authenticated counterparty lookup", func(t *testing.T) {
+		fs := &fakeStore{listTradeAssets: func(_ context.Context, id string) (domain.TradeInventory, error) {
+			if id != otherID {
+				t.Fatalf("player id = %q", id)
+			}
+			return domain.TradeInventory{
+				Units:     []domain.Unit{{ID: unitID, OwnerID: otherID}},
+				Treasures: []domain.Treasure{{ID: treasureID, OwnerID: otherID}},
+			}, nil
+		}}
+		response := request(t, testServer(fs), "GET", "/players/"+otherID+"/trade-assets", "", true)
+		assertResponse(t, response, 200, "")
+		if !strings.Contains(response.Body.String(), unitID) || !strings.Contains(response.Body.String(), treasureID) {
+			t.Fatalf("trade inventory response = %s", response.Body.String())
+		}
+		assertResponse(t, request(t, testServer(&fakeStore{}), "GET", "/players/not-a-uuid/trade-assets", "", true), 400, "invalid_request")
+	})
 	t.Run("create and accept map ownership differently", func(t *testing.T) {
 		create := &fakeStore{createTrade: func(context.Context, domain.NewTrade) (domain.Trade, error) {
 			return domain.Trade{}, domain.ErrAssetNotOwned
@@ -512,7 +688,7 @@ func TestTreasureAndTradeEndpoints(t *testing.T) {
 		}}
 		assertResponse(t, request(t, testServer(busy), "POST", "/trades/"+tradeID+"/accept", "", true), 409, "player_busy")
 	})
-	t.Run("accept and reject use authenticated recipient", func(t *testing.T) {
+	t.Run("accept reject and cancel use authenticated actor", func(t *testing.T) {
 		accept := &fakeStore{acceptTrade: func(_ context.Context, tr, p string) (domain.Trade, error) {
 			if tr != tradeID || p != playerID {
 				t.Fatal("wrong IDs")
@@ -525,8 +701,15 @@ func TestTreasureAndTradeEndpoints(t *testing.T) {
 			}
 			return domain.Trade{ID: tr}, nil
 		}}
+		cancel := &fakeStore{cancelTrade: func(_ context.Context, tr, p string) (domain.Trade, error) {
+			if tr != tradeID || p != playerID {
+				t.Fatal("wrong IDs")
+			}
+			return domain.Trade{ID: tr, Status: domain.TradeStatusCancelled}, nil
+		}}
 		assertResponse(t, request(t, testServer(accept), "POST", "/trades/"+tradeID+"/accept", "", true), 200, "")
 		assertResponse(t, request(t, testServer(reject), "POST", "/trades/"+tradeID+"/reject", "", true), 200, "")
+		assertResponse(t, request(t, testServer(cancel), "POST", "/trades/"+tradeID+"/cancel", "", true), 200, "")
 	})
 }
 
@@ -614,6 +797,8 @@ func TestAllSafeDomainErrorsHaveExactPublicMappings(t *testing.T) {
 		{domain.ErrPlayerNotInCombat, 409, "player_not_in_combat", "player is not in combat"},
 		{domain.ErrTradeNotPending, 409, "trade_not_pending", "trade is not pending"},
 		{domain.ErrTradeRecipient, 403, "invalid_trade_recipient", "player is not the trade recipient"},
+		{domain.ErrTradeSender, 403, "invalid_trade_sender", "player is not the trade sender"},
+		{domain.ErrAssetReserved, 409, "asset_reserved", "asset is reserved by a pending trade"},
 		{domain.ErrAlreadyEquipped, 409, "already_equipped", "treasure is equipped to another unit"},
 		{domain.ErrBattleLoadoutFull, 409, "battle_loadout_full", "battle loadout already has three units"},
 		{domain.ErrUnitUnavailable, 409, "unit_unavailable", "unit is not alive and available"},

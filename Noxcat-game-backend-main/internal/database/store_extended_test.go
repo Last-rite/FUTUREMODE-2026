@@ -224,6 +224,85 @@ func TestSettleBattleSessionUnequipsDeadUnit(t *testing.T) {
 	if loaded[0].IsAlive || loaded[0].IsEquipped {
 		t.Fatalf("fallen unit alive/equipped = %t/%t, want false/false", loaded[0].IsAlive, loaded[0].IsEquipped)
 	}
+	loadouts, err := store.ListPlayerLoadouts(context.Background(), player.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(loadouts[0].UnitIDs) != 0 {
+		t.Fatalf("fallen unit remains in active loadout: %v", loadouts[0].UnitIDs)
+	}
+}
+
+func TestHomeStonePreventsOneDeathAndConsumesCharge(t *testing.T) {
+	store := newStoreTest(t)
+	player, err := store.CreatePlayer(context.Background(), domain.NewPlayer{
+		Username: "home-stone-player", PasswordHash: "bcrypt-hash", StartingMoney: 100,
+		StartingUnits: []domain.NewUnit{{
+			Species: domain.UnitSpeciesWind, BaseStats: defaultStats, IsEquipped: true,
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dungeon := createDungeon(t, store)
+	units, _ := store.ListPlayerUnits(context.Background(), player.ID)
+	var treasureID string
+	if err := testPool.QueryRow(context.Background(), `
+		INSERT INTO treasures (
+			owner_id, code, name, treasure_type, rarity, health_bonus, effect_code, charges
+		) VALUES ($1, 'home-stone', '回家石', 'utility', 'epic', 5, 'home_stone', 1)
+		RETURNING id`, player.ID).Scan(&treasureID); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EquipTreasure(context.Background(), player.ID, treasureID, units[0].ID); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := startBattleSession(store, context.Background(), player.ID, dungeon.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fallenStats := first.Units[0].CurrentStats
+	fallenStats.Health = 0
+	if err := settleActiveBattleSession(store, context.Background(), domain.BattleResult{
+		PlayerID: player.ID, DungeonID: dungeon.ID,
+		Units: []domain.UnitSettlement{{UnitID: units[0].ID, CurrentStats: fallenStats, IsAlive: false}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	loaded, _ := store.ListPlayerUnits(context.Background(), player.ID)
+	if !loaded[0].IsAlive || !loaded[0].IsEquipped || loaded[0].CurrentStats.Health != 1 {
+		t.Fatalf("home-stone survivor = %+v", loaded[0])
+	}
+	treasures, _ := store.ListPlayerTreasures(context.Background(), player.ID)
+	if treasures[0].Charges == nil || *treasures[0].Charges != 0 {
+		t.Fatalf("home-stone charges = %v, want 0", treasures[0].Charges)
+	}
+	loadouts, _ := store.ListPlayerLoadouts(context.Background(), player.ID)
+	if len(loadouts[0].UnitIDs) != 1 || loadouts[0].UnitIDs[0] != units[0].ID {
+		t.Fatalf("protected unit loadout = %v", loadouts[0].UnitIDs)
+	}
+
+	second, err := startBattleSession(store, context.Background(), player.ID, dungeon.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fallenStats = second.Units[0].CurrentStats
+	fallenStats.Health = 0
+	if err := settleActiveBattleSession(store, context.Background(), domain.BattleResult{
+		PlayerID: player.ID, DungeonID: dungeon.ID,
+		Units: []domain.UnitSettlement{{UnitID: units[0].ID, CurrentStats: fallenStats, IsAlive: false}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	loaded, _ = store.ListPlayerUnits(context.Background(), player.ID)
+	if loaded[0].IsAlive || loaded[0].IsEquipped {
+		t.Fatalf("depleted home-stone unit = %+v", loaded[0])
+	}
+	loadouts, _ = store.ListPlayerLoadouts(context.Background(), player.ID)
+	if len(loadouts[0].UnitIDs) != 0 {
+		t.Fatalf("dead unit remains in loadout: %v", loadouts[0].UnitIDs)
+	}
 }
 
 func TestLostBattleDoesNotAwardMoneyOrProgress(t *testing.T) {
@@ -379,6 +458,7 @@ func TestTradeValidationAndFailurePaths(t *testing.T) {
 	recipient := createPlayer(t, store, "trade-validation-recipient", 0)
 	third := createPlayer(t, store, "trade-validation-third", 0)
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+	makeUnitTradeable(t, units[0].ID)
 
 	if _, err := store.CreateTrade(context.Background(), domain.NewTrade{FromPlayerID: sender.ID, ToPlayerID: recipient.ID}); !errors.Is(err, domain.ErrInvalidTradeAsset) {
 		t.Errorf("assetless CreateTrade() error = %v, want ErrInvalidTradeAsset", err)
@@ -467,29 +547,32 @@ func TestTreasureTradeLifecycle(t *testing.T) {
 	}
 }
 
-func TestStaleTradeCannotTransferSameUnitTwice(t *testing.T) {
+func TestPendingTradeReservationPreventsDuplicateUnitOffer(t *testing.T) {
 	store := newStoreTest(t)
 	sender := createPlayer(t, store, "stale-trade-sender", 1)
 	firstRecipient := createPlayer(t, store, "stale-trade-first", 0)
 	secondRecipient := createPlayer(t, store, "stale-trade-second", 0)
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+	makeUnitTradeable(t, units[0].ID)
 	first, err := store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: sender.ID, ToPlayerID: firstRecipient.ID, UnitID: stringPointer(units[0].ID),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := store.CreateTrade(context.Background(), domain.NewTrade{
+	_, err = store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: sender.ID, ToPlayerID: secondRecipient.ID, UnitID: stringPointer(units[0].ID),
 	})
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, domain.ErrAssetReserved) {
+		t.Fatalf("duplicate CreateTrade() error = %v, want ErrAssetReserved", err)
 	}
 	if _, err := store.AcceptTrade(context.Background(), first.ID, firstRecipient.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTrade(context.Background(), second.ID, secondRecipient.ID); !errors.Is(err, domain.ErrAssetNotOwned) {
-		t.Fatalf("stale AcceptTrade() error = %v, want ErrAssetNotOwned", err)
+	if _, err := store.CreateTrade(context.Background(), domain.NewTrade{
+		FromPlayerID: sender.ID, ToPlayerID: secondRecipient.ID, UnitID: stringPointer(units[0].ID),
+	}); !errors.Is(err, domain.ErrAssetNotOwned) {
+		t.Fatalf("transferred-unit CreateTrade() error = %v, want ErrAssetNotOwned", err)
 	}
 }
 
@@ -519,6 +602,7 @@ func TestListPlayerTradesWithoutStatusFilter(t *testing.T) {
 	sender := createPlayer(t, store, "trade-list-sender", 1)
 	recipient := createPlayer(t, store, "trade-list-recipient", 0)
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+	makeUnitTradeable(t, units[0].ID)
 	if _, err := store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: sender.ID,
 		ToPlayerID:   recipient.ID,

@@ -30,6 +30,10 @@ type rowScanner interface {
 const unitColumns = `id, owner_id, species, base_stats, current_stats,
 	equipped_treasure_id, is_permanent, is_alive, is_equipped, created_at`
 
+const treasureColumns = `id, owner_id, code, name, treasure_type, rarity,
+	damage_bonus, health_bonus, defense_bonus, speed_bonus, effect_code, charges,
+	equipped_by_unit_id, created_at`
+
 func marshalStats(stats domain.Stats) ([]byte, error) {
 	value, err := json.Marshal(stats)
 	if err != nil {
@@ -48,6 +52,7 @@ func scanPlayer(row rowScanner) (domain.Player, error) {
 		&player.Money,
 		&player.Status,
 		&player.IsBanned,
+		&player.ActiveLoadoutSlot,
 		&player.CreatedAt,
 	)
 	return player, err
@@ -81,11 +86,33 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	return unit, nil
 }
 
+func scanTreasure(row rowScanner) (domain.Treasure, error) {
+	var treasure domain.Treasure
+	err := row.Scan(
+		&treasure.ID,
+		&treasure.OwnerID,
+		&treasure.Code,
+		&treasure.Name,
+		&treasure.TreasureType,
+		&treasure.Rarity,
+		&treasure.DamageBonus,
+		&treasure.HealthBonus,
+		&treasure.DefenseBonus,
+		&treasure.SpeedBonus,
+		&treasure.EffectCode,
+		&treasure.Charges,
+		&treasure.EquippedByUnitID,
+		&treasure.CreatedAt,
+	)
+	return treasure, err
+}
+
 func scanDungeon(row rowScanner) (domain.Dungeon, error) {
 	var dungeon domain.Dungeon
 	err := row.Scan(
 		&dungeon.ID,
 		&dungeon.Name,
+		&dungeon.SortOrder,
 		&dungeon.EnemyConfig,
 		&dungeon.RewardMoney,
 		&dungeon.RewardDrops,

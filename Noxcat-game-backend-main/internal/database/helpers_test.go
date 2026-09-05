@@ -20,8 +20,11 @@ func resetDatabase(ctx context.Context) error {
 	_, err := testPool.Exec(ctx, `
 		TRUNCATE TABLE
 			battle_sessions,
+			trade_assets,
 			trades,
 			player_dungeon_progress,
+			player_loadout_units,
+			player_loadouts,
 			treasures,
 			units,
 			dungeons,
@@ -106,6 +109,23 @@ func createTreasure(t *testing.T, ownerID string, damageBonus int) domain.Treasu
 
 func stringPointer(value string) *string {
 	return &value
+}
+
+func makeUnitTradeable(t *testing.T, unitID string) {
+	t.Helper()
+	if _, err := testPool.Exec(context.Background(), `UPDATE units SET is_permanent = false, is_equipped = false WHERE id = $1`, unitID); err != nil {
+		t.Fatalf("make unit %q tradeable: %v", unitID, err)
+	}
+	if _, err := testPool.Exec(context.Background(), `DELETE FROM player_loadout_units WHERE unit_id = $1`, unitID); err != nil {
+		t.Fatalf("remove tradeable unit %q from loadouts: %v", unitID, err)
+	}
+}
+
+func makeUnitNonPermanent(t *testing.T, unitID string) {
+	t.Helper()
+	if _, err := testPool.Exec(context.Background(), `UPDATE units SET is_permanent = false WHERE id = $1`, unitID); err != nil {
+		t.Fatalf("make unit %q non-permanent: %v", unitID, err)
+	}
 }
 
 func startBattleSession(store *database.Store, ctx context.Context, playerID, dungeonID string) (domain.BattleSnapshot, error) {

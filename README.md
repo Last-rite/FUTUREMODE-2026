@@ -10,7 +10,7 @@
 
 - 功能一 : 類似知名手遊《怪物彈珠》的遊戲玩法，玩家用三隻寵物球組成的隊伍，抓準角度彈射角色，利用牆壁與撞擊角色造成的反彈，撞擊敵方造成傷害
 - 功能二 : 若輸給敵方，寵物將會被遺留在地牢中成為獲勝獎勵之一，下一位戰勝此地牢的玩家有機會獲得該寵物
-- 功能三 : 玩家可以在交易所使用金幣或道具和其他玩家進行交易
+- 功能三 : 玩家可以在交易所以 NOXCAT 或裝備向指定玩家發起贈與／雙向交換
 
 ## 系統架構
 
@@ -27,7 +27,7 @@
 | **使用者與狀態管理** | Google Identity Services (OAuth 2.0)、Cookie / LocalStorage | 支援 Google 快速登入與訪客模式，兼具 1 天會話保持與本機模擬數據持久化 |
 | **圖示庫** | Lucide React | 提供現代化科技感向量圖示（武器、道具、戰鬥與導覽選單） |
 | **測試後端（Demo）** | Browser Mock Backend (`src/demo-backend/`) | 瀏覽器端非同步 API 替身，支援帳號登入、隊伍編組、地牢共享戰利品池結算與玩家間交易流轉 |
-| **正式後端（架構規劃）** | Go (Golang) + PostgreSQL (`pgxpool`) + WebSocket | 規劃行級鎖（`FOR UPDATE`）防重複領取、確定性戰鬥物理後端校驗、JWT 鑑權與即時交易通知 |
+| **正式後端** | Go (Golang) + PostgreSQL (`pgxpool`) + WebSocket | 已實作 JWT 鑑權、五組編隊、戰鬥工作階段、裝備效果、具 reservation 的原子雙向交易與即時交易通知 |
 | **雲端部署（Sponsor）** | Zeabur | 雲端一鍵自動化 Git CI/CD 部署、自動 HTTPS / SSL 憑證與邊緣網路託管 |
 
 ## 安裝與執行
@@ -73,6 +73,20 @@
    npm run preview
    ```
 
+### 正式 Go／PostgreSQL 模式
+
+瀏覽器 demo 預設保持不變。要改用正式後端，build 時設定
+`VITE_BACKEND_MODE=http`；`VITE_API_BASE_URL` 留空即使用同源 API。根目錄
+`Dockerfile` 會採用此模式，並由 Go 程序透過 `STATIC_DIR=/app/public`
+同時提供 SPA、REST API 與 WebSocket。Bearer access token 只保存在
+`sessionStorage`，不寫入 cookie 或 URL；目前不實作 refresh token，過期後
+重新登入。
+
+正式交易以資產 UUID 為準：發起方提供一隻 NOXCAT 或一件裝備，並可選擇
+單向贈與、換取對方一隻 NOXCAT，或換取一至十件指定裝備。等待期間只鎖定
+發起方資產；接受時後端會重新驗證雙方持有權並在同一 PostgreSQL transaction
+完成互換，任何一件資產失效都會完整回滾。
+
 ### 快速測試帳號
 
 為便於評審與測試人員快速重現完整流程，系統已內建測試帳號（亦可自由註冊新帳號或以訪客／Google 登入）：
@@ -105,10 +119,10 @@
 
 ### 未來工作與後續規劃 (Future Work & Roadmap)
 
-1. **正式後端與雲端資料庫落地（Production Backend）**
-   - 實作 `architecture.md` 所定義之 Go (Golang) 後端與 PostgreSQL 資料庫（`pgxpool`）。
-   - 引入行級鎖（`SELECT ... FOR UPDATE`）保證跨玩家交易與地牢戰利品池的 ACID 原子性，杜絕資產雙花或重複領取。
-   - 透過 WebSocket 實作即時在線交易請求推播與狀態更新。
+1. **正式後端上線與雲端資料庫維運（Production Rollout）**
+   - 將現有 Go／PostgreSQL 同源部署套用到正式環境，建立備份、還原演練與監控。
+   - 保持交易與戰鬥 mutation 的既有固定鎖序與 PostgreSQL deadlock／競態測試。
+   - 依實際流量補充 rate limit；MVP 暫不加入 refresh token、outbox 或交易金幣功能。
 2. **Web3 智能合約與 NOXCAT 錢包整合（Web3 & Token Economy）**
    - 將寵物與稀有裝備鑄造成為鏈上 NFT。
    - 深度對接 NOXCAT 官方電子錢包，支援一鍵 Web3 簽名登入與鏈上資產劃轉。

@@ -60,11 +60,15 @@ func run(ctx context.Context, config config, logger *slog.Logger) error {
 		return err
 	}
 	tradeHub := httpapi.NewTradeHub(logger)
-	handler := httpapi.NewServer(httpapi.Config{
+	apiHandler := httpapi.NewServer(httpapi.Config{
 		Store: store, Auth: authService, Battles: battleService, Logger: logger,
 		TradeNotifier: tradeHub, WebSockets: tradeHub,
 		StartingMoney: config.startingMoney, StartingUnits: startingRoster(),
 	}).Handler()
+	handler, err := httpapi.WithStaticFrontend(apiHandler, config.staticDir)
+	if err != nil {
+		return err
+	}
 	httpServer := &http.Server{
 		Addr:              config.httpAddress,
 		Handler:           handler,

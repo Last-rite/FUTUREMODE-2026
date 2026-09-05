@@ -176,6 +176,8 @@ export class GameEngine {
             atkBonus: pet.equippedItem.atkBonus || 0,
             defBonus: pet.equippedItem.defBonus || 0,
             spdBonus: pet.equippedItem.spdBonus || 0,
+            effectCode: pet.equippedItem.effectCode || null,
+            charges: pet.equippedItem.charges ?? null,
           } : null,
         };
 
@@ -385,12 +387,14 @@ export class GameEngine {
                       b.idString?.includes('nxc_1') ||
                       (b.name?.includes('NOXCAT') && !b.name?.includes('FUTURE') && !b.name?.includes('COOL') && !b.name?.includes('HARD'));
 
-      const hasHomeStone = Boolean(b.equipment && (
+      const homeStoneIdentity = Boolean(b.equipment && (
+        b.equipment.effectCode === 'home_stone' ||
         b.equipment.name?.includes('回家') ||
         b.equipment.idString?.includes('return_stone') ||
-        b.equipment.idString?.includes('home') ||
-        b.equipment.type === 'TREASURE'
+        b.equipment.idString?.includes('home')
       ));
+      const hasChargeMetadata = b.equipment?.charges !== null && b.equipment?.charges !== undefined;
+      const hasHomeStone = homeStoneIdentity && (!hasChargeMetadata || Number(b.equipment.charges) > 0);
 
       const canReturnHome = isNxc01 || hasHomeStone;
 
@@ -442,6 +446,11 @@ export class GameEngine {
       gainedItems: this.battleGains?.items || [],
       claimedAssets: this.battleGains?.claimedAssets || [],
       goldEarned: this.goldEarned,
+      unitStates: playerBalls.map((ball) => ({
+        id: ball.petId,
+        hp: Math.max(0, Math.round(ball.hp)),
+        alive: Boolean(ball.alive && ball.hp > 0),
+      })).filter((unit) => unit.id),
     };
   }
 

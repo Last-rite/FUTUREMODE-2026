@@ -1,0 +1,10 @@
+.git
+.agents
+.env
+node_modules
+dist
+Noxcat-game-backend-main/.git
+Noxcat-game-backend-main/.env
+Noxcat-game-backend-main/tmp
+**/*_test.go
+docs

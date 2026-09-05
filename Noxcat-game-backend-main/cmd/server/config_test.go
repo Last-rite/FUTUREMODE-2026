@@ -36,6 +36,7 @@ func TestLoadConfigOverrides(t *testing.T) {
 		"JWT_SECRET":               "01234567890123456789012345678901",
 		"JWT_ISSUER":               "issuer",
 		"HTTP_ADDRESS":             "127.0.0.1:9000",
+		"STATIC_DIR":               "/srv/noxcat/public",
 		"BATTLE_SESSION_TTL":       "30m",
 		"BATTLE_CLEANUP_INTERVAL":  "10s",
 		"BATTLE_CLEANUP_BATCH":     "25",
@@ -46,7 +47,7 @@ func TestLoadConfigOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if loaded.httpAddress != "127.0.0.1:9000" || loaded.jwtIssuer != "issuer" ||
+	if loaded.httpAddress != "127.0.0.1:9000" || loaded.staticDir != "/srv/noxcat/public" || loaded.jwtIssuer != "issuer" ||
 		loaded.battleSessionTTL != 30*time.Minute || loaded.cleanupInterval != 10*time.Second ||
 		loaded.cleanupBatch != 25 || loaded.shutdownTimeout != 3*time.Second ||
 		loaded.databaseTimeout != 2*time.Second || loaded.startingMoney != 250 {

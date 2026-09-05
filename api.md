@@ -99,6 +99,8 @@ shown; they must not be collapsed into `500`.
 | `ErrPlayerNotInCombat` | `409` | `player_not_in_combat` | `player is not in combat` |
 | `ErrTradeNotPending` | `409` | `trade_not_pending` | `trade is not pending` |
 | `ErrTradeRecipient` | `403` | `invalid_trade_recipient` | `player is not the trade recipient` |
+| `ErrTradeSender` | `403` | `invalid_trade_sender` | `player is not the trade sender` |
+| `ErrAssetReserved` | `409` | `asset_reserved` | `asset is reserved by a pending trade` |
 | `ErrAlreadyEquipped` | `409` | `already_equipped` | `treasure is equipped to another unit` |
 | `ErrBattleLoadoutFull` | `409` | `battle_loadout_full` | `battle loadout already has three units` |
 | `ErrUnitUnavailable` | `409` | `unit_unavailable` | `unit is not alive and available` |
@@ -451,13 +453,20 @@ changes during combat.
 ### `GET /trades?status=pending`
 
 Lists trades involving the authenticated player. `status` is optional and, if
-present, must be `pending`, `accepted`, or `rejected`.
+present, must be `pending`, `accepted`, `rejected`, or `cancelled`. Each trade
+contains an ordered `requested_assets` array; an empty array is a gift.
 
 Response: `200 OK`
 
 ```json
 {"trades":[]}
 ```
+
+### `GET /players/{player_id}/trade-assets`
+
+Returns only the player's currently transferable units and treasures for exact
+ID selection. The caller must be authenticated. This read does not reserve the
+target player's assets.
 
 ### `POST /trades`
 
@@ -466,7 +475,8 @@ Request with a unit:
 ```json
 {
   "to_player_id": "uuid",
-  "unit_id": "uuid"
+  "unit_id": "uuid",
+  "requested_assets": [{"treasure_id":"uuid"}]
 }
 ```
 
@@ -475,7 +485,8 @@ Request with a treasure:
 ```json
 {
   "to_player_id": "uuid",
-  "treasure_id": "uuid"
+  "treasure_id": "uuid",
+  "requested_assets": []
 }
 ```
 
@@ -483,24 +494,30 @@ Handler validation:
 
 - `to_player_id` is a valid UUID and differs from the JWT player ID.
 - Exactly one of `unit_id` and `treasure_id` is present and valid.
+- `requested_assets` is empty, one unit, or one to ten distinct treasures.
 - Supplying both or neither returns `400 invalid_request`; it must not reach
   the store as `ErrInvalidTradeAsset`.
 
 Response: `201 Created` with the trade resource.
 
 Errors: `404 player_not_found`, `404 unit_not_found`,
-`404 treasure_not_found`, `403 asset_not_owned`, `409 already_equipped`.
+`404 treasure_not_found`, `403 asset_not_owned`, `409 already_equipped`,
+`409 unit_unavailable`, and `409 asset_reserved`.
+
+Only the sender's offered asset is reserved while pending. Requested assets
+are revalidated at acceptance and are never pre-reserved by another player.
 
 ### `POST /trades/{trade_id}/accept`
 
 The recipient ID comes from the JWT. The handler validates only the path UUID;
-the store locks the trade, both players in UUID order, and the asset before
-authoritatively checking the pending state and ownership.
+the store locks the trade, both players, all units, all treasures, and loadout
+memberships in a stable order before atomically swapping ownership.
 
 Response: `200 OK` with the accepted trade.
 
 Errors: `404 trade_not_found`, `403 invalid_trade_recipient`,
-`409 trade_not_pending`, `409 trade_asset_unavailable`.
+`409 trade_not_pending`, `409 trade_asset_unavailable`, `409 asset_reserved`,
+and `409 player_busy`.
 
 ### `POST /trades/{trade_id}/reject`
 
@@ -508,6 +525,11 @@ Response: `200 OK` with the rejected trade.
 
 Errors: `404 trade_not_found`, `403 invalid_trade_recipient`,
 `409 trade_not_pending`.
+
+### `POST /trades/{trade_id}/cancel`
+
+Only the authenticated sender may cancel. Cancellation releases the offered
+asset reservation and returns the trade with status `cancelled`.
 
 Trade WebSocket notifications are sent only after the database transaction
 commits. Notification failure never changes an already committed REST response.

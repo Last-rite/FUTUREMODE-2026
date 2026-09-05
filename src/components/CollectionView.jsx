@@ -239,7 +239,7 @@ function DetailSpeechBubble({ statsRef, containerRef, quote, isWeapon = false })
   );
 }
 
-export default function CollectionView({ data, onToggleParty, onEquipItem, onMessage }) {
+export default function CollectionView({ data, onToggleParty, onEquipItem, onSaveLoadout, onSelectLoadout, onMessage }) {
   // Mode switch: 'pets' vs 'items'
   const [tab, setTab] = useState('pets');
   const [selectedPet, setSelectedPet] = useState(null);
@@ -264,9 +264,19 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     saveStoredLoadouts(next);
   };
 
-  const handleSelectLoadout = (number) => {
+  const handleSelectLoadout = async (number) => {
+    const previous = loadout;
     setLoadout(number);
     setActiveLoadoutIndex(number);
+    if (onSelectLoadout) {
+      try {
+        await onSelectLoadout(number);
+      } catch (error) {
+        setLoadout(previous);
+        setActiveLoadoutIndex(previous);
+        onMessage(error.message || '無法切換編組', 'error');
+      }
+    }
   };
 
   // Fixed 3 slot array [slot0, slot1, slot2]
@@ -430,7 +440,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
 
   // Sync loadout 1 to backend demo API
   const syncBackendParty = async (slots) => {
-    if (!onToggleParty) return;
+    if (!onToggleParty || onSaveLoadout) return;
     const targetSelectedIds = new Set(slots.filter(Boolean));
     for (const p of data.pets) {
       const isSelected = Boolean(p.selected);
@@ -465,8 +475,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     const nextLoadouts = { ...loadouts, [loadout]: nextSlots };
     saveLoadouts(nextLoadouts);
 
-    if (loadout === 1) {
-      syncBackendParty(nextSlots);
+    try {
+      if (onSaveLoadout) await onSaveLoadout(loadout, nextSlots.filter(Boolean));
+      else if (loadout === 1) await syncBackendParty(nextSlots);
+    } catch (error) {
+      saveLoadouts(loadouts);
+      onMessage(error.message || '無法儲存編組', 'error');
     }
   };
 
@@ -478,8 +492,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     nextSlots[slotIndex] = null;
     const nextLoadouts = { ...loadouts, [loadout]: nextSlots };
     saveLoadouts(nextLoadouts);
-    if (loadout === 1) {
-      syncBackendParty(nextSlots);
+    try {
+      if (onSaveLoadout) await onSaveLoadout(loadout, nextSlots.filter(Boolean));
+      else if (loadout === 1) await syncBackendParty(nextSlots);
+    } catch (error) {
+      saveLoadouts(loadouts);
+      onMessage(error.message || '無法儲存編組', 'error');
     }
   };
 

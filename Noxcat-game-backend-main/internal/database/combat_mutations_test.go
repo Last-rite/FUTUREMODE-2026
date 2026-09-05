@@ -65,14 +65,15 @@ func TestAcceptTradeBlocksEitherCombatParticipantAndRollsBack(t *testing.T) {
 	for _, combatant := range []string{"sender", "recipient"} {
 		t.Run(combatant, func(t *testing.T) {
 			store := newStoreTest(t)
-			sender := createPlayer(t, store, "combat-trade-sender-"+combatant, 1)
+			sender := createPlayer(t, store, "combat-trade-sender-"+combatant, 2)
 			recipient := createPlayer(t, store, "combat-trade-recipient-"+combatant, 1)
 			dungeon := createDungeon(t, store)
 			senderUnits, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+			makeUnitTradeable(t, senderUnits[1].ID)
 			trade, err := store.CreateTrade(context.Background(), domain.NewTrade{
 				FromPlayerID: sender.ID,
 				ToPlayerID:   recipient.ID,
-				UnitID:       stringPointer(senderUnits[0].ID),
+				UnitID:       stringPointer(senderUnits[1].ID),
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -88,7 +89,7 @@ func TestAcceptTradeBlocksEitherCombatParticipantAndRollsBack(t *testing.T) {
 				t.Fatalf("AcceptTrade() error = %v, want ErrPlayerBusy", err)
 			}
 			var ownerID string
-			if err := testPool.QueryRow(context.Background(), `SELECT owner_id FROM units WHERE id = $1`, senderUnits[0].ID).Scan(&ownerID); err != nil {
+			if err := testPool.QueryRow(context.Background(), `SELECT owner_id FROM units WHERE id = $1`, senderUnits[1].ID).Scan(&ownerID); err != nil {
 				t.Fatal(err)
 			}
 			if ownerID != sender.ID {
@@ -107,17 +108,18 @@ func TestAcceptTradeBlocksEitherCombatParticipantAndRollsBack(t *testing.T) {
 
 func TestCombatAllowsCreatingAndRejectingPendingTrade(t *testing.T) {
 	store := newStoreTest(t)
-	sender := createPlayer(t, store, "combat-offer-sender", 1)
+	sender := createPlayer(t, store, "combat-offer-sender", 2)
 	recipient := createPlayer(t, store, "combat-offer-recipient", 0)
 	dungeon := createDungeon(t, store)
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+	makeUnitTradeable(t, units[1].ID)
 	if _, err := startBattleSession(store, context.Background(), sender.ID, dungeon.ID); err != nil {
 		t.Fatal(err)
 	}
 	trade, err := store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: sender.ID,
 		ToPlayerID:   recipient.ID,
-		UnitID:       stringPointer(units[0].ID),
+		UnitID:       stringPointer(units[1].ID),
 	})
 	if err != nil {
 		t.Fatalf("CreateTrade() during combat error = %v", err)

@@ -13,7 +13,7 @@ import gemImg from '../assets/noxgem_128.png';
 import { getBallImage } from '../game/sprites.js';
 import { getPetAvatar } from './NoxPlaceholder.jsx';
 import { hexToRgba, lerpColor } from '../game/physics.js';
-import { demoApi } from '../demo-backend/api.js';
+import { gameApi } from '../api/index.js';
 
 /**
  * Dynamic HP bar gradient:
@@ -517,7 +517,7 @@ export default function GameView({ user, dungeon, playerTeam = [], onExitToLobby
         setSnapshot(snap);
       },
       onEnemyDefeated: (enemyBall) => {
-        return demoApi.rollDungeonLoot(dungeon?.id, user?.id);
+        return gameApi.rollDungeonLoot(dungeon?.id, user?.id);
       },
       onGameOver: (result) => {
         setGameOver(result);

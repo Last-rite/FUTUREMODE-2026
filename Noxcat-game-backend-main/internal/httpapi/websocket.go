@@ -19,9 +19,10 @@ const (
 )
 
 const (
-	TradeCreated  = "trade.created"
-	TradeAccepted = "trade.accepted"
-	TradeRejected = "trade.rejected"
+	TradeCreated   = "trade.created"
+	TradeAccepted  = "trade.accepted"
+	TradeRejected  = "trade.rejected"
+	TradeCancelled = "trade.cancelled"
 )
 
 type TradeNotification struct {

@@ -84,25 +84,63 @@ func (s *Store) SettleBattleSession(ctx context.Context, result domain.BattleRes
 
 	settlements := append([]domain.UnitSettlement(nil), result.Units...)
 	sort.Slice(settlements, func(i, j int) bool { return settlements[i].UnitID < settlements[j].UnitID })
+	lockedUnits := make(map[string]domain.Unit, len(settlements))
 	for index, settlement := range settlements {
 		if settlement.UnitID == "" || (index > 0 && settlement.UnitID == settlements[index-1].UnitID) {
 			return domain.ErrInvalidInput
 		}
-		var ownerID string
-		err := tx.QueryRow(ctx, `SELECT owner_id FROM units WHERE id = $1 FOR UPDATE`, settlement.UnitID).Scan(&ownerID)
+		unit, err := scanUnit(tx.QueryRow(ctx, `SELECT `+unitColumns+` FROM units WHERE id = $1 FOR UPDATE`, settlement.UnitID))
 		if errors.Is(err, pgx.ErrNoRows) {
 			return notFound(domain.ErrUnitNotFound)
 		}
 		if err != nil {
 			return fmt.Errorf("lock settlement unit: %w", err)
 		}
-		if ownerID != result.PlayerID {
+		if unit.OwnerID != result.PlayerID {
 			return domain.ErrAssetNotOwned
 		}
+		lockedUnits[unit.ID] = unit
 	}
 
+	treasureRows, err := tx.Query(ctx, `
+		SELECT `+treasureColumns+` FROM treasures
+		WHERE owner_id = $1 ORDER BY id FOR UPDATE`, result.PlayerID)
+	if err != nil {
+		return fmt.Errorf("lock settlement treasures: %w", err)
+	}
+	lockedTreasures := make(map[string]domain.Treasure)
+	for treasureRows.Next() {
+		treasure, scanErr := scanTreasure(treasureRows)
+		if scanErr != nil {
+			treasureRows.Close()
+			return fmt.Errorf("scan settlement treasure: %w", scanErr)
+		}
+		lockedTreasures[treasure.ID] = treasure
+	}
+	if err := treasureRows.Err(); err != nil {
+		treasureRows.Close()
+		return fmt.Errorf("iterate settlement treasures: %w", err)
+	}
+	treasureRows.Close()
+
 	for _, settlement := range settlements {
-		stats, err := marshalStats(settlement.CurrentStats)
+		currentStats := settlement.CurrentStats
+		isAlive := settlement.IsAlive
+		unit := lockedUnits[settlement.UnitID]
+		if !isAlive && unit.EquippedTreasureID != nil {
+			treasure, exists := lockedTreasures[*unit.EquippedTreasureID]
+			if exists && treasure.EffectCode != nil && *treasure.EffectCode == "home_stone" &&
+				treasure.Charges != nil && *treasure.Charges > 0 {
+				isAlive = true
+				if currentStats.Health <= 0 {
+					currentStats.Health = 1
+				}
+				if _, err := tx.Exec(ctx, `UPDATE treasures SET charges = charges - 1 WHERE id = $1`, treasure.ID); err != nil {
+					return fmt.Errorf("consume home stone charge: %w", err)
+				}
+			}
+		}
+		stats, err := marshalStats(currentStats)
 		if err != nil {
 			return err
 		}
@@ -112,9 +150,14 @@ func (s *Store) SettleBattleSession(ctx context.Context, result domain.BattleRes
 			    is_alive = $3,
 			    is_equipped = CASE WHEN $3 THEN is_equipped ELSE false END
 			WHERE id = $1`,
-			settlement.UnitID, stats, settlement.IsAlive,
+			settlement.UnitID, stats, isAlive,
 		); err != nil {
 			return fmt.Errorf("update settlement unit: %w", err)
+		}
+		if !isAlive {
+			if err := removeUnitFromLoadouts(ctx, tx, settlement.UnitID); err != nil {
+				return fmt.Errorf("clear dead unit loadouts: %w", err)
+			}
 		}
 	}
 
@@ -130,8 +173,17 @@ func (s *Store) SettleBattleSession(ctx context.Context, result domain.BattleRes
 		}
 		for _, drop := range result.TreasureDrops {
 			if _, err := tx.Exec(ctx, `
-				INSERT INTO treasures (owner_id, damage_bonus) VALUES ($1, $2)`,
-				result.PlayerID, drop.DamageBonus,
+				INSERT INTO treasures (
+					owner_id, code, name, treasure_type, rarity, damage_bonus,
+					health_bonus, defense_bonus, speed_bonus, effect_code, charges
+				) VALUES (
+					$1, COALESCE(NULLIF($2, ''), 'legacy'), COALESCE(NULLIF($3, ''), 'Treasure'),
+					COALESCE(NULLIF($4, ''), 'weapon'), COALESCE(NULLIF($5, ''), 'common'),
+					$6, $7, $8, $9, $10, $11
+				)`,
+				result.PlayerID, drop.Code, drop.Name, drop.TreasureType, drop.Rarity,
+				drop.DamageBonus, drop.HealthBonus, drop.DefenseBonus, drop.SpeedBonus,
+				drop.EffectCode, drop.Charges,
 			); err != nil {
 				return fmt.Errorf("insert treasure drop: %w", err)
 			}

@@ -52,6 +52,8 @@ func TestCrossTradeAcceptsDoNotDeadlock(t *testing.T) {
 	second := createPlayer(t, store, "cross-trade-second", 1)
 	firstUnits, _ := store.ListPlayerUnits(context.Background(), first.ID)
 	secondUnits, _ := store.ListPlayerUnits(context.Background(), second.ID)
+	makeUnitTradeable(t, firstUnits[0].ID)
+	makeUnitTradeable(t, secondUnits[0].ID)
 	firstTrade, err := store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: first.ID,
 		ToPlayerID:   second.ID,
@@ -86,6 +88,47 @@ func TestCrossTradeAcceptsDoNotDeadlock(t *testing.T) {
 	}
 }
 
+func TestCrossBidirectionalTradeAcceptsDoNotDeadlock(t *testing.T) {
+	store := newStoreTest(t)
+	first := createPlayer(t, store, "cross-barter-first", 1)
+	second := createPlayer(t, store, "cross-barter-second", 1)
+	firstUnits, _ := store.ListPlayerUnits(context.Background(), first.ID)
+	secondUnits, _ := store.ListPlayerUnits(context.Background(), second.ID)
+	makeUnitTradeable(t, firstUnits[0].ID)
+	makeUnitTradeable(t, secondUnits[0].ID)
+	firstTreasure := createTreasure(t, first.ID, 1)
+	secondTreasure := createTreasure(t, second.ID, 2)
+	firstTrade, err := store.CreateTrade(context.Background(), domain.NewTrade{
+		FromPlayerID: first.ID, ToPlayerID: second.ID, UnitID: stringPointer(firstUnits[0].ID),
+		RequestedAssets: []domain.TradeAsset{{TreasureID: stringPointer(secondTreasure.ID)}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondTrade, err := store.CreateTrade(context.Background(), domain.NewTrade{
+		FromPlayerID: second.ID, ToPlayerID: first.ID, UnitID: stringPointer(secondUnits[0].ID),
+		RequestedAssets: []domain.TradeAsset{{TreasureID: stringPointer(firstTreasure.ID)}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := runSimultaneously(t,
+		func(ctx context.Context) error {
+			_, err := store.AcceptTrade(ctx, firstTrade.ID, second.ID)
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := store.AcceptTrade(ctx, secondTrade.ID, first.ID)
+			return err
+		},
+	)
+	for index, err := range results {
+		if err != nil {
+			t.Fatalf("cross barter accept %d error = %v", index, err)
+		}
+	}
+}
+
 func TestCreateTradeAndAcceptTradeDoNotInvertPlayerUnitLocks(t *testing.T) {
 	store := newStoreTest(t)
 	sender := createPlayer(t, store, "create-accept-sender", 12)
@@ -93,6 +136,7 @@ func TestCreateTradeAndAcceptTradeDoNotInvertPlayerUnitLocks(t *testing.T) {
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
 
 	for round, unit := range units {
+		makeUnitTradeable(t, unit.ID)
 		existing, err := store.CreateTrade(context.Background(), domain.NewTrade{
 			FromPlayerID: sender.ID,
 			ToPlayerID:   recipient.ID,
@@ -119,8 +163,8 @@ func TestCreateTradeAndAcceptTradeDoNotInvertPlayerUnitLocks(t *testing.T) {
 		if results[1] != nil {
 			t.Fatalf("round %d AcceptTrade() error = %v", round, results[1])
 		}
-		if results[0] != nil && !errors.Is(results[0], domain.ErrAssetNotOwned) {
-			t.Fatalf("round %d concurrent CreateTrade() error = %v", round, results[0])
+		if results[0] != nil && !errors.Is(results[0], domain.ErrAssetNotOwned) && !errors.Is(results[0], domain.ErrAssetReserved) {
+			t.Fatalf("round %d concurrent CreateTrade() error = %v, want ownership or reservation conflict", round, results[0])
 		}
 	}
 }
@@ -219,13 +263,14 @@ func TestBattleSettlementAndTradeAcceptanceDoNotDeadlock(t *testing.T) {
 	store := newStoreTest(t)
 	dungeon := createDungeon(t, store)
 	for round := 0; round < 20; round++ {
-		fighter := createPlayer(t, store, fmt.Sprintf("settlement-trade-fighter-%d", round), 1)
+		fighter := createPlayer(t, store, fmt.Sprintf("settlement-trade-fighter-%d", round), 2)
 		recipient := createPlayer(t, store, fmt.Sprintf("settlement-trade-recipient-%d", round), 0)
 		units, _ := store.ListPlayerUnits(context.Background(), fighter.ID)
+		makeUnitTradeable(t, units[1].ID)
 		trade, err := store.CreateTrade(context.Background(), domain.NewTrade{
 			FromPlayerID: fighter.ID,
 			ToPlayerID:   recipient.ID,
-			UnitID:       stringPointer(units[0].ID),
+			UnitID:       stringPointer(units[1].ID),
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -261,6 +306,7 @@ func TestEquipTreasureAndCreateTradeDoNotDeadlock(t *testing.T) {
 	recipient := createPlayer(t, store, "equip-trade-recipient", 0)
 	units, _ := store.ListPlayerUnits(context.Background(), owner.ID)
 	treasure := createTreasure(t, owner.ID, 3)
+	makeUnitTradeable(t, units[0].ID)
 
 	results := runSimultaneously(t,
 		func(ctx context.Context) error {
@@ -275,10 +321,13 @@ func TestEquipTreasureAndCreateTradeDoNotDeadlock(t *testing.T) {
 			return err
 		},
 	)
-	if results[0] != nil {
-		t.Fatalf("EquipTreasure() error = %v", results[0])
+	if results[0] != nil && !errors.Is(results[0], domain.ErrAssetReserved) {
+		t.Fatalf("EquipTreasure() error = %v, want nil or ErrAssetReserved", results[0])
 	}
-	if results[1] != nil && !errors.Is(results[1], domain.ErrAlreadyEquipped) {
-		t.Fatalf("CreateTrade() error = %v, want nil or ErrAlreadyEquipped", results[1])
+	if results[1] != nil && !errors.Is(results[1], domain.ErrAlreadyEquipped) && !errors.Is(results[1], domain.ErrUnitUnavailable) {
+		t.Fatalf("CreateTrade() error = %v, want nil or unavailable equipped unit", results[1])
+	}
+	if (results[0] == nil) == (results[1] == nil) {
+		t.Fatalf("exactly one concurrent mutation must commit, got equip=%v trade=%v", results[0], results[1])
 	}
 }

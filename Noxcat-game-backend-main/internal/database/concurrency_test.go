@@ -15,6 +15,7 @@ func TestConcurrentAcceptTradeSerializesOnRowLock(t *testing.T) {
 	sender := createPlayer(t, store, "lock-sender", 1)
 	recipient := createPlayer(t, store, "lock-recipient", 0)
 	units, _ := store.ListPlayerUnits(context.Background(), sender.ID)
+	makeUnitTradeable(t, units[0].ID)
 	trade, err := store.CreateTrade(context.Background(), domain.NewTrade{
 		FromPlayerID: sender.ID,
 		ToPlayerID:   recipient.ID,

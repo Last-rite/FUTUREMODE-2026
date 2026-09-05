@@ -8,7 +8,7 @@ import BottomNav from './components/BottomNav.jsx';
 import Toast from './components/Toast.jsx';
 import BattleTransitionOverlay from './components/BattleTransitionOverlay.jsx';
 import BrandLockup from './components/BrandLockup.jsx';
-import { demoApi } from './demo-backend/api.js';
+import { gameApi, isHttpBackend } from './api/index.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
 import { getActiveTeam } from './utils/teamStorage.js';
 import { startBackgroundPreload, preloadGameDataAssets } from './utils/assetPreloader.js';
@@ -35,10 +35,17 @@ export default function App() {
 
     const bootstrap = async () => {
       const session = getAuthCookie();
-      if (!session?.id) { setView('auth'); return; }
-      const gameData = await demoApi.getGameData(session.id);
-      preloadGameDataAssets(gameData);
-      setCurrentUser(session); setData(gameData); setView('home');
+      if (!session?.id || (isHttpBackend && !gameApi.isAuthenticated())) { setView('auth'); return; }
+      try {
+        const gameData = await gameApi.getGameData(session.id);
+        preloadGameDataAssets(gameData);
+        setCurrentUser(gameData.user || session); setData(gameData); setView('home');
+      } catch (error) {
+        gameApi.logout?.();
+        clearAuthCookie();
+        setCurrentUser(null);
+        setView('auth');
+      }
     };
     bootstrap();
   }, []);
@@ -67,63 +74,77 @@ export default function App() {
 
   const handleLoginSuccess = async ({ mode, username, password, displayName }) => {
     const user = mode === 'register'
-      ? await demoApi.register(username, password, displayName)
-      : await demoApi.login(username, password);
-    const gameData = await demoApi.getGameData(user.id);
+      ? await gameApi.register(username, password, displayName)
+      : await gameApi.login(username, password);
+    const gameData = await gameApi.getGameData(user.id);
     preloadGameDataAssets(gameData);
-    setAuthCookie(user); setCurrentUser(user); setData(gameData); setView('home');
+    const current = gameData.user || user;
+    setAuthCookie(current); setCurrentUser(current); setData(gameData); setView('home');
   };
-  const handleSignOut = () => { clearAuthCookie(); setCurrentUser(null); setView('auth'); };
+  const handleSignOut = () => { gameApi.logout?.(); clearAuthCookie(); setCurrentUser(null); setView('auth'); };
   const showMessage = (message, tone = 'success') => setToast({ message, tone, key: Date.now() });
 
   const handleToggleParty = async (petId) => {
-    const nextData = await demoApi.togglePartyMember(petId, currentUser?.id);
+    const nextData = await gameApi.togglePartyMember(petId, currentUser?.id);
     setData(nextData);
   };
 
   const handleEquipItem = async (petId, itemId) => {
-    const nextData = await demoApi.equipItem(petId, itemId, currentUser?.id);
+    const nextData = await gameApi.equipItem(petId, itemId, currentUser?.id);
     setData(nextData);
   };
 
   const handleAddPet = async (petData) => {
-    const nextData = await demoApi.addPet(petData, currentUser?.id);
+    const nextData = await gameApi.addPet(petData, currentUser?.id);
     setData(nextData);
     showMessage('成功召喚新 NOXCAT！');
   };
 
   const handleAddItem = async (itemData) => {
-    const nextData = await demoApi.addItem(itemData, currentUser?.id);
+    const nextData = await gameApi.addItem(itemData, currentUser?.id);
     setData(nextData);
     showMessage('成功鍛造新裝備！');
   };
 
   const handleCreateTrade = async (trade) => {
-    const nextData = await demoApi.createTrade({ ...trade, playerId: currentUser?.id });
+    const nextData = await gameApi.createTrade({ ...trade, playerId: currentUser?.id });
     setData(nextData);
+  };
+
+  const handleLoadTradeAssets = async (playerId) => {
+    if (gameApi.getTradeAssets) return gameApi.getTradeAssets(playerId);
+    return {
+      pets: (data?.allPets || data?.pets || []).filter((pet) => pet.ownerId === playerId),
+      items: (data?.allItems || data?.items || []).filter((item) => item.ownerId === playerId),
+    };
   };
 
   const handleResolveTrade = async (tradeId, status) => {
-    const nextData = await demoApi.resolveTrade(tradeId, status, currentUser?.id);
+    const nextData = await gameApi.resolveTrade(tradeId, status, currentUser?.id);
     setData(nextData);
-    showMessage(status === 'accepted' ? '已接受交易' : '已拒絕交易');
+    showMessage(status === 'accepted' ? '已接受交易' : status === 'cancelled' ? '已撤回交易' : '已拒絕交易');
   };
 
-  const handleStartGame = (dungeon) => {
-    clearTransitionTimeouts();
-    setBattleOutcome(null);
-    sound.playMusic('battle', { restart: true });
-    setActiveDungeon(dungeon);
-    setIsEnteringBattle(true);
-    // Switch to game screen mid-transition (450ms) behind closed shutters
-    const t1 = setTimeout(() => {
-      setView('game');
-    }, 450);
-    // Shutters open at 1.0s; text banner floats atop combat field until 1.8s
-    const t2 = setTimeout(() => {
-      setIsEnteringBattle(false);
-    }, 1800);
-    transitionTimeoutsRef.current = [t1, t2];
+  const handleStartGame = async (dungeon) => {
+    try {
+      if (isHttpBackend) await gameApi.startBattle(dungeon.id);
+      clearTransitionTimeouts();
+      setBattleOutcome(null);
+      sound.playMusic('battle', { restart: true });
+      setActiveDungeon(dungeon);
+      setIsEnteringBattle(true);
+      // Switch to game screen mid-transition (450ms) behind closed shutters
+      const t1 = setTimeout(() => {
+        setView('game');
+      }, 450);
+      // Shutters open at 1.0s; text banner floats atop combat field until 1.8s
+      const t2 = setTimeout(() => {
+        setIsEnteringBattle(false);
+      }, 1800);
+      transitionTimeoutsRef.current = [t1, t2];
+    } catch (error) {
+      showMessage(error.message || '無法開始戰鬥', 'error');
+    }
   };
 
   const handleDismissTransition = () => {
@@ -137,8 +158,20 @@ export default function App() {
 
   const handleBattleComplete = async (result) => {
     setBattleOutcome(result?.winner || 'AI');
-    const nextData = await demoApi.recordBattleResult(result, activeDungeon?.id, currentUser?.id);
+    const nextData = await gameApi.recordBattleResult(result, activeDungeon?.id, currentUser?.id);
     setData(nextData);
+    if (nextData.user) {
+      setCurrentUser(nextData.user);
+      setAuthCookie(nextData.user);
+    }
+  };
+
+  const handleSaveLoadout = async (slot, unitIds) => {
+    await gameApi.saveLoadout(slot, unitIds, currentUser?.id);
+  };
+
+  const handleSelectLoadout = async (slot) => {
+    await gameApi.setActiveLoadout(slot, currentUser?.id);
   };
 
   const handleExitBattle = () => {
@@ -177,6 +210,8 @@ export default function App() {
                   data={data}
                   onToggleParty={handleToggleParty}
                   onEquipItem={handleEquipItem}
+                  onSaveLoadout={isHttpBackend ? handleSaveLoadout : undefined}
+                  onSelectLoadout={isHttpBackend ? handleSelectLoadout : undefined}
                   onMessage={showMessage}
                 />
               )}
@@ -184,8 +219,9 @@ export default function App() {
                 <TradeView
                   data={data}
                   currentUser={currentUser}
-                  onCreateTrade={handleCreateTrade}
-                  onResolveTrade={handleResolveTrade}
+          onCreateTrade={handleCreateTrade}
+          onResolveTrade={handleResolveTrade}
+          onLoadTradeAssets={handleLoadTradeAssets}
                   onMessage={showMessage}
                 />
               )}

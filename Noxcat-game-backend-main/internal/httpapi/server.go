@@ -18,16 +18,25 @@ const (
 
 type Store interface {
 	CreatePlayer(context.Context, domain.NewPlayer) (domain.Player, error)
+	PlayerByID(context.Context, string) (domain.Player, error)
 	PlayerByUsername(context.Context, string) (domain.Player, error)
 	ListPlayerUnits(context.Context, string) ([]domain.Unit, error)
+	ListPlayerTreasures(context.Context, string) ([]domain.Treasure, error)
+	ListPlayerLoadouts(context.Context, string) ([]domain.PlayerLoadout, error)
 	PlayerStatus(context.Context, string) (domain.PlayerStatus, error)
+	ListDungeons(context.Context) ([]domain.Dungeon, error)
 	ListSolvedDungeons(context.Context, string) ([]domain.Dungeon, error)
 	SetBattleLoadout(context.Context, string, []string) error
+	SetPlayerLoadout(context.Context, string, int, []string) error
+	SetActivePlayerLoadout(context.Context, string, int) error
 	EquipTreasure(context.Context, string, string, string) error
+	UnequipTreasure(context.Context, string, string) error
 	ListPlayerTrades(context.Context, string, *domain.TradeStatus) ([]domain.Trade, error)
+	ListTradeAssets(context.Context, string) (domain.TradeInventory, error)
 	CreateTrade(context.Context, domain.NewTrade) (domain.Trade, error)
 	AcceptTrade(context.Context, string, string) (domain.Trade, error)
 	RejectTrade(context.Context, string, string) (domain.Trade, error)
+	CancelTrade(context.Context, string, string) (domain.Trade, error)
 	CreateDungeon(context.Context, domain.Dungeon) (domain.Dungeon, error)
 	UpdateDungeon(context.Context, domain.Dungeon) (domain.Dungeon, error)
 	BanPlayer(context.Context, string) error
@@ -122,18 +131,27 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /auth/register", s.register)
 	mux.HandleFunc("POST /auth/login", s.login)
+	mux.HandleFunc("GET /players/{player_id}", s.getPlayer)
 	mux.HandleFunc("GET /players/{player_id}/units", s.listUnits)
+	mux.HandleFunc("GET /players/{player_id}/treasures", s.listTreasures)
+	mux.HandleFunc("GET /players/{player_id}/loadouts", s.listLoadouts)
+	mux.HandleFunc("GET /players/{player_id}/trade-assets", s.listTradeAssets)
+	mux.HandleFunc("PUT /players/{player_id}/loadouts/{slot}", s.setLoadoutSlot)
+	mux.HandleFunc("PUT /players/{player_id}/loadouts/active", s.setActiveLoadout)
 	mux.HandleFunc("PUT /players/{player_id}/loadout", s.setLoadout)
 	mux.HandleFunc("GET /players/{player_id}/status", s.playerStatus)
 	mux.HandleFunc("GET /players/{player_id}/dungeons", s.listSolvedDungeons)
+	mux.HandleFunc("GET /dungeons", s.listDungeons)
 	mux.HandleFunc("POST /battles/start", s.startBattle)
 	mux.HandleFunc("POST /battles/result", s.submitBattleResult)
 	mux.HandleFunc("POST /battles/cancel", s.cancelBattle)
 	mux.HandleFunc("POST /treasures/{treasure_id}/equip", s.equipTreasure)
+	mux.HandleFunc("DELETE /treasures/{treasure_id}/equip", s.unequipTreasure)
 	mux.HandleFunc("GET /trades", s.listTrades)
 	mux.HandleFunc("POST /trades", s.createTrade)
 	mux.HandleFunc("POST /trades/{trade_id}/accept", s.acceptTrade)
 	mux.HandleFunc("POST /trades/{trade_id}/reject", s.rejectTrade)
+	mux.HandleFunc("POST /trades/{trade_id}/cancel", s.cancelTrade)
 	mux.HandleFunc("GET /ws", s.webSocket)
 	mux.HandleFunc("POST /admin/dungeons", s.createDungeon)
 	mux.HandleFunc("PUT /admin/dungeons/{dungeon_id}", s.updateDungeon)
