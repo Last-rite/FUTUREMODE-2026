@@ -1,7 +1,7 @@
 import {
   BALL_R, INNER_R, DEFAULT_HP, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_SPD,
   DAMP, BOUNCE_DAMP, MIN_SPD, W, H, COLORS,
-  FUTURE_WALL_DAMAGE_BONUS, COOL_KNOCKBACK_MULTIPLIER,
+  FUTURE_TEAMMATE_HEAL, COOL_KNOCKBACK_MULTIPLIER,
   COOL_MIN_KNOCKBACK_SPEED, HARD_EXTRA_SLOW_MULTIPLIER
 } from './constants.js';
 import { dist, lerpColor, hexToRgba } from './physics.js';
@@ -30,7 +30,6 @@ export class Ball {
     this.code = options.code || '';
     this.image = options.image || null;
     this.skillType = options.skillType || getSkillType(this);
-    this.futureDamageBonus = 0;
 
     // Accent color:
     // Enemies (owner === 2) have uniform red '#ff2a55'
@@ -130,8 +129,6 @@ export class Ball {
   }
 
   launch(vx, vy) {
-    // FUTURE's wall charge only lasts for the current movement/turn.
-    this.futureDamageBonus = 0;
     const spdMultiplier = this.spd > 10 ? (this.spd / 100) : this.spd;
     this.vx = vx * spdMultiplier;
     this.vy = vy * spdMultiplier;
@@ -140,7 +137,7 @@ export class Ball {
     this.triggerWave(3.5); // Initial jolt on launch
   }
 
-  updatePhysics(allBalls) {
+  updatePhysics(allBalls, activeOwner = null) {
     if (!this.moving || !this.alive) {
       return [];
     }
@@ -183,11 +180,6 @@ export class Ball {
       events.push({ type: 'wall', speed: Math.abs(this.vy), x: this.x, y: this.y });
     }
 
-    if (this.skillType === 'future' && events.some((event) => event.type === 'wall')) {
-      // Repeated wall bounces refresh the charge rather than stacking it.
-      this.futureDamageBonus = FUTURE_WALL_DAMAGE_BONUS;
-    }
-
     // Ball-to-ball collisions
     const diameter = BALL_R * 2;
     for (const other of allBalls) {
@@ -199,11 +191,20 @@ export class Ball {
         const ny = d > 0 ? (this.y - other.y) / d : 0.0;
         const overlap = diameter - d;
 
-        // Position separation
-        this.x += nx * overlap * 0.5;
-        this.y += ny * overlap * 0.5;
-        other.x -= nx * overlap * 0.5;
-        other.y -= ny * overlap * 0.5;
+        const isThisFriendly = activeOwner != null ? this.owner === activeOwner : true;
+        const isOtherFriendly = activeOwner != null ? other.owner === activeOwner : other.owner === this.owner;
+        const isEnemyHittingStationaryFriendly = !isThisFriendly && isOtherFriendly && !other.moving;
+
+        // Position separation: stationary friendly units act as solid walls
+        if (isEnemyHittingStationaryFriendly) {
+          this.x += nx * overlap;
+          this.y += ny * overlap;
+        } else {
+          this.x += nx * overlap * 0.5;
+          this.y += ny * overlap * 0.5;
+          other.x -= nx * overlap * 0.5;
+          other.y -= ny * overlap * 0.5;
+        }
 
         // Prevent clipping out of bounds
         this.x = Math.max(BALL_R, Math.min(W - BALL_R, this.x));
@@ -232,54 +233,125 @@ export class Ball {
           y: contactY,
         });
 
-        // Damage calculation: Attacker ATK - Defender DEF (always minimum 1 damage)
+        // Teammate interaction: FUTURE CAT heals teammate +5 HP during its active turn
+        if (other.owner === this.owner) {
+          const isThisActiveTurn = activeOwner != null ? this.owner === activeOwner : true;
+          if (this.skillType === 'future' && isThisActiveTurn) {
+            const maxHp = other.maxHp || 100;
+            const healAmount = FUTURE_TEAMMATE_HEAL;
+            other.hp = Math.min(maxHp, other.hp + healAmount);
+            other.triggerWave(3.5);
+
+            events.push({
+              type: 'heal',
+              healer: this,
+              target: other,
+              amount: healAmount,
+              x: contactX,
+              y: contactY,
+            });
+          }
+        }
+
+        // Damage calculation:
+        // 1) Normal Attack: Moving friendly unit attacks enemy
+        // 2) Stationary Counter: Knocked enemy hitting stationary friendly unit is attacked by the stationary friendly unit
         if (other.owner !== this.owner) {
-          const bonusDamage = this.skillType === 'future' ? this.futureDamageBonus : 0;
-          if (bonusDamage > 0) this.futureDamageBonus = 0;
+          if (isThisFriendly && !isOtherFriendly) {
+            const rawDmg = Math.max(1, this.atk - other.def);
+            const hpLost = Math.min(rawDmg, Math.max(0, other.hp));
+            other.hp = Math.max(0, other.hp - rawDmg);
 
-          const rawDmg = Math.max(1, this.atk + bonusDamage - other.def);
-          const hpLost = Math.min(rawDmg, Math.max(0, other.hp));
-          other.hp = Math.max(0, other.hp - rawDmg);
+            let knockback = false;
+            if (this.skillType === 'cool' && other.hp > 0) {
+              const knockbackSpeed = Math.max(
+                COOL_MIN_KNOCKBACK_SPEED,
+                impactSpd * COOL_KNOCKBACK_MULTIPLIER
+              );
+              other.vx = -nx * knockbackSpeed;
+              other.vy = -ny * knockbackSpeed;
+              other.moving = true;
+              other.triggerWave(5.5);
+              knockback = true;
+            }
 
-          let knockback = false;
-          if (this.skillType === 'cool' && other.hp > 0) {
-            const knockbackSpeed = Math.max(
-              COOL_MIN_KNOCKBACK_SPEED,
-              impactSpd * COOL_KNOCKBACK_MULTIPLIER
-            );
-            other.vx = -nx * knockbackSpeed;
-            other.vy = -ny * knockbackSpeed;
-            other.moving = true;
-            other.triggerWave(5.5);
-            knockback = true;
-          }
+            const slowedByHard = other.skillType === 'hard';
+            if (slowedByHard) {
+              this.vx *= HARD_EXTRA_SLOW_MULTIPLIER;
+              this.vy *= HARD_EXTRA_SLOW_MULTIPLIER;
+            }
 
-          const slowedByHard = other.skillType === 'hard';
-          if (slowedByHard) {
-            this.vx *= HARD_EXTRA_SLOW_MULTIPLIER;
-            this.vy *= HARD_EXTRA_SLOW_MULTIPLIER;
-          }
+            // Heavy wave jolt on damaged ball (stacks if already shaking!)
+            other.triggerWave(4.0 + rawDmg * 0.4);
 
-          // Heavy wave jolt on damaged ball (stacks if already shaking!)
-          other.triggerWave(4.0 + rawDmg * 0.4);
+            events.push({
+              type: 'damage',
+              attacker: this,
+              defender: other,
+              damage: rawDmg,
+              effectiveDmg: hpLost,
+              hpLost,
+              bonusDamage: 0,
+              knockback,
+              slowedByHard,
+              x: contactX,
+              y: contactY,
+            });
 
-          events.push({
-            type: 'damage',
-            attacker: this,
-            defender: other,
-            damage: rawDmg,
-            effectiveDmg: hpLost,
-            hpLost,
-            bonusDamage,
-            knockback,
-            slowedByHard,
-            x: contactX,
-            y: contactY,
-          });
+            if (other.hp <= 0) {
+              other.alive = false;
+              events.push({ type: 'defeat', ball: other, x: other.x, y: other.y });
+            }
+          } else if (isEnemyHittingStationaryFriendly) {
+            // Knocked enemy hits stationary friendly unit: stationary friendly unit attacks the enemy!
+            const rawDmg = Math.max(1, other.atk - this.def);
+            const hpLost = Math.min(rawDmg, Math.max(0, this.hp));
+            this.hp = Math.max(0, this.hp - rawDmg);
 
-          if (other.hp <= 0) {
-            other.alive = false;
-            events.push({ type: 'defeat', ball: other, x: other.x, y: other.y });
+            let knockback = false;
+            if (other.skillType === 'cool' && this.hp > 0) {
+              const knockbackSpeed = Math.max(
+                COOL_MIN_KNOCKBACK_SPEED,
+                impactSpd * COOL_KNOCKBACK_MULTIPLIER
+              );
+              this.vx = nx * knockbackSpeed;
+              this.vy = ny * knockbackSpeed;
+              this.triggerWave(5.5);
+              knockback = true;
+            }
+
+            const slowedByHard = other.skillType === 'hard';
+            if (slowedByHard) {
+              this.vx *= HARD_EXTRA_SLOW_MULTIPLIER;
+              this.vy *= HARD_EXTRA_SLOW_MULTIPLIER;
+            }
+
+            // Heavy wave jolt on damaged enemy
+            this.triggerWave(4.0 + rawDmg * 0.4);
+
+            events.push({
+              type: 'damage',
+              attacker: other,
+              defender: this,
+              damage: rawDmg,
+              effectiveDmg: hpLost,
+              hpLost,
+              bonusDamage: 0,
+              knockback,
+              slowedByHard,
+              isCounter: true,
+              x: contactX,
+              y: contactY,
+            });
+
+            if (this.hp <= 0) {
+              this.alive = false;
+              this.moving = false;
+              this.vx = 0;
+              this.vy = 0;
+              events.push({ type: 'defeat', ball: this, x: this.x, y: this.y });
+              break;
+            }
           }
         }
       }
@@ -290,7 +362,6 @@ export class Ball {
       this.vx = 0;
       this.vy = 0;
       this.trail = [];
-      this.futureDamageBonus = 0;
     }
 
     return events;

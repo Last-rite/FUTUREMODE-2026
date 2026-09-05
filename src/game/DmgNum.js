@@ -1,11 +1,12 @@
 import { COLORS } from './constants.js';
 
 export class DmgNum {
-  constructor(x, y, amount, isCrit = false) {
+  constructor(x, y, amount, isCrit = false, isHeal = false) {
     this.x = x;
     this.y = y;
     this.val = amount;
     this.isCrit = isCrit;
+    this.isHeal = isHeal;
     this.life = 55;
     this.maxLife = 55;
     this.vy = -2.2;
@@ -33,14 +34,16 @@ export class DmgNum {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
+    const text = this.isHeal ? `+${this.val}` : `-${this.val}`;
+
     // Black heavy border
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 6;
-    ctx.strokeText(`-${this.val}`, this.x, this.y);
+    ctx.strokeText(text, this.x, this.y);
 
     // Neon fill
-    ctx.fillStyle = this.isCrit ? COLORS.GOLD : COLORS.A_COL;
-    ctx.fillText(`-${this.val}`, this.x, this.y);
+    ctx.fillStyle = this.isHeal ? '#00ff66' : this.isCrit ? COLORS.GOLD : COLORS.A_COL;
+    ctx.fillText(text, this.x, this.y);
 
     ctx.restore();
   }

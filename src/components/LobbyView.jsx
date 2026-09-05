@@ -39,8 +39,14 @@ export default function LobbyView({ user, data, onStartGame, onSignOut }) {
     onStartGame(dungeon);
   };
 
+  const lostInDungeon = (data.lostAssets || []).filter(
+    (a) => a.status === 'in_pool' && (a.dungeonId === dungeon?.id || a.location?.includes(dungeon?.name))
+  );
+  const lostCatsCount = lostInDungeon.filter((a) => a.type === 'pet').length;
+  const lostItemsCount = lostInDungeon.filter((a) => a.type !== 'pet').length;
+
   return (
-    <main className="screen-scroll sketch-home">
+    <main className="screen-scroll sketch-home" aria-label="大廳主畫面">
       <header className="sketch-brandbar">
         <BrandLockup compact />
         <div className="sketch-brandbar__actions">
@@ -57,6 +63,10 @@ export default function LobbyView({ user, data, onStartGame, onSignOut }) {
         <div className="sketch-mission__heading">
           <span>關卡 {dungeon.chapter}</span>
           <h1>{dungeon.name}</h1>
+          <div className="flex items-center justify-center gap-3 mt-0.5 text-[11px] font-mono tracking-wider">
+            <span className="text-red-400 font-bold">💀 走失貓咪:{lostCatsCount}</span>
+            <span className="text-[#00e5ff] font-semibold">失落遺物:{lostItemsCount}</span>
+          </div>
         </div>
         <div className="sketch-mission__field">
           <div className="sketch-stage-platform" aria-hidden="true" />

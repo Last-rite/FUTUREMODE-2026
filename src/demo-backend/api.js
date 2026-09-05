@@ -21,19 +21,19 @@ function readDb() {
           parsed.pets.forEach((p) => {
             p.accent = '#00ff66';
             if (p.name === 'COOL NOXCAT' || p.idString?.includes('rush')) {
-              p.hp = 130;
+              p.hp = 100;
               p.atk = 8;
-              p.def = 3;
+              p.def = 2;
               p.spd = 120;
               p.skill = '疾風推進：碰撞時強力擊退對手。';
             } else if (p.name === 'HARD NOXCAT' || p.idString?.includes('tank')) {
-              p.hp = 100;
+              p.hp = 130;
               p.atk = 10;
               p.def = 3;
               p.spd = 80;
               p.skill = '堅毅立場：被敵人撞擊時，使攻擊者額外減速一次。';
             } else if (p.name === 'FUTURE NOXCAT' || p.idString?.includes('tech')) {
-              p.skill = '時空衝擊：撞牆後，本次移動的下一次攻擊 +2 傷害；命中後重置。';
+              p.skill = '時空修復：主動回合每次撞擊隊友為該隊友 +5 HP。';
             }
           });
         }
@@ -355,6 +355,41 @@ export const demoApi = {
     if (result.goldEarned && result.goldEarned > 0) {
       if (!db.wallet) db.wallet = { gold: 0, gem: 0, chip: 0 };
       db.wallet.gold = (Number(db.wallet.gold) || 0) + result.goldEarned;
+      if (player) {
+        player.nox = (Number(player.nox) || 0) + result.goldEarned;
+      }
+    }
+
+    // 1.5 Add any gained pets & items rolled from enemy defeat loot table
+    if (result.gainedPets && result.gainedPets.length > 0) {
+      db.pets ||= [];
+      result.gainedPets.forEach((p) => {
+        if (!db.pets.some((existing) => existing.id === p.id)) {
+          db.pets.push({ ...p, ownerId: activePlayerId });
+        }
+      });
+    }
+
+    if (result.gainedItems && result.gainedItems.length > 0) {
+      db.items ||= [];
+      result.gainedItems.forEach((item) => {
+        if (!db.items.some((existing) => existing.id === item.id)) {
+          db.items.push({ ...item, ownerId: activePlayerId });
+        }
+      });
+    }
+
+    // Update claimed status for any assets claimed during battle
+    if (result.claimedAssets && result.claimedAssets.length > 0) {
+      const claimedIds = new Set(result.claimedAssets.map((a) => a.id));
+      (db.lostAssets || []).forEach((asset) => {
+        if (claimedIds.has(asset.id)) {
+          asset.status = 'claimed';
+          asset.claimedByPlayerId = activePlayerId;
+          asset.claimedBy = (player?.gameId || player?.displayName || player?.username || 'PILOT').toUpperCase();
+          asset.claimedAt = new Date().toISOString();
+        }
+      });
     }
 
     // 2. Snapshot lost equipment & pets before removal to populate dungeon pool
@@ -409,11 +444,16 @@ export const demoApi = {
       solved.add(dungeonId);
       db.dungeonProgress[activePlayerId] = [...solved];
 
-      rescued = lostAssetsBackend.claimDungeonLostAsset(db, {
-        dungeonId,
-        winnerPlayerId: activePlayerId,
-        winnerCallsign: player?.gameId || player?.displayName || player?.username,
-      });
+      // If no assets were claimed via mid-battle enemy loot drops, award one victory rescue
+      if (!result.claimedAssets || result.claimedAssets.length === 0) {
+        rescued = lostAssetsBackend.claimDungeonLostAsset(db, {
+          dungeonId,
+          winnerPlayerId: activePlayerId,
+          winnerCallsign: player?.gameId || player?.displayName || player?.username,
+        });
+      } else {
+        rescued = { asset: result.claimedAssets[0] };
+      }
     }
 
     db.lastBattle = {
@@ -426,6 +466,19 @@ export const demoApi = {
 
     writeDb(db);
     return this.getGameData(activePlayerId);
+  },
+
+  rollDungeonLoot(dungeonId, playerId) {
+    const db = readDb();
+    const activePlayerId = playerId || getAuthCookie()?.id || null;
+    const player = (db.players || []).find((p) => p.id === activePlayerId);
+    const result = lostAssetsBackend.rollDungeonLoot(db, {
+      dungeonId,
+      playerId: activePlayerId,
+      playerCallsign: player?.gameId || player?.displayName || player?.username,
+    });
+    writeDb(db);
+    return result;
   },
 
   async reset(playerId) {
