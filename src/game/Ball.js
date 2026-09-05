@@ -179,6 +179,7 @@ export class Ball {
       this.moving = false;
       this.vx = 0;
       this.vy = 0;
+      this.trail = [];
     }
 
     return events;
@@ -187,21 +188,25 @@ export class Ball {
   draw(ctx, isActive = false) {
     if (!this.alive) return;
 
-    // Draw motion trail
-    const n = this.trail.length;
-    for (let i = 0; i < n; i++) {
-      const pt = this.trail[i];
-      const progress = i / n;
-      const alpha = 0.28 * progress;
-      const r = Math.max(3, BALL_R * 0.65 * progress);
+    // Draw motion trail only while actively moving
+    if (this.moving && this.trail.length > 0) {
+      const n = this.trail.length;
+      for (let i = 0; i < n; i++) {
+        const pt = this.trail[i];
+        const progress = i / n;
+        const alpha = 0.28 * progress;
+        const r = Math.max(3, BALL_R * 0.65 * progress);
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = this.color;
-      ctx.globalAlpha = alpha;
-      ctx.fill();
-      ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+        ctx.restore();
+      }
+    } else if (this.trail.length > 0) {
+      this.trail = [];
     }
 
     // Active peg neon aura
@@ -323,25 +328,34 @@ export class Ball {
     ctx.arc(this.x, this.y, innerR - 0.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // 5. Centered Label & HP Text inside Core
+    // 5. Centered Label inside Core
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Label ("1b", "2c", etc.)
-    ctx.font = '900 15px monospace';
+    // Label ("1b", "2c", etc.) centered inside the dark core
+    ctx.font = '900 16px monospace';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 4;
-    ctx.strokeText(this.label, this.x, this.y - 8);
+    ctx.strokeText(this.label, this.x, this.y - 2);
     ctx.fillStyle = COLORS.WHITE;
-    ctx.fillText(this.label, this.x, this.y - 8);
+    ctx.fillText(this.label, this.x, this.y - 2);
 
-    // HP Number
-    ctx.font = '900 14px monospace';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4;
-    ctx.strokeText(`${this.hp}`, this.x, this.y + 9);
-    ctx.fillStyle = hpRatio > 0.25 ? this.color : COLORS.A_COL;
-    ctx.fillText(`${this.hp}`, this.x, this.y + 9);
+    // 6. HP Text positioned exactly on the lower part of the HP ring
+    let hpColor = COLORS.WHITE; // Default white for enemy and full-health player
+    if (this.owner === 1 && hpRatio < 1.0) {
+      // Transition from light grey/white mixed with red towards pure bright red at low HP
+      const g = Math.round(25 + 190 * hpRatio);
+      const b = Math.round(35 + 190 * hpRatio);
+      hpColor = `rgb(255, ${g}, ${b})`;
+    }
+
+    const hpRingY = this.y + (innerR + R) * 0.5; // Exactly centered on lower ring band (38px)
+    ctx.font = '900 24px monospace';
+    ctx.strokeStyle = '#05070a';
+    ctx.lineWidth = 5;
+    ctx.strokeText(`${this.hp}`, this.x, hpRingY);
+    ctx.fillStyle = hpColor;
+    ctx.fillText(`${this.hp}`, this.x, hpRingY);
 
     ctx.restore();
   }

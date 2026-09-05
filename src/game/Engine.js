@@ -201,6 +201,10 @@ export class GameEngine {
   }
 
   advanceTurn() {
+    for (const b of this.balls) {
+      b.trail = [];
+    }
+
     this.turnIndex++;
     if (this.turnIndex >= this.turnQueue.length) {
       this.turnIndex = 0;
@@ -626,12 +630,6 @@ export class GameEngine {
       ctx.stroke();
     }
 
-    // Minimal territory hints
-    ctx.font = '900 11px "Courier New", monospace';
-    ctx.fillStyle = 'rgba(255, 42, 85, 0.3)';
-    ctx.fillText('▲ ENEMY TERRITORY', 20, 26);
-    ctx.fillStyle = 'rgba(0, 255, 102, 0.3)';
-    ctx.fillText('▼ PLAYER TERRITORY', 20, H - 18);
     ctx.restore();
 
     // 3. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow)

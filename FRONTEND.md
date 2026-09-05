@@ -13,17 +13,20 @@ It adapts the original turn-based marble battle physics into a responsive web ap
 A core design principle is the strict separation between high-frequency physics execution and low-frequency UI rendering:
 
 ```text
-React App (UI Layer & Low-Frequency State)
-├── Main Phone Container (Aspect Ratio Guard)
-├── Floating Collapsible Boss HP Bar (Top)
-├── Interactive Canvas Mount (<canvas>)
-├── Bottom Initiative Console
-│   ├── Left-to-Right Character Queue (Leftmost = Active "GO!")
-│   │   ├── Liquid Fill Ring Avatar
-│   │   ├── Individual Mini HP Bar
-│   │   └── Numeric HP Indicator
-│   └── Utility Toolbar (Round, Info, Mute, Restart)
-└── Game Over & Rules Modals
+React App (App Shell & View Routing)
+├── AuthModal (Google Identity Services + Game ID Setup)
+├── LobbyView (Pilot Dashboard, Online Status, CallSign Editor, Start Game)
+└── GameView (Battle Arena & HUD)
+    ├── Main Phone Container (Aspect Ratio Guard)
+    ├── Floating Boss HP Bar (Top, controlled via SHOW_BOSS_BAR)
+    ├── Interactive Canvas Mount (<canvas>)
+    ├── Bottom Initiative Console
+    │   ├── Left-to-Right Character Queue (Leftmost = Active "GO!")
+    │   │   ├── Liquid Fill Ring Avatar
+    │   │   ├── Individual Mini HP Bar
+    │   │   └── Numeric HP Indicator
+    │   └── Utility Toolbar (Round, Info, Mute, Restart)
+    └── Game Over & Rules Modals
 
 Canvas Game Engine (High-Frequency 60/120 FPS Loop)
 ├── GameLoop (Fixed dt Accumulator & Substepping)
@@ -35,7 +38,9 @@ Canvas Game Engine (High-Frequency 60/120 FPS Loop)
 └── Sound Synthesizer (Procedural Web Audio API)
 ```
 
-### Communication Flow
+### Communication & Auth Flow
+- **Session Persistence**: 1-day browser cookie (`futuremode_auth`, `max-age=86400`) with localStorage mirror backup.
+- **Routing**: `App.jsx` handles state transitions between `'loading'` → `'auth'` → `'lobby'` → `'game'`.
 - **React → Engine (Commands)**: `resetGame()`, audio controls (`sound.toggleMute()`).
 - **Engine → React (Snapshots & Events)**: Dispatched at turn transitions and damage events (`onSnapshot`, `onGameOver`). React never polls or calculates 60 FPS physics updates.
 
@@ -142,6 +147,7 @@ All core game variables are centralized in [`src/game/constants.js`](file:///c:/
 
 ```javascript
 export const TEAM_SIZE = 3;       // Change team size (e.g. 2, 3, 4) without altering UI
+export const SHOW_BOSS_BAR = true; // Backdoor toggle for the floating boss HP bar
 export const DEFAULT_HP = 100;     // Starting health per peg
 export const DEFAULT_ATK = 10;     // Attack power
 export const DEFAULT_DEF = 2;      // Defense stat (Damage = max(1, ATK - DEF) = 8)
@@ -149,6 +155,13 @@ export const BALL_R = 42;          // Outer ball hitbox radius
 export const INNER_R = 34;         // Inner core radius
 export const RING_THICKNESS = 8;   // Outer liquid ring thickness
 ```
+
+---
+
+## Deployment to Zeabur
+
+Production deployment is targeted for **[Zeabur](https://zeabur.com)**. For build specs, environment variables (`VITE_GOOGLE_CLIENT_ID`), and OAuth domain whitelisting, refer to:
+👉 **[`ZEABUR_DEPLOYMENT.md`](file:///c:/Users/white/Desktop/hackathon/ZEABUR_DEPLOYMENT.md)**
 
 ---
 

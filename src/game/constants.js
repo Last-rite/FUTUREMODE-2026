@@ -6,6 +6,9 @@
 // Easily change to 1, 2, 3, 4, 5, etc. to test different team sizes
 export const TEAM_SIZE = 3;
 
+// ── BACKDOOR VARIABLE: Toggle Boss HP Bar on / off (defaults to true) ──
+export const SHOW_BOSS_BAR = true;
+
 // ── Arena Dimensions (Portrait 90° CCW rotated) ──
 export const W = 550;
 export const H = 800;
