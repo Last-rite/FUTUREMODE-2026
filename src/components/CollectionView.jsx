@@ -23,12 +23,12 @@ import {
 
 const STAT_ICONS = { hp: Shield, atk: Swords, def: Shield, spd: Zap };
 
-// Stat bar bounds: leftmost is 0, rightmost is 999 HP, 99 ATK, 20 DEF, 999% SPD
+// Stat bar bounds: leftmost is 0, rightmost is 333 HP, 33 ATK, 6 DEF, 333% SPD
 const STAT_MAX_LIMITS = {
-  hp: 999,
-  atk: 99,
-  def: 20,
-  spd: 999,
+  hp: 333,
+  atk: 33,
+  def: 6,
+  spd: 333,
 };
 
 // Custom cyber weapon illustration component
@@ -127,7 +127,7 @@ function DetailSpeechBubble({ statsRef, containerRef, quote, isWeapon = false })
       let maxOverlapX = 0;
       let worstRowRight = 0;
 
-      // Check each individual stat row and the skill card
+      // Check each individual stat row and skill card in the left column
       const rows = statsEl.querySelectorAll('.sketch-stat-row, .sketch-fs-skill');
       rows.forEach((row) => {
         const rowRect = row.getBoundingClientRect();
@@ -973,6 +973,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           aria-modal="true"
           aria-label={`${selectedPet.name} 詳情`}
           style={{ '--pet-accent': selectedPet.accent }}
+          ref={petMainRef}
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
@@ -995,46 +996,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           </div>
 
           {/* Main Content Area: Stats on left, Speech Bubble & Art on right */}
-          <div className="sketch-fs-main" ref={petMainRef}>
-            {/* Left Column: HP on top, Special Card in middle, ATK/DEF/SPD on bottom */}
+          <div className="sketch-fs-main">
+            {/* Left Column: Stats on top, Special Skill on bottom */}
             <div className="sketch-fs-left-col" ref={petStatsRef}>
-              {/* HP Stat Row */}
-              <div className="sketch-fs-hp-wrap">
-                {(() => {
-                  const key = 'hp';
-                  const Icon = STAT_ICONS[key];
-                  const value = selectedPet[key];
-                  const maxRef = STAT_MAX_LIMITS[key] || 100;
-                  const barWidth = Math.min(100, Math.max(0, (value / maxRef) * 100));
-                  return (
-                    <div className="sketch-stat-row" key={key}>
-                      <div className="sketch-stat-label-wrap">
-                        <span className="sketch-stat-label">
-                          <Icon size={12} />
-                          {key.toUpperCase()} :
-                        </span>
-                      </div>
-                      <strong className="sketch-stat-val">{value}</strong>
-                      <div className="sketch-stat-bar-track">
-                        <div
-                          className="sketch-stat-bar-fill"
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Special Skill card: narrower, wraps text, nestled between HP and other 3 stats */}
-              <div className="sketch-fs-skill">
-                <span className="sketch-fs-skill-title">Special:</span>
-                <p className="sketch-fs-skill-desc">{selectedPet.skill}</p>
-              </div>
-
-              {/* The other three stats: ATK, DEF, SPD */}
               <div className="sketch-fs-stats">
-                {['atk', 'def', 'spd'].map((key) => {
+                {['hp', 'atk', 'def', 'spd'].map((key) => {
                   const Icon = STAT_ICONS[key];
                   const value = selectedPet[key];
                   const maxRef = STAT_MAX_LIMITS[key] || 100;
@@ -1059,6 +1025,12 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Special Skill card on bottom left */}
+              <div className="sketch-fs-skill">
+                <span className="sketch-fs-skill-title">Special:</span>
+                <p className="sketch-fs-skill-desc">{selectedPet.skill}</p>
               </div>
             </div>
 
@@ -1086,6 +1058,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           role="dialog"
           aria-modal="true"
           aria-label={`${selectedItem.name} 詳情`}
+          ref={weaponMainRef}
         >
           {/* Top Title ("標題" centered as in sketch) + Close */}
           <header className="sketch-fs-topbar">
@@ -1108,58 +1081,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           </div>
 
           {/* Main Content Area: Left Stats with dynamic "增加量", Right Bubble & Big Art */}
-          <div className="sketch-fs-main" ref={weaponMainRef}>
-            {/* Left Column: HP on top, Special Card in middle, ATK/DEF/SPD on bottom */}
+          <div className="sketch-fs-main">
+            {/* Left Column: Stats on top, Special Effect on bottom */}
             <div className="sketch-fs-left-col" ref={weaponStatsRef}>
-              {/* HP Bonus Row */}
-              <div className="sketch-fs-hp-wrap">
-                {(() => {
-                  const key = 'hp';
-                  const Icon = STAT_ICONS[key];
-                  const bonusVal = getItemBonus(selectedItem, key);
-                  const hasBonus = bonusVal > 0;
-                  const maxRef = STAT_MAX_LIMITS[key] || 100;
-                  const fillWidth = hasBonus ? Math.min(100, Math.max(0, (bonusVal / maxRef) * 100)) : 0;
-                  const displayBonus = hasBonus ? `+${bonusVal}` : '+0';
-
-                  return (
-                    <div className={`sketch-stat-row ${hasBonus ? 'is-boosted' : ''}`} key={key}>
-                      <div className="sketch-stat-label-wrap">
-                        <span className="sketch-stat-label">
-                          <Icon size={12} />
-                          {key.toUpperCase()} :
-                        </span>
-                        {hasBonus && (
-                          <span className="sketch-increase-callout">
-                            ➔
-                          </span>
-                        )}
-                      </div>
-                      <strong className={`sketch-stat-val ${hasBonus ? 'text-[#35d9ff]' : 'text-[#56655c]'}`}>
-                        {displayBonus}
-                      </strong>
-                      <div className="sketch-stat-bar-track">
-                        <div
-                          className={`sketch-stat-bar-fill ${hasBonus ? 'is-bonus-fill' : ''}`}
-                          style={{ width: `${fillWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Special Effect Card: narrower, between HP and other 3 stats */}
-              <div className="sketch-fs-skill">
-                <span className="sketch-fs-skill-title">Special:</span>
-                <p className="sketch-fs-skill-desc">
-                  {selectedItem.skill || `${selectedItem.bonus}。裝備後於戰鬥中提供額外戰力支援。`}
-                </p>
-              </div>
-
-              {/* The other three stats: ATK, DEF, SPD */}
               <div className="sketch-fs-stats sketch-fs-stats--weapon">
-                {['atk', 'def', 'spd'].map((key) => {
+                {['hp', 'atk', 'def', 'spd'].map((key) => {
                   const Icon = STAT_ICONS[key];
                   const bonusVal = getItemBonus(selectedItem, key);
                   const hasBonus = bonusVal > 0;
@@ -1195,6 +1121,14 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Special Effect & Description on bottom left */}
+              <div className="sketch-fs-skill">
+                <span className="sketch-fs-skill-title">Special:</span>
+                <p className="sketch-fs-skill-desc">
+                  {selectedItem.skill || `${selectedItem.bonus}。裝備後於戰鬥中提供額外戰力支援。`}
+                </p>
               </div>
             </div>
 

@@ -18,7 +18,20 @@ function readDb() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && Array.isArray(parsed.pets)) {
-          parsed.pets.forEach(p => { p.accent = '#00ff66'; });
+          parsed.pets.forEach((p) => {
+            p.accent = '#00ff66';
+            if (p.name === 'COOL NOXCAT' || p.idString?.includes('rush')) {
+              p.hp = 130;
+              p.atk = 8;
+              p.def = 3;
+              p.spd = 120;
+            } else if (p.name === 'HARD NOXCAT' || p.idString?.includes('tank')) {
+              p.hp = 100;
+              p.atk = 10;
+              p.def = 3;
+              p.spd = 80;
+            }
+          });
         }
         memoryDb = parsed;
         return parsed;

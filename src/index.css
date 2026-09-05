@@ -529,6 +529,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   -webkit-backdrop-filter: blur(18px);
   animation: fullDetailIn .22s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .sketch-fullscreen-detail::-webkit-scrollbar { display: none; }
 @keyframes fullDetailIn { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: scale(1); } }
@@ -537,7 +539,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-fullscreen-detail--weapon { background: radial-gradient(circle at 75% 60%, rgba(53,217,255,.16), #050806 72%); }
 
 /* Topbar: Title "標題" centered, Close "✕" at right */
-.sketch-fs-topbar { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-bottom: 6px; }
+.sketch-fs-topbar { position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-bottom: 6px; }
 .sketch-fs-title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font: 950 14px/1 ui-monospace, monospace; color: #bac8bf; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
 .sketch-fs-close-btn { margin-left: auto; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #334438; border-radius: 0; background: #080f0b; color: #9aa89f; cursor: pointer; transition: color .15s, border-color .15s; }
 .sketch-fs-close-btn:hover { color: var(--green); border-color: var(--green); }
@@ -558,15 +560,15 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  overflow: hidden;
+  overflow: clip;
 }
 
-/* Left Column: holds HP on top, Special card in middle, and 3 Stats below */
+/* Left Column: holds Stats on top, and Skill Card filling below */
 .sketch-fs-left-col {
   position: relative;
   z-index: 6;
-  width: 48%;
-  max-width: 195px;
+  width: 42%;
+  max-width: 175px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -574,13 +576,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   pointer-events: auto;
 }
 
-.sketch-fs-hp-wrap {
-  width: 100%;
-  margin-top: 4px;
-}
-
 /* Stats Column with Slanted Gauges & Blue "增加量" Callout */
-.sketch-fs-stats { position: relative; width: 100%; display: grid; gap: 10px; }
+.sketch-fs-stats { position: relative; width: 100%; display: grid; gap: 11px; margin-top: 4px; }
 .sketch-stat-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 6px; align-items: baseline; }
 .sketch-stat-label-wrap { display: flex; align-items: center; gap: 5px; }
 .sketch-stat-label { display: flex; align-items: center; gap: 4px; font: 850 10px/1 ui-monospace, monospace; color: #a4b3a8; }
@@ -594,37 +591,37 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .is-bonus-fill { background: #35d9ff !important; box-shadow: 0 0 8px rgba(53,217,255,.6); }
 
 /* Hero Column on Right in Detail Views:
-   Moved flush against the right edge of the screen to eliminate empty space and border clipping
+   Positioned flush in bottom-right corner, on TOP of the left column/skill card.
+   bottom: 0 keeps feet and shoes fully visible above the bottom navigation/safe area.
 */
 .sketch-fs-hero-col {
   position: absolute;
   right: -16px;
-  bottom: -4px;
-  width: min(65vw, 300px);
+  bottom: 0;
+  width: min(92vw, 420px);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  justify-content: flex-end;
   pointer-events: none;
-  z-index: 4;
+  z-index: 20;
 }
 
 /* The Speech Bubble (幹話氣泡):
-   Positioned on the upper right directly above character art.
-   If colliding with left column, automatically shifts right and becomes taller/narrower (.is-avoiding)
+   Strictly confined to the right space above the MC art (max-width: min(45vw, 160px)),
+   preventing it from expanding into the left stats / special skill column.
 */
 .sketch-speech-bubble {
   position: relative;
-  z-index: 7;
-  max-width: 190px;
+  z-index: 25;
+  max-width: min(45vw, 160px);
   width: fit-content;
-  padding: 8px 12px;
+  padding: 8px 11px;
   border: 2px solid var(--pet-accent, #00ff66);
   border-radius: 13px;
   background: rgba(8, 16, 11, 0.96);
   color: #e1ebe3;
   box-shadow: 0 6px 20px rgba(0,0,0,.65);
-  margin: 0 16px 8px auto;
+  margin: 0 18px 10px auto;
   pointer-events: auto;
   transition: transform 0.16s ease-out, max-width 0.16s ease-out;
 }
@@ -670,7 +667,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 }
 
 /* 2X LARGE Character & Weapon Art Display:
-   Right-aligned and flush with screen border
+   Right-aligned and flush with bottom-right corner, bumped up slightly so shoes are unclipped.
 */
 .sketch-fs-character {
   position: relative;
@@ -679,32 +676,42 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   justify-content: flex-end;
   align-items: flex-end;
   pointer-events: none;
+  z-index: 22;
 }
 .sketch-fs-character .nox-avatar {
-  width: 100%;
-  max-width: 290px;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
+  width: min(92vw, 420px);
+  height: min(92vw, 420px);
+  position: relative;
+  display: block;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  margin-right: -10px;
+  overflow: visible !important;
+  margin-right: 0;
+  flex-shrink: 0;
 }
-.sketch-fs-character .nox-avatar img {
+.sketch-fs-character .nox-avatar img,
+.sketch-fs-character .nox-avatar .nox-avatar__img {
+  position: absolute;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: right bottom;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transform: translate(19%, 3%);
   filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 55%, transparent));
 }
 .sketch-fs-character .nox-avatar svg {
-  width: 90%;
-  height: 90%;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 88%;
+  height: 88%;
+  transform: translate(8%, 2%);
   color: var(--pet-accent, #00ff66);
   filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 55%, transparent));
 }
@@ -720,67 +727,77 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   opacity: 0.6;
 }
 .sketch-fs-weapon-art .cyber-item-art {
-  width: 100%;
-  max-width: 290px;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
+  width: min(92vw, 420px);
+  height: min(92vw, 420px);
+  position: relative;
+  display: block;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  margin-right: -10px;
+  overflow: visible !important;
+  margin-right: 0;
+  flex-shrink: 0;
 }
 .sketch-fs-weapon-art .cyber-item-art .item-img {
-  width: 96%;
-  height: 96%;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   object-position: right bottom;
   image-rendering: pixelated;
+  transform: translate(12%, 2%);
   filter: drop-shadow(0 0 24px rgba(53, 217, 255, 0.55));
 }
 
-/* Skill & Special Description:
-   Positioned between HP bar and other 3 stats,
-   narrower with multiple line breaks, without touching character.
+/* Skill & Special Description at Bottom-Left:
+   Prominent vertical rectangle below stats (matching red-box drawing)
+   with larger readable font and comfortable vertical height,
+   firmly in the left 44% without pressing against the character.
 */
 .sketch-fs-skill {
   position: relative;
   z-index: 8;
-  margin: 9px 0;
-  width: fit-content;
-  max-width: 138px;
+  margin-top: 10px;
+  flex: 1;
+  min-height: 100px;
+  max-height: 260px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 4px;
-  padding: 7px 10px 8px;
+  gap: 6px;
+  padding: 10px 9px 12px;
   border-left: 3.5px solid var(--pet-accent, #00ff66);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-right: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 4px;
-  background: rgba(4, 8, 6, 0.95);
+  background: rgba(4, 8, 6, 0.94);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.75);
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.sketch-fs-skill::-webkit-scrollbar { display: none; }
 .sketch-fullscreen-detail--weapon .sketch-fs-skill {
   border-left-color: #35d9ff;
 }
 .sketch-fs-skill-title {
-  font: 900 12px/1 'Chakra Petch', ui-monospace, monospace;
+  font: 900 13px/1 'Chakra Petch', ui-monospace, monospace;
   color: var(--pet-accent, #00ff66);
   letter-spacing: .08em;
+  text-transform: uppercase;
 }
 .sketch-fullscreen-detail--weapon .sketch-fs-skill-title {
   color: #35d9ff;
 }
 .sketch-fs-skill-desc {
   margin: 0;
-  font: 600 12px/1.48 'Noto Sans TC', sans-serif;
+  font: 600 12.5px/1.55 'Noto Sans TC', sans-serif;
   color: #dbe6df;
   word-break: break-word;
   letter-spacing: 0.01em;
