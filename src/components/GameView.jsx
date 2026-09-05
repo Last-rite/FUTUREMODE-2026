@@ -250,14 +250,14 @@ function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
             <img
               src={swordImg}
               alt="武器"
-              className="w-7 h-7 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.6)]"
+              className="w-9 h-9 object-contain pixelated drop-shadow-[0_0_10px_rgba(0,255,102,0.65)]"
             />
           )}
           {type === 'shield' && (
             <img
               src={shieldImg}
               alt="防具"
-              className="w-7 h-7 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.6)]"
+              className="w-9 h-9 object-contain pixelated drop-shadow-[0_0_10px_rgba(0,255,102,0.65)]"
             />
           )}
           {type === 'lost-cat' && <Cat size={26} strokeWidth={2.2} />}

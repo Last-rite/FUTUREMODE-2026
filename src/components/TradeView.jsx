@@ -124,7 +124,7 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
                         <img
                           src={trade.offerWeapon?.includes('盾') ? shieldImg : (trade.offerWeapon?.includes('寶石') || trade.offerWeapon?.includes('水晶') || trade.offerWeapon?.includes('石')) ? gemImg : swordImg}
                           alt={trade.offerWeapon || '武器'}
-                          className="w-3.5 h-3.5 object-contain pixelated"
+                          className="w-5 h-5 object-contain pixelated"
                         />
                       </div>
                     </div>
@@ -214,7 +214,7 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
                         <img
                           src={(asset.name?.includes('盾') || asset.iconType === 'shield') ? shieldImg : (asset.name?.includes('寶石') || asset.name?.includes('水晶') || asset.name?.includes('石')) ? gemImg : swordImg}
                           alt={asset.name}
-                          className="w-6 h-6 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.3)]"
+                          className="w-8 h-8 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.3)]"
                         />
                       </div>
                     )}

@@ -27,11 +27,23 @@ export function ItemIllustration({ item, size = 'lg' }) {
   if (size === 'sm') {
     return (
       <span className="sketch-mini-item-icon">
-        {isBlade && <img src={swordImg} alt={item?.name || '劍'} className="w-3.5 h-3.5 object-contain pixelated" />}
-        {isShield && <img src={shieldImg} alt={item?.name || '盾'} className="w-3.5 h-3.5 object-contain pixelated" />}
-        {isHome && <img src={gemImg} alt={item?.name || '寶石'} className="w-3.5 h-3.5 object-contain pixelated" />}
-        {!isBlade && !isShield && !isHome && <Gem size={12} />}
+        {isBlade && <img src={swordImg} alt={item?.name || '劍'} className="w-5 h-5 object-contain pixelated" />}
+        {isShield && <img src={shieldImg} alt={item?.name || '盾'} className="w-5 h-5 object-contain pixelated" />}
+        {isHome && <img src={gemImg} alt={item?.name || '寶石'} className="w-5 h-5 object-contain pixelated" />}
+        {!isBlade && !isShield && !isHome && <Gem size={18} />}
       </span>
+    );
+  }
+
+  if (size === 'slot') {
+    return (
+      <div className="sketch-slot-weapon-fill">
+        {isBlade && <img src={swordImg} alt={item?.name || '劍'} className="sketch-slot-weapon-full-img pixelated" />}
+        {isShield && <img src={shieldImg} alt={item?.name || '盾'} className="sketch-slot-weapon-full-img pixelated" />}
+        {isHome && <img src={gemImg} alt={item?.name || '寶石'} className="sketch-slot-weapon-full-img pixelated" />}
+        {!isBlade && !isShield && !isHome && <Gem size={52} className="text-[#35d9ff]" />}
+        <span className="sketch-slot-bonus-tag">{item?.bonus}</span>
+      </div>
     );
   }
 
@@ -60,7 +72,7 @@ export function ItemIllustration({ item, size = 'lg' }) {
       )}
       {!isBlade && !isShield && !isHome && (
         <div className="item-svg-fallback">
-          <Gem size={42} />
+          <Gem size={46} />
         </div>
       )}
       <span className="cyber-item-art__code">{item?.rarity || 'RELIC'}</span>
@@ -465,6 +477,9 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                 }}
                 onDrop={(e) => handleSlotDrop(e, slot)}
               >
+                {/* Solid tactile corner number matching hand-drawn sketch (No circular frame!) */}
+                <span className="sketch-slot-idx">{slot + 1}</span>
+
                 {/* Subtle remove button for pet in pet mode */}
                 {isPetMode && pet && (
                   <button
@@ -522,10 +537,9 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       ) : (
                         <div className="sketch-slot-empty-plus">+</div>
                       )}
-                      <span className="sketch-slot-idx">{slot + 1}</span>
                     </>
                   ) : (
-                    <Cat size={14} />
+                    <Cat size={18} strokeWidth={2.4} />
                   )}
                 </button>
 
@@ -549,20 +563,16 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                   {!isPetMode ? (
                     <>
                       {item ? (
-                        <div className="sketch-slot-weapon-fill">
-                          <ItemIllustration item={item} size="md" />
-                          <small>{item.bonus}</small>
-                        </div>
+                        <ItemIllustration item={item} size="slot" />
                       ) : (
                         <div className="sketch-slot-empty-weapon">
-                          <Plus size={18} />
+                          <Plus size={22} />
                           <small>{pet ? '拖曳裝備' : '未裝備'}</small>
                         </div>
                       )}
-                      <span className="sketch-slot-idx">{slot + 1}</span>
                     </>
                   ) : (
-                    <>{item ? <ItemIllustration item={item} size="sm" /> : <Plus size={10} />}</>
+                    <>{item ? <ItemIllustration item={item} size="sm" /> : <Plus size={12} />}</>
                   )}
                 </button>
               </div>
