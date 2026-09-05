@@ -32,6 +32,10 @@ export class GameEngine {
     this.initialEnemyFleetMaxHp = 0;
     this.initialPlayerFleetMaxHp = 0;
 
+    // Hit counter & pulse effect for background arena watermark
+    this.hitCount = 0;
+    this.hitPulse = 0;
+
     // Backdoor: Enemy agent inaccuracy (default 10 degrees and power variation)
     this.enemy_agent_inaccuracy = ENEMY_AGENT_INACCURACY;
 
@@ -114,6 +118,8 @@ export class GameEngine {
     this.impactRings = [];
     this.round = 1;
     this.turnIndex = 0;
+    this.hitCount = 0;
+    this.hitPulse = 0;
     this.aiAimPreview = null;
     this.dragStart = null;
     this.aimPt = null;
@@ -231,6 +237,8 @@ export class GameEngine {
         const vy = Math.sin(finalTheta) * finalPower * SPEED_SCALE;
 
         sound.playLaunch(Math.min(1.0, finalPower / DRAG_MAX));
+        this.hitCount = 0;
+        this.hitPulse = 0;
         ball.launch(vx, vy);
         this.state = 'ROLLING';
         this.emitLog(`⚡ AI launches peg ${ball.label}!`);
@@ -453,6 +461,8 @@ export class GameEngine {
         const pvy = -(dy / pull) * clampedPull * SPEED_SCALE;
 
         sound.playLaunch(clampedPull / DRAG_MAX);
+        this.hitCount = 0;
+        this.hitPulse = 0;
         ball.launch(pvx, pvy);
         this.shake = 4;
         this.state = 'ROLLING';
@@ -603,6 +613,8 @@ export class GameEngine {
           this.shake = Math.max(this.shake, Math.min(6, ev.speed * 0.35));
         } else if (ev.type === 'damage') {
           sound.playDamage();
+          this.hitCount++;
+          this.hitPulse = 1.0;
           this.shake = Math.max(this.shake, 11 + ev.damage * 0.65);
           if (navigator.vibrate) navigator.vibrate([25]);
 
@@ -686,6 +698,11 @@ export class GameEngine {
       if (b.alive) b.updateWave();
     }
 
+    if (this.hitPulse > 0) {
+      this.hitPulse *= 0.91;
+      if (this.hitPulse < 0.01) this.hitPulse = 0;
+    }
+
     this.render();
     requestAnimationFrame(this.loop);
   }
@@ -734,6 +751,45 @@ export class GameEngine {
     }
 
     ctx.restore();
+
+    // ── Dark Gray Arena Hit Counter (Matching Hand-Drawn Design Sketch) ──
+    if (this.hitCount > 0) {
+      ctx.save();
+      const cx = W / 2;
+      const cy = 385;
+      const scale = 1.0 + (this.hitPulse || 0) * 0.12;
+
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 1. Large Hit Number
+      ctx.font = 'italic 900 135px "Chakra Petch", "Oxanium", sans-serif';
+      ctx.fillStyle = 'rgba(40, 52, 65, 0.28)';
+      ctx.fillText(`${this.hitCount}`, 0, -35);
+
+      ctx.strokeStyle = 'rgba(125, 145, 165, 0.35)';
+      ctx.lineWidth = 2.5;
+      ctx.strokeText(`${this.hitCount}`, 0, -35);
+
+      // 2. 'HITS' Sub-label
+      ctx.font = 'italic 900 34px "Chakra Petch", "Oxanium", sans-serif';
+      if ('letterSpacing' in ctx) {
+        ctx.letterSpacing = '10px';
+      }
+      const labelText = ('letterSpacing' in ctx) ? 'HITS' : 'H I T S';
+
+      ctx.fillStyle = 'rgba(40, 52, 65, 0.28)';
+      ctx.fillText(labelText, 0, 52);
+
+      ctx.strokeStyle = 'rgba(125, 145, 165, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeText(labelText, 0, 52);
+
+      ctx.restore();
+    }
 
     // 3. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow)
     if (this.state === 'PLAYER_AIM' && this.dragStart && this.aimPt && this.activeBall) {
