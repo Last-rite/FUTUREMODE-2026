@@ -650,7 +650,11 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                       )}
                     </>
                   ) : (
-                    <Cat size={18} strokeWidth={2.4} />
+                    pet ? (
+                      <NoxPlaceholder pet={pet} size="sm" />
+                    ) : (
+                      <Cat size={18} strokeWidth={2.4} />
+                    )
                   )}
                 </button>
 

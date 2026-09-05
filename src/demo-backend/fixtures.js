@@ -1,3 +1,5 @@
+import levelCityImg from '../assets/level_city.png';
+
 // DEMO ONLY: browser fixtures that imitate data returned by the future API.
 // Each newly registered account receives their own 6 starting NOXCATs and 3 equipment items.
 
@@ -189,7 +191,7 @@ export const DEMO_PETS = [];
 export const DEMO_ITEMS = [];
 
 export const DEMO_DUNGEONS = [
-  { id: 'dungeon-zero', chapter: '01', name: '零號資料井', subtitle: 'DATA WELL // ENTRY NODE', difficulty: 'NORMAL', cost: 5, loot: 3, tone: '#00ff66' },
+  { id: 'dungeon-zero', chapter: '01', name: '零號資料井', subtitle: 'DATA WELL // ENTRY NODE', difficulty: 'NORMAL', cost: 5, loot: 3, tone: '#00ff66', image: levelCityImg },
   { id: 'dungeon-ash', chapter: '02', name: '灰燼轉運站', subtitle: 'ASH RELAY // HIGH RISK', difficulty: 'HARD', cost: 8, loot: 7, tone: '#ff5f3d' },
 ];
 

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { BatteryCharging, ChevronLeft, ChevronRight, Coins, LogOut, RotateCcw, AlertTriangle } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
 import BrandLockup from './BrandLockup.jsx';
+import levelCityImg from '../assets/level_city.png';
 import { getActiveTeam, getActiveLoadoutIndex } from '../utils/teamStorage.js';
 
 export default function LobbyView({ user, data, onStartGame, onSignOut, onReset }) {
@@ -75,8 +76,18 @@ export default function LobbyView({ user, data, onStartGame, onSignOut, onReset 
             />
           </svg>
           <div className="sketch-mission__node" aria-label="關卡圖像">
-            <BatteryCharging size={46} />
-            <span>STAGE</span>
+            {dungeon?.image || dungeon?.chapter === '01' ? (
+              <img
+                src={dungeon?.image || levelCityImg}
+                alt={dungeon?.name || '關卡'}
+                className="sketch-mission__node-img pixelated"
+              />
+            ) : (
+              <>
+                <BatteryCharging size={46} />
+                <span>STAGE</span>
+              </>
+            )}
           </div>
           <button className="sketch-stage-arrow sketch-stage-arrow--left" onClick={() => cycleDungeon(-1)} aria-label="上一個關卡"><ChevronLeft size={28} /></button>
           <button className="sketch-stage-arrow sketch-stage-arrow--right" onClick={() => cycleDungeon(1)} aria-label="下一個關卡"><ChevronRight size={28} /></button>
