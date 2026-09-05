@@ -13,13 +13,19 @@ export const SHOW_BOSS_BAR = true;
 export const W = 550;
 export const H = 800;
 
-// ── Ball & Stat Settings ──
+// ── Ball & Stat Settings (5 combat attributes: hp/maxHp, atk, def, spd) ──
 export const INNER_R = 34;         // Radius of inner dark core (original ball size)
 export const RING_THICKNESS = 8;   // Edge thickness (x0.8)
 export const BALL_R = INNER_R + RING_THICKNESS; // 42 total outer collision radius
 export const BALL_MAX_HP = 100;
+export const DEFAULT_HP = 100;
 export const DEFAULT_ATK = 10;
 export const DEFAULT_DEF = 2;
+export const DEFAULT_SPD = 1.0;    // Speed multiplier on ball release
+
+// ── Spawn Y Coordinates ──
+export const ENEMY_START_Y = 175;  // Moved down for breathing room below boss bar
+export const PLAYER_START_Y = 660; // Player starting row
 
 // ── Slingshot & Physics (from game_v2.py) ──
 export const DRAG_MAX = 160;       // Max pull distance

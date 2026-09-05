@@ -1,6 +1,7 @@
 import {
   W, H, BALL_R, DRAG_MAX, SPEED_SCALE, COLORS,
-  TEAM_SIZE, DEFAULT_ATK, DEFAULT_DEF
+  TEAM_SIZE, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD,
+  ENEMY_START_Y, PLAYER_START_Y
 } from './constants.js';
 import { Ball } from './Ball.js';
 import { DmgNum, Particle, GlassShard, LiquidDrop, ImpactRing } from './DmgNum.js';
@@ -122,13 +123,13 @@ export class GameEngine {
       const aLabel = `2${char}`;
 
       const px = pSpacing * (i + 1);
-      const py = 660;
-      this.balls.push(new Ball(pLabel, 1, px, py, DEFAULT_ATK, DEFAULT_DEF));
+      const py = PLAYER_START_Y;
+      this.balls.push(new Ball(pLabel, 1, px, py, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD));
       pLabels.push(pLabel);
 
       const ax = pSpacing * (i + 1);
-      const ay = 140;
-      this.balls.push(new Ball(aLabel, 2, ax, ay, DEFAULT_ATK, DEFAULT_DEF));
+      const ay = ENEMY_START_Y;
+      this.balls.push(new Ball(aLabel, 2, ax, ay, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_HP, DEFAULT_SPD));
       aLabels.push(aLabel);
     }
 
@@ -243,8 +244,10 @@ export class GameEngine {
         x: b.x,
         y: b.y,
         hp: b.hp,
+        maxHp: b.maxHp,
         atk: b.atk,
         def: b.def,
+        spd: b.spd,
         alive: b.alive,
       })),
       activeLabel: this.activeBall?.label,
@@ -280,6 +283,7 @@ export class GameEngine {
         maxHp: b.maxHp,
         atk: b.atk,
         def: b.def,
+        spd: b.spd,
         isCurrent: idx === 0,
         isBoss: b.owner === 2 && b.label === '2a',
       };

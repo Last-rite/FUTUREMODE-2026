@@ -1,21 +1,25 @@
 import {
-  BALL_R, INNER_R, BALL_MAX_HP, DEFAULT_ATK, DEFAULT_DEF,
+  BALL_R, INNER_R, DEFAULT_HP, DEFAULT_ATK, DEFAULT_DEF, DEFAULT_SPD,
   DAMP, BOUNCE_DAMP, MIN_SPD, W, H, COLORS
 } from './constants.js';
 import { dist, lerpColor } from './physics.js';
 
 export class Ball {
-  constructor(label, owner, x, y, atk = DEFAULT_ATK, def = DEFAULT_DEF) {
+  constructor(label, owner, x, y, atk = DEFAULT_ATK, def = DEFAULT_DEF, maxHp = DEFAULT_HP, spd = DEFAULT_SPD) {
     this.label = label;
     this.owner = owner; // 1 = player, 2 = AI
     this.x = x;
     this.y = y;
     this.vx = 0;
     this.vy = 0;
-    this.hp = BALL_MAX_HP;
-    this.maxHp = BALL_MAX_HP;
-    this.atk = atk;
-    this.def = def;
+    
+    // 5 Combat Attributes (hidden from direct board display): hp/maxHp, atk, def, spd
+    this.maxHp = Number(maxHp) || DEFAULT_HP;
+    this.hp = this.maxHp;
+    this.atk = Number(atk) || DEFAULT_ATK;
+    this.def = Number(def) || DEFAULT_DEF;
+    this.spd = Number(spd) || DEFAULT_SPD;
+
     this.moving = false;
     this.alive = true;
     this.trail = [];
@@ -54,8 +58,8 @@ export class Ball {
   }
 
   launch(vx, vy) {
-    this.vx = vx;
-    this.vy = vy;
+    this.vx = vx * this.spd;
+    this.vy = vy * this.spd;
     this.moving = true;
     this.trail = [];
     this.triggerWave(3.5); // Initial jolt on launch
@@ -341,11 +345,19 @@ export class Ball {
     ctx.fillText(this.label, this.x, this.y - 2);
 
     // 6. HP Text positioned exactly on the lower part of the HP ring
-    let hpColor = COLORS.WHITE; // Default white for enemy and full-health player
-    if (this.owner === 1 && hpRatio < 1.0) {
-      // Transition from light grey/white mixed with red towards pure bright red at low HP
-      const g = Math.round(25 + 190 * hpRatio);
-      const b = Math.round(35 + 190 * hpRatio);
+    let hpColor = COLORS.WHITE; // Default white for full health (100%)
+    if (hpRatio < 1.0) {
+      // Piecewise gradient:
+      // From 60% to 100% HP: use grey/white gradient from 90% to 100%
+      // From 0% to 60% HP: use gradient from 0% to 90%
+      let effectiveRatio;
+      if (hpRatio >= 0.6) {
+        effectiveRatio = 0.9 + 0.1 * ((hpRatio - 0.6) / 0.4);
+      } else {
+        effectiveRatio = 0.9 * (hpRatio / 0.6);
+      }
+      const g = Math.round(25 + 190 * effectiveRatio);
+      const b = Math.round(35 + 190 * effectiveRatio);
       hpColor = `rgb(255, ${g}, ${b})`;
     }
 

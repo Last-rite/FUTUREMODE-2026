@@ -7,6 +7,129 @@ import {
   Trophy, Skull, X, Shield, Swords
 } from 'lucide-react';
 
+function SquarcleBall({ char, isCurrent, isPlayer }) {
+  const canvasRef = useRef(null);
+  const phaseRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animId;
+
+    const render = () => {
+      phaseRef.current += 0.07;
+      const size = 58;
+      const ringW = 7;
+      const innerSize = size - ringW * 2; // 44
+      const maxHp = char.maxHp || 100;
+      const hpRatio = Math.max(0, Math.min(1, char.hp / maxHp));
+
+      ctx.clearRect(0, 0, size, size);
+
+      ctx.save();
+      // Outer squarcle clipping path
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, 14);
+      ctx.fillStyle = '#060a0f';
+      ctx.fill();
+      ctx.clip();
+
+      // Liquid fill with undulation wave
+      if (hpRatio > 0) {
+        const surfaceY = size - size * hpRatio;
+        const waveAmp = isCurrent ? 2.2 : 1.4;
+        const phase = phaseRef.current;
+
+        const liqGrad = ctx.createLinearGradient(0, surfaceY, 0, size);
+        if (isPlayer) {
+          liqGrad.addColorStop(0, '#00ff66');
+          liqGrad.addColorStop(1, '#008f39');
+        } else {
+          liqGrad.addColorStop(0, '#ff2a55');
+          liqGrad.addColorStop(1, '#99112e');
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(-4, size + 4);
+        ctx.lineTo(-4, surfaceY);
+        for (let x = -4; x <= size + 4; x += 2) {
+          const y = surfaceY + (hpRatio < 0.99 ? Math.sin(x * 0.25 + phase) * waveAmp : 0);
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(size + 4, size + 4);
+        ctx.closePath();
+        ctx.fillStyle = liqGrad;
+        ctx.fill();
+
+        // White surface meniscus line
+        if (hpRatio < 0.99) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          for (let x = 0; x <= size; x += 2) {
+            const y = surfaceY + Math.sin(x * 0.25 + phase) * waveAmp;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // Cutout inner squarcle core (7px border width)
+      ctx.beginPath();
+      ctx.roundRect(ringW, ringW, innerSize, innerSize, 8);
+      ctx.fillStyle = '#080d14';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Centered Character Label inside inner squarcle
+      ctx.font = '900 15px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(char.label, size / 2, size / 2);
+
+      ctx.restore();
+
+      // Outer squarcle border
+      ctx.beginPath();
+      ctx.roundRect(0.75, 0.75, size - 1.5, size - 1.5, 13.5);
+      ctx.strokeStyle = isCurrent
+        ? '#ffffff'
+        : (isPlayer ? 'rgba(0, 255, 102, 0.45)' : 'rgba(255, 42, 85, 0.45)');
+      ctx.lineWidth = isCurrent ? 2.5 : 1.2;
+      ctx.stroke();
+
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [char.hp, char.maxHp, char.label, isCurrent, isPlayer]);
+
+  return (
+    <div
+      className={`relative rounded-2xl p-0.5 transition-all duration-200 ${
+        isCurrent
+          ? isPlayer
+            ? 'shadow-[0_0_20px_rgba(0,255,102,0.65)] scale-105 z-20'
+            : 'shadow-[0_0_20px_rgba(255,42,85,0.65)] scale-105 z-20'
+          : 'opacity-85 hover:opacity-100'
+      }`}
+    >
+      <canvas
+        ref={canvasRef}
+        width={58}
+        height={58}
+        className="w-[58px] h-[58px] block rounded-2xl bg-[#060a0f]"
+      />
+    </div>
+  );
+}
+
 export default function GameView({ onExitToLobby }) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -64,7 +187,36 @@ export default function GameView({ onExitToLobby }) {
       {/* ── Main Arcade Phone Frame (NOXCAT Deep Tech Theme) ── */}
       <div className="relative w-full max-w-[480px] h-full max-h-[920px] flex flex-col justify-between items-center shadow-2xl bg-[#080d14] border-x border-[#172331]">
         
-        {/* ── Playfield Arena Area with Optional Floating Boss HP Bar ── */}
+        {/* ── Boss HP Bar (Top Header OUTSIDE the battle area) ── */}
+        {SHOW_BOSS_BAR && boss && (
+          <header className="w-full shrink-0 z-20 px-3 pt-3 pb-1 flex flex-col items-center bg-[#080d14] border-b border-[#172331]/60">
+            <div className="w-full max-w-[420px] bg-[#0c131dc0] backdrop-blur-md border border-[#ff2a55]/40 rounded-full px-3 py-1 flex items-center gap-2 shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+              {/* Boss Skull Badge */}
+              <div className="flex items-center gap-1 bg-[#220a12] border border-[#ff2a55] px-2 py-0.5 rounded-full shrink-0">
+                <Skull size={13} className="text-[#ff2a55] animate-pulse" />
+                <span className="text-[10px] font-black text-[#ff2a55] font-mono tracking-wider">
+                  BOSS
+                </span>
+              </div>
+
+              {/* Segmented Boss HP Bar */}
+              <div className="flex-1 flex flex-col gap-0.5">
+                <div className="flex justify-between items-center text-[10px] font-mono font-bold px-0.5">
+                  <span className="text-white drop-shadow">ENEMY FLEET</span>
+                  <span className="text-[#ff2a55] drop-shadow">{boss.totalHp} / {boss.maxTotalHp}</span>
+                </div>
+                <div className="w-full h-2.5 bg-[#141d28] rounded-full overflow-hidden p-0.5 border border-[#ff2a55]/30">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#ffd000] via-[#ff5533] to-[#ff2a55] rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(255,42,85,0.6)]"
+                    style={{ width: `${bossHpRatio}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </header>
+        )}
+
+        {/* ── Playfield Arena Area ── */}
         <main className="relative flex-1 w-full min-h-0 flex items-center justify-center p-2 overflow-hidden">
           <div
             className="relative flex items-center justify-center h-full max-h-full max-w-full"
@@ -75,115 +227,41 @@ export default function GameView({ onExitToLobby }) {
               ref={canvasRef}
               className="w-full h-full block cursor-crosshair touch-none rounded-xl border-2 border-[#1f3144] shadow-2xl bg-[#05070a]"
             />
-
-            {/* ── Boss HP Bar (Toggleable via SHOW_BOSS_BAR backdoor in constants.js) ── */}
-            {SHOW_BOSS_BAR && boss && (
-              <div className="absolute top-3 inset-x-3 pointer-events-none z-20 flex flex-col items-center">
-                <div className="pointer-events-auto w-full max-w-[420px] bg-[#0c131dc0] backdrop-blur-md border border-[#ff2a55]/40 rounded-full px-3 py-1 flex items-center gap-2 shadow-[0_4px_20px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* Boss Skull Badge */}
-                  <div className="flex items-center gap-1 bg-[#220a12] border border-[#ff2a55] px-2 py-0.5 rounded-full shrink-0">
-                    <Skull size={13} className="text-[#ff2a55] animate-pulse" />
-                    <span className="text-[10px] font-black text-[#ff2a55] font-mono tracking-wider">
-                      BOSS
-                    </span>
-                  </div>
-
-                  {/* Segmented Boss HP Bar */}
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <div className="flex justify-between items-center text-[10px] font-mono font-bold px-0.5">
-                      <span className="text-white drop-shadow">ENEMY FLEET</span>
-                      <span className="text-[#ff2a55] drop-shadow">{boss.totalHp} / {boss.maxTotalHp}</span>
-                    </div>
-                    <div className="w-full h-2.5 bg-[#141d28] rounded-full overflow-hidden p-0.5 border border-[#ff2a55]/30">
-                      <div
-                        className="h-full bg-gradient-to-r from-[#ffd000] via-[#ff5533] to-[#ff2a55] rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(255,42,85,0.6)]"
-                        style={{ width: `${bossHpRatio}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </main>
 
         {/* ── Monster Strike Bottom Console (Initiative Queue + Toolbar) ── */}
         <footer className="w-full shrink-0 z-10 flex flex-col bg-[#080d14] border-t border-[#172331] shadow-[0_-8px_25px_rgba(0,0,0,0.7)]">
           {/* 1. Initiative Character Rack (Leftmost is ALWAYS the active mover) */}
-          <div className="w-full px-2 pt-5 pb-2 overflow-x-auto scrollbar-none flex items-center gap-2">
+          <div className="w-full px-3 pt-6 pb-2.5 overflow-x-auto scrollbar-none flex items-center gap-2.5">
             {snapshot.initiativeQueue.map((char, index) => {
               const isCurrent = char.isCurrent;
               const isPlayer = char.owner === 1;
-              const hpPct = Math.max(0, Math.min(100, (char.hp / char.maxHp) * 100));
 
               return (
                 <div
                   key={`${char.label}-${index}`}
-                  className={`relative shrink-0 flex flex-col items-center rounded-xl p-1.5 pt-2 transition-all duration-200 border ${
-                    isCurrent
-                      ? isPlayer
-                        ? 'bg-[#0b1f14] border-[#00ff66] shadow-[0_0_18px_rgba(0,255,102,0.6)] scale-105 z-20'
-                        : 'bg-[#260c14] border-[#ff2a55] shadow-[0_0_18px_rgba(255,42,85,0.6)] scale-105 z-20'
-                      : isPlayer
-                      ? 'bg-[#091410] border-[#00ff66]/30 opacity-80'
-                      : 'bg-[#18090d] border-[#ff2a55]/30 opacity-80'
-                  }`}
-                  style={{ width: '70px' }}
+                  className="relative shrink-0 flex flex-col items-center"
                 >
                   {/* Prominent Leftmost "GO!" Banner */}
                   {isCurrent && (
                     <div
-                      className={`absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[9px] font-black font-mono uppercase tracking-wider text-center shadow-lg animate-bounce z-30 border ${
+                      className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-black font-mono uppercase tracking-wider text-center shadow-lg animate-bounce z-30 border ${
                         isPlayer
-                          ? 'bg-[#00ff66] text-black border-white shadow-[0_0_10px_rgba(0,255,102,0.9)]'
-                          : 'bg-[#ff2a55] text-white border-white shadow-[0_0_10px_rgba(255,42,85,0.9)]'
+                          ? 'bg-[#00ff66] text-black border-white shadow-[0_0_12px_rgba(0,255,102,0.9)]'
+                          : 'bg-[#ff2a55] text-white border-white shadow-[0_0_12px_rgba(255,42,85,0.9)]'
                       }`}
                     >
                       GO!
                     </div>
                   )}
 
-                  {/* Character Avatar with Outer Liquid Ring */}
-                  <div
-                    className="relative w-10 h-10 rounded-full border-2 flex items-center justify-center mb-1 overflow-hidden shadow-inner mt-0.5"
-                    style={{
-                      borderColor: isCurrent ? '#ffffff' : (isPlayer ? '#00ff66' : '#ff2a55'),
-                      backgroundColor: '#060a0f',
-                    }}
-                  >
-                    {/* Ring liquid fill level from bottom */}
-                    <div
-                      className="absolute bottom-0 inset-x-0 transition-all duration-300"
-                      style={{
-                        height: `${hpPct}%`,
-                        backgroundColor: isPlayer ? '#00ff66' : '#ff2a55',
-                        opacity: 0.9,
-                      }}
-                    />
-                    {/* Inner core cutout */}
-                    <div className="relative z-10 w-6 h-6 rounded-full bg-[#080d14] border border-white/20 flex items-center justify-center">
-                      <span className="text-[10px] font-black font-mono text-white">
-                        {char.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* HP Bar Below Character */}
-                  <div className="w-full flex flex-col gap-0.5 items-center">
-                    <div className="w-full h-1.5 bg-[#141d28] rounded-full overflow-hidden p-[1px] border border-slate-700/50">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{
-                          width: `${hpPct}%`,
-                          backgroundColor: isPlayer ? '#00ff66' : '#ff2a55',
-                        }}
-                      />
-                    </div>
-                    {/* Numerical HP indicator */}
-                    <span className="text-[10px] font-mono font-bold text-slate-300 leading-none mt-0.5">
-                      {char.hp}
-                    </span>
-                  </div>
+                  {/* Centered Squarcle Ball with Liquid Wave Ring */}
+                  <SquarcleBall
+                    char={char}
+                    isCurrent={isCurrent}
+                    isPlayer={isPlayer}
+                  />
                 </div>
               );
             })}

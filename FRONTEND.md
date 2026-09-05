@@ -53,21 +53,24 @@ Canvas Game Engine (High-Frequency 60/120 FPS Loop)
 - **Canvas Resolution**: Fixed logical resolution of `550 × 800 px` (`W = 550, H = 800`).
 - **Coordinate Mapping**: Drag inputs are dynamically scaled via `canvas.getBoundingClientRect()` so that pointer positions map 1:1 with canvas units regardless of device DPI or screen scaling.
 
-### 2. Floating Boss HP Bar (Top)
-- **Position**: Anchored to the top of the canvas playfield.
+### 2. Boss HP Bar (Top Header)
+- **Position**: Located in a dedicated top header outside the battle arena (preventing any canvas overlay).
 - **Features**:
   - Displays the combined health pool of the entire enemy fleet (`boss.totalHp / boss.maxTotalHp`).
   - Animated skull badge with gradient health bar (`#ffd000` → `#ff5533` → `#ff2a55`).
-  - Eye toggle button allowing the player to collapse/expand the bar to prevent obscuring the top playfield.
+  - Controlled by the `SHOW_BOSS_BAR` backdoor variable in `constants.js`.
+  - Enemy pegs spawn lower (`y = 175`) to provide ample breathing room beneath the top header.
 
 ### 3. Monster Strike Initiative Rack (Bottom)
-Located at the bottom of the screen, mirroring the initiative queue design:
+Located at the bottom of the screen:
 - **Left-to-Right Execution**: Pegs take turns sequentially. The **leftmost card is always the currently active mover**.
 - **"GO!" Banner**: The active card features an elevated, pulsating `GO!` badge above the card.
-- **Card Elements**:
-  - **Circular Avatar**: Shows the peg label with outer liquid ring fill percentage.
-  - **Mini HP Bar**: Horizontal segmented bar indicating remaining life.
-  - **Numeric HP**: Explicit text reading (e.g., `100`, `92`, `0`).
+- **Centered Squarcle Liquid Cards**:
+  - Mini HP bars and numeric text are removed from the queue cards (leaving numeric HP exclusively to the physical pegs on the board).
+  - Each peg is represented by a **squarcle** (rounded-2xl frame).
+  - An inner squarcle core (`rounded-xl`) is inset with a ~7px border matching the peg's 8px `RING_THICKNESS`.
+  - The outer squarcle ring contains an animated liquid wave fill reflecting remaining HP (`hp / maxHp`).
+  - Centered monospace character label (`1a`, `2b`) inside the inner core.
 - **Queue Rotation**: Once a peg finishes its move and settles, it shifts to the back of the alive queue. Eliminated pegs (`HP <= 0`) are removed.
 
 ### 4. Utility Toolbar
@@ -79,14 +82,21 @@ Directly beneath the character cards:
 
 ---
 
-## In-Game Peg & Liquid Health System
+## Combat Attributes & Liquid Health System
 
-### Concentric Ring Design
-Each peg is rendered with an inner core and an outer liquid health ring:
-- **Outer Ring Radius (`BALL_R`)**: `42px` (total hitbox radius).
-- **Inner Core Radius (`INNER_R`)**: `34px` (obsidian dark center).
-- **Ring Thickness**: `8px` (`BALL_R - INNER_R`).
-- **Center Label & HP**: Monospace, high-contrast labels (`1a`, `2b`) and large font for mobile readability.
+### 5 Combat Attributes
+Each ball has 5 attributes managed internally (hidden from direct board display to preserve a clean visual aesthetic):
+1. `hp`: Current health.
+2. `maxHp`: Maximum health pool (default `100`).
+3. `atk`: Attack rating (default `10`).
+4. `def`: Defense rating (default `2`, Damage = $\max(1, \text{ATK} - \text{DEF})$).
+5. `spd`: Velocity multiplier float (default `1.0`), multiplying initial release speed upon launch.
+
+### Piecewise HP Text Color Gradient
+The numeric HP on the outer ring dynamically shifts color for both player and enemy pegs based on $\text{hpRatio} = \text{hp} / \text{maxHp}$:
+- **60% to 100% HP**: Retains a crisp white / metallic light grey gradient (mapped from the previous 90%–100% parameter range).
+- **0% to 60% HP**: Smoothly transitions toward cyber crimson red at low health (mapped from the previous 0%–90% range).
+- At 0% HP, the peg shatters into glass and liquid particles.
 
 ### Impact Wave Undulation
 The outer liquid ring fills from the bottom up to reflect current HP:
