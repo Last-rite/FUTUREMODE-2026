@@ -512,7 +512,24 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .cyber-item-art__code { position: absolute; bottom: 2px; font: 900 6px/1 ui-monospace, monospace; color: #87998e; letter-spacing: .08em; text-shadow: 0 0 4px #000; }
 
 /* FULL-SCREEN DETAIL VIEW (Matching pet_detail_example.jpg & weapon_detail_example.jpg) */
-.sketch-fullscreen-detail { position: absolute; inset: 0; z-index: 70; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: max(16px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); background: rgba(4, 7, 5, 0.94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); animation: fullDetailIn .22s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto; scrollbar-width: none; }
+.sketch-fullscreen-detail {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  background: rgba(4, 7, 5, 0.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: fullDetailIn .22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
 .sketch-fullscreen-detail::-webkit-scrollbar { display: none; }
 @keyframes fullDetailIn { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: scale(1); } }
 
@@ -532,11 +549,38 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-banner-chevron { margin-left: auto; color: var(--name-accent); font: 900 20px/1 'Chakra Petch', sans-serif; letter-spacing: -3px; }
 .sketch-name-banner--item { --name-accent: #35d9ff; }
 
-/* Main Area: Full vertical expanse */
-.sketch-fs-main { position: relative; flex: 1; min-height: 320px; display: flex; flex-direction: column; justify-content: space-between; }
+/* Main Area: Full vertical expanse with left stats/skill & right hero col */
+.sketch-fs-main {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+/* Left Column: holds HP on top, Special card in middle, and 3 Stats below */
+.sketch-fs-left-col {
+  position: relative;
+  z-index: 6;
+  width: 48%;
+  max-width: 195px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  pointer-events: auto;
+}
+
+.sketch-fs-hp-wrap {
+  width: 100%;
+  margin-top: 4px;
+}
 
 /* Stats Column with Slanted Gauges & Blue "增加量" Callout */
-.sketch-fs-stats { position: relative; z-index: 4; width: 50%; display: grid; gap: 14px; margin-top: 10px; }
+.sketch-fs-stats { position: relative; width: 100%; display: grid; gap: 10px; }
 .sketch-stat-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 6px; align-items: baseline; }
 .sketch-stat-label-wrap { display: flex; align-items: center; gap: 5px; }
 .sketch-stat-label { display: flex; align-items: center; gap: 4px; font: 850 10px/1 ui-monospace, monospace; color: #a4b3a8; }
@@ -549,35 +593,54 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 @keyframes pulseCallout { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
 .is-bonus-fill { background: #35d9ff !important; box-shadow: 0 0 8px rgba(53,217,255,.6); }
 
-/* Hero Column on Right in Detail Views (Speech bubble directly above Art) */
+/* Hero Column on Right in Detail Views:
+   Moved flush against the right edge of the screen to eliminate empty space and border clipping
+*/
 .sketch-fs-hero-col {
   position: absolute;
-  right: -20%;
-  bottom: -28px;
-  width: min(92vw, 420px);
+  right: -16px;
+  bottom: -4px;
+  width: min(65vw, 300px);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: flex-end;
   pointer-events: none;
-  z-index: 3;
+  z-index: 4;
 }
 
-/* The Speech Bubble (幹話氣泡) directly above Character/Weapon with Downward Centered Pointer Tail */
+/* The Speech Bubble (幹話氣泡):
+   Positioned on the upper right directly above character art.
+   If colliding with left column, automatically shifts right and becomes taller/narrower (.is-avoiding)
+*/
 .sketch-speech-bubble {
   position: relative;
-  z-index: 6;
-  width: 56%;
-  padding: 10px 12px;
+  z-index: 7;
+  max-width: 190px;
+  width: fit-content;
+  padding: 8px 12px;
   border: 2px solid var(--pet-accent, #00ff66);
   border-radius: 13px;
-  background: #08100b;
+  background: rgba(8, 16, 11, 0.96);
   color: #e1ebe3;
   box-shadow: 0 6px 20px rgba(0,0,0,.65);
-  margin: 0 24% 8px 0;
+  margin: 0 16px 8px auto;
   pointer-events: auto;
+  transition: transform 0.16s ease-out, max-width 0.16s ease-out;
 }
-.sketch-speech-bubble--item { border-color: #35d9ff; background: #081218; }
-.sketch-speech-bubble p { margin: 0; font: 750 10.5px/1.45 ui-monospace, monospace; text-align: center; }
+.sketch-speech-bubble.is-avoiding {
+  box-shadow: 0 8px 26px rgba(0,0,0,.85);
+}
+.sketch-speech-bubble--item {
+  border-color: #35d9ff;
+  background: rgba(8, 18, 24, 0.96);
+}
+.sketch-speech-bubble p {
+  margin: 0;
+  font: 750 10.5px/1.38 ui-monospace, monospace;
+  text-align: center;
+  word-break: break-word;
+}
 .sketch-bubble-tail {
   position: absolute;
   bottom: -11px;
@@ -585,42 +648,143 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 9px solid transparent;
-  border-right: 9px solid transparent;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
   border-top: 11px solid var(--pet-accent, #00ff66);
+  transition: transform 0.16s ease-out;
 }
 .sketch-bubble-tail::after {
   content: '';
   position: absolute;
   bottom: 2px;
-  left: -7px;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
+  left: -6px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
   border-top: 9px solid #08100b;
 }
-.sketch-bubble-tail--item { border-top-color: #35d9ff; }
-.sketch-bubble-tail--item::after { border-top-color: #081218; }
+.sketch-bubble-tail--item {
+  border-top-color: #35d9ff;
+}
+.sketch-bubble-tail--item::after {
+  border-top-color: #081218;
+}
 
-/* Large Character/Weapon Art Display in Detail Views (Borderless matching sketches) */
+/* 2X LARGE Character & Weapon Art Display:
+   Right-aligned and flush with screen border
+*/
 .sketch-fs-character {
   position: relative;
   width: 100%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
   pointer-events: none;
 }
-.sketch-fs-character .nox-avatar { width: min(92vw, 420px); height: min(92vw, 420px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
-.sketch-fs-character .nox-avatar svg { width: min(84vw, 370px); height: min(84vw, 370px); color: var(--pet-accent, #00ff66); filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 50%, transparent)); }
+.sketch-fs-character .nox-avatar {
+  width: 100%;
+  max-width: 290px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-right: -10px;
+}
+.sketch-fs-character .nox-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right bottom;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 55%, transparent));
+}
+.sketch-fs-character .nox-avatar svg {
+  width: 90%;
+  height: 90%;
+  color: var(--pet-accent, #00ff66);
+  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 55%, transparent));
+}
 .sketch-fs-character .nox-avatar .nox-avatar__scan { display: none; }
 .sketch-fs-character .nox-avatar .nox-avatar__placeholder { display: none; }
-.sketch-fs-character .nox-avatar .nox-avatar__code { position: absolute; bottom: 4px; right: 16px; font: 900 10px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); letter-spacing: .1em; opacity: 0.6; }
-.sketch-fs-weapon-art .cyber-item-art { width: min(92vw, 420px); height: min(92vw, 420px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
-.sketch-fs-weapon-art .cyber-item-art .item-img { width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(0 0 26px rgba(53, 217, 255, 0.5)); }
+.sketch-fs-character .nox-avatar .nox-avatar__code {
+  position: absolute;
+  bottom: 4px;
+  right: 18px;
+  font: 900 10px/1 ui-monospace, monospace;
+  color: var(--pet-accent, #00ff66);
+  letter-spacing: .1em;
+  opacity: 0.6;
+}
+.sketch-fs-weapon-art .cyber-item-art {
+  width: 100%;
+  max-width: 290px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-right: -10px;
+}
+.sketch-fs-weapon-art .cyber-item-art .item-img {
+  width: 96%;
+  height: 96%;
+  object-fit: contain;
+  object-position: right bottom;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 24px rgba(53, 217, 255, 0.55));
+}
 
-/* Skill & Special Description at Bottom-Left */
-.sketch-fs-skill { position: relative; z-index: 5; margin-top: auto; width: 54%; display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--pet-accent, #00ff66); background: rgba(5,8,6,.88); }
-.sketch-fs-skill-title { font: 900 9px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); letter-spacing: .08em; }
-.sketch-fs-skill-desc { margin: 0; font: 750 9px/1.45 ui-monospace, monospace; color: #cfd8d1; }
+/* Skill & Special Description:
+   Positioned between HP bar and other 3 stats,
+   narrower with multiple line breaks, without touching character.
+*/
+.sketch-fs-skill {
+  position: relative;
+  z-index: 8;
+  margin: 9px 0;
+  width: fit-content;
+  max-width: 138px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 7px 10px 8px;
+  border-left: 3.5px solid var(--pet-accent, #00ff66);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  background: rgba(4, 8, 6, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+.sketch-fullscreen-detail--weapon .sketch-fs-skill {
+  border-left-color: #35d9ff;
+}
+.sketch-fs-skill-title {
+  font: 900 12px/1 'Chakra Petch', ui-monospace, monospace;
+  color: var(--pet-accent, #00ff66);
+  letter-spacing: .08em;
+}
+.sketch-fullscreen-detail--weapon .sketch-fs-skill-title {
+  color: #35d9ff;
+}
+.sketch-fs-skill-desc {
+  margin: 0;
+  font: 600 12px/1.48 'Noto Sans TC', sans-serif;
+  color: #dbe6df;
+  word-break: break-word;
+  letter-spacing: 0.01em;
+}
 
 /* Bottom Action Footer */
 .sketch-fs-footer { margin-top: 14px; display: grid; gap: 8px; z-index: 10; }

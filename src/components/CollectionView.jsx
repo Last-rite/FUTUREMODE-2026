@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   Cat,
   Gem,
@@ -92,6 +92,153 @@ export function ItemIllustration({ item, size = 'lg' }) {
   );
 }
 
+/**
+ * Speech Bubble with Automatic Collision Avoidance:
+ * Sits directly on top of the character's head by default.
+ * If colliding with the stats bar on the left, automatically shifts right
+ * and constrains width to become taller & narrower ("如果疊到就稍微向右+變高變窄").
+ */
+function DetailSpeechBubble({ statsRef, containerRef, quote, isWeapon = false }) {
+  const bubbleRef = useRef(null);
+  const [avoidance, setAvoidance] = useState({ shifted: false, shiftX: 0, maxWidth: null, tailOffsetX: 0 });
+  const avoidanceRef = useRef(avoidance);
+  avoidanceRef.current = avoidance;
+
+  useLayoutEffect(() => {
+    let animId = null;
+    const timers = [];
+
+    const checkCollision = () => {
+      if (!statsRef.current || !bubbleRef.current || !containerRef.current) return;
+
+      const statsEl = statsRef.current;
+      const bubbleEl = bubbleRef.current;
+      const contEl = containerRef.current;
+
+      const bubbleRect = bubbleEl.getBoundingClientRect();
+      const contRect = contEl.getBoundingClientRect();
+      const currentShift = avoidanceRef.current.shifted ? avoidanceRef.current.shiftX : 0;
+      const unshiftedLeft = bubbleRect.left - currentShift;
+      const unshiftedRight = bubbleRect.right - currentShift;
+
+      // Generous safety margin between outer speech box border/glow and any stat row/value/bar
+      const safetyMargin = 18;
+
+      let maxOverlapX = 0;
+      let worstRowRight = 0;
+
+      // Check each individual stat row and the skill card
+      const rows = statsEl.querySelectorAll('.sketch-stat-row, .sketch-fs-skill');
+      rows.forEach((row) => {
+        const rowRect = row.getBoundingClientRect();
+        // Check if the outer bubble box overlaps vertically with this element (with 6px buffer)
+        const verticalOverlap =
+          bubbleRect.bottom >= rowRect.top - 6 && bubbleRect.top <= rowRect.bottom + 6;
+
+        if (verticalOverlap) {
+          const overlap = rowRect.right + safetyMargin - unshiftedLeft;
+          if (overlap > maxOverlapX) {
+            maxOverlapX = overlap;
+            worstRowRight = rowRect.right;
+          }
+        }
+      });
+
+      // Also check against overall stats container bounds
+      const statsRect = statsEl.getBoundingClientRect();
+      const contVerticalOverlap =
+        bubbleRect.bottom >= statsRect.top - 6 && bubbleRect.top <= statsRect.bottom + 6;
+      if (contVerticalOverlap) {
+        const contOverlap = statsRect.right + safetyMargin - unshiftedLeft;
+        if (contOverlap > maxOverlapX) {
+          maxOverlapX = contOverlap;
+          worstRowRight = Math.max(worstRowRight, statsRect.right);
+        }
+      }
+
+      if (maxOverlapX > 0) {
+        // ENTIRE BOX overlaps or is too close!
+        // Shift right so the bubble's left outer edge clears all stat elements
+        const maxAllowedLeft = worstRowRight + safetyMargin;
+        const availableWidth = contRect.right - maxAllowedLeft - 10;
+        
+        // Target maxWidth: narrower so text wraps to 3~4 lines (taller and narrower)
+        const targetMaxWidth = Math.max(115, Math.min(150, availableWidth));
+        const shiftX = Math.max(12, Math.min(maxOverlapX + 4, contRect.right - unshiftedRight - 8));
+
+        const next = {
+          shifted: true,
+          shiftX,
+          maxWidth: `${Math.round(targetMaxWidth)}px`,
+          tailOffsetX: -Math.round(shiftX * 0.76),
+        };
+
+        if (
+          !avoidanceRef.current.shifted ||
+          Math.abs(avoidanceRef.current.shiftX - shiftX) > 2 ||
+          avoidanceRef.current.maxWidth !== next.maxWidth
+        ) {
+          setAvoidance(next);
+        }
+      } else {
+        if (avoidanceRef.current.shifted) {
+          setAvoidance({ shifted: false, shiftX: 0, maxWidth: null, tailOffsetX: 0 });
+        }
+      }
+    };
+
+    checkCollision();
+    animId = requestAnimationFrame(checkCollision);
+    timers.push(setTimeout(checkCollision, 50));
+    timers.push(setTimeout(checkCollision, 120));
+    timers.push(setTimeout(checkCollision, 260)); // after fullDetailIn 220ms animation
+    timers.push(setTimeout(checkCollision, 450));
+
+    window.addEventListener('resize', checkCollision);
+
+    let resizeObs = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObs = new ResizeObserver(() => checkCollision());
+      if (containerRef.current) resizeObs.observe(containerRef.current);
+      if (statsRef.current) resizeObs.observe(statsRef.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(animId);
+      timers.forEach((t) => clearTimeout(t));
+      window.removeEventListener('resize', checkCollision);
+      if (resizeObs) resizeObs.disconnect();
+    };
+  }, [quote, statsRef, containerRef]);
+
+  return (
+    <div
+      ref={bubbleRef}
+      className={`sketch-speech-bubble ${isWeapon ? 'sketch-speech-bubble--item' : ''} ${avoidance.shifted ? 'is-avoiding' : ''}`}
+      style={{
+        ...(avoidance.shifted
+          ? {
+              transform: `translateX(${avoidance.shiftX}px)`,
+              maxWidth: avoidance.maxWidth,
+            }
+          : {}),
+      }}
+    >
+      <p>「{quote}」</p>
+      <span
+        className={`sketch-bubble-tail ${isWeapon ? 'sketch-bubble-tail--item' : ''}`}
+        style={{
+          ...(avoidance.shifted && avoidance.tailOffsetX
+            ? {
+                transform: `translateX(calc(-50% + ${avoidance.tailOffsetX}px))`,
+              }
+            : {}),
+        }}
+      />
+    </div>
+  );
+}
+
 export default function CollectionView({ data, onToggleParty, onEquipItem, onMessage }) {
   // Mode switch: 'pets' vs 'items'
   const [tab, setTab] = useState('pets');
@@ -103,6 +250,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   const [dragOverSlot, setDragOverSlot] = useState(null); // 0 | 1 | 2 | 'vault' | null
   const [touchGhost, setTouchGhost] = useState(null); // { x, y, name, type }
   const touchInfoRef = useRef(null);
+  const petStatsRef = useRef(null);
+  const petMainRef = useRef(null);
+  const weaponStatsRef = useRef(null);
+  const weaponMainRef = useRef(null);
 
   // Loadout management: 5 tabs storing distinct 3-slot party line-ups
   const [loadout, setLoadout] = useState(() => getActiveLoadoutIndex());
@@ -844,49 +995,80 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           </div>
 
           {/* Main Content Area: Stats on left, Speech Bubble & Art on right */}
-          <div className="sketch-fs-main">
-            {/* Left Stats Column */}
-            <div className="sketch-fs-stats">
-              {['hp', 'atk', 'def', 'spd'].map((key) => {
-                const Icon = STAT_ICONS[key];
-                const value = selectedPet[key];
-                const maxRef = STAT_MAX_LIMITS[key] || 100;
-                const barWidth = Math.min(100, Math.max(0, (value / maxRef) * 100));
-                const displayVal = key === 'spd' ? `${value}%` : value;
-
-                return (
-                  <div className="sketch-stat-row" key={key}>
-                    <div className="sketch-stat-label-wrap">
-                      <span className="sketch-stat-label">
-                        <Icon size={12} />
-                        {key.toUpperCase()} :
-                      </span>
+          <div className="sketch-fs-main" ref={petMainRef}>
+            {/* Left Column: HP on top, Special Card in middle, ATK/DEF/SPD on bottom */}
+            <div className="sketch-fs-left-col" ref={petStatsRef}>
+              {/* HP Stat Row */}
+              <div className="sketch-fs-hp-wrap">
+                {(() => {
+                  const key = 'hp';
+                  const Icon = STAT_ICONS[key];
+                  const value = selectedPet[key];
+                  const maxRef = STAT_MAX_LIMITS[key] || 100;
+                  const barWidth = Math.min(100, Math.max(0, (value / maxRef) * 100));
+                  return (
+                    <div className="sketch-stat-row" key={key}>
+                      <div className="sketch-stat-label-wrap">
+                        <span className="sketch-stat-label">
+                          <Icon size={12} />
+                          {key.toUpperCase()} :
+                        </span>
+                      </div>
+                      <strong className="sketch-stat-val">{value}</strong>
+                      <div className="sketch-stat-bar-track">
+                        <div
+                          className="sketch-stat-bar-fill"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
                     </div>
-                    <strong className="sketch-stat-val">{displayVal}</strong>
-                    <div className="sketch-stat-bar-track">
-                      <div
-                        className="sketch-stat-bar-fill"
-                        style={{ width: `${barWidth}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Special Skill and Description on bottom left */}
-            <div className="sketch-fs-skill">
-              <span className="sketch-fs-skill-title">特殊技能</span>
-              <p className="sketch-fs-skill-desc">{selectedPet.skill}</p>
-            </div>
-
-            {/* Right Hero Column: Speech Bubble positioned directly above Character Art */}
-            <div className="sketch-fs-hero-col">
-              {/* Speech Bubble: "每隻獨一無二的幹話" centered above character with downward tail */}
-              <div className="sketch-speech-bubble">
-                <p>「{selectedPet.quote}」</p>
-                <span className="sketch-bubble-tail" />
+                  );
+                })()}
               </div>
+
+              {/* Special Skill card: narrower, wraps text, nestled between HP and other 3 stats */}
+              <div className="sketch-fs-skill">
+                <span className="sketch-fs-skill-title">Special:</span>
+                <p className="sketch-fs-skill-desc">{selectedPet.skill}</p>
+              </div>
+
+              {/* The other three stats: ATK, DEF, SPD */}
+              <div className="sketch-fs-stats">
+                {['atk', 'def', 'spd'].map((key) => {
+                  const Icon = STAT_ICONS[key];
+                  const value = selectedPet[key];
+                  const maxRef = STAT_MAX_LIMITS[key] || 100;
+                  const barWidth = Math.min(100, Math.max(0, (value / maxRef) * 100));
+                  const displayVal = key === 'spd' ? `${value}%` : value;
+
+                  return (
+                    <div className="sketch-stat-row" key={key}>
+                      <div className="sketch-stat-label-wrap">
+                        <span className="sketch-stat-label">
+                          <Icon size={12} />
+                          {key.toUpperCase()} :
+                        </span>
+                      </div>
+                      <strong className="sketch-stat-val">{displayVal}</strong>
+                      <div className="sketch-stat-bar-track">
+                        <div
+                          className="sketch-stat-bar-fill"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Hero Column: Speech Bubble directly above Character Art */}
+            <div className="sketch-fs-hero-col">
+              <DetailSpeechBubble
+                statsRef={petStatsRef}
+                containerRef={petMainRef}
+                quote={selectedPet.quote}
+              />
 
               {/* Large Character Art */}
               <div className="sketch-fs-character">
@@ -926,62 +1108,104 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
           </div>
 
           {/* Main Content Area: Left Stats with dynamic "增加量", Right Bubble & Big Art */}
-          <div className="sketch-fs-main">
-            {/* Left Stats Column with accurate "增加量" annotation and dynamic bar calculation */}
-            <div className="sketch-fs-stats sketch-fs-stats--weapon">
-              {['hp', 'atk', 'def', 'spd'].map((key) => {
-                const Icon = STAT_ICONS[key];
-                const bonusVal = getItemBonus(selectedItem, key);
-                const hasBonus = bonusVal > 0;
-                const maxRef = STAT_MAX_LIMITS[key] || 100;
-                const fillWidth = hasBonus ? Math.min(100, Math.max(0, (bonusVal / maxRef) * 100)) : 0;
-                const displayBonus = hasBonus
-                  ? (key === 'spd' ? `+${bonusVal}%` : `+${bonusVal}`)
-                  : (key === 'spd' ? '+0%' : '+0');
+          <div className="sketch-fs-main" ref={weaponMainRef}>
+            {/* Left Column: HP on top, Special Card in middle, ATK/DEF/SPD on bottom */}
+            <div className="sketch-fs-left-col" ref={weaponStatsRef}>
+              {/* HP Bonus Row */}
+              <div className="sketch-fs-hp-wrap">
+                {(() => {
+                  const key = 'hp';
+                  const Icon = STAT_ICONS[key];
+                  const bonusVal = getItemBonus(selectedItem, key);
+                  const hasBonus = bonusVal > 0;
+                  const maxRef = STAT_MAX_LIMITS[key] || 100;
+                  const fillWidth = hasBonus ? Math.min(100, Math.max(0, (bonusVal / maxRef) * 100)) : 0;
+                  const displayBonus = hasBonus ? `+${bonusVal}` : '+0';
 
-                return (
-                  <div className={`sketch-stat-row ${hasBonus ? 'is-boosted' : ''}`} key={key}>
-                    <div className="sketch-stat-label-wrap">
-                      <span className="sketch-stat-label">
-                        <Icon size={12} />
-                        {key.toUpperCase()} :
-                      </span>
-                      {/* Blue handwritten-style arrow callout matching sketch */}
-                      {hasBonus && (
-                        <span className="sketch-increase-callout">
-                          ➔
+                  return (
+                    <div className={`sketch-stat-row ${hasBonus ? 'is-boosted' : ''}`} key={key}>
+                      <div className="sketch-stat-label-wrap">
+                        <span className="sketch-stat-label">
+                          <Icon size={12} />
+                          {key.toUpperCase()} :
                         </span>
-                      )}
+                        {hasBonus && (
+                          <span className="sketch-increase-callout">
+                            ➔
+                          </span>
+                        )}
+                      </div>
+                      <strong className={`sketch-stat-val ${hasBonus ? 'text-[#35d9ff]' : 'text-[#56655c]'}`}>
+                        {displayBonus}
+                      </strong>
+                      <div className="sketch-stat-bar-track">
+                        <div
+                          className={`sketch-stat-bar-fill ${hasBonus ? 'is-bonus-fill' : ''}`}
+                          style={{ width: `${fillWidth}%` }}
+                        />
+                      </div>
                     </div>
-                    <strong className={`sketch-stat-val ${hasBonus ? 'text-[#35d9ff]' : 'text-[#56655c]'}`}>
-                      {displayBonus}
-                    </strong>
-                    <div className="sketch-stat-bar-track">
-                      <div
-                        className={`sketch-stat-bar-fill ${hasBonus ? 'is-bonus-fill' : ''}`}
-                        style={{ width: `${fillWidth}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })()}
+              </div>
 
-            {/* Special Effect & Description on bottom left */}
-            <div className="sketch-fs-skill">
-              <span className="sketch-fs-skill-title">特殊效果</span>
-              <p className="sketch-fs-skill-desc">
-                {selectedItem.skill || `${selectedItem.bonus}。裝備後於戰鬥中提供額外戰力支援。`}
-              </p>
+              {/* Special Effect Card: narrower, between HP and other 3 stats */}
+              <div className="sketch-fs-skill">
+                <span className="sketch-fs-skill-title">Special:</span>
+                <p className="sketch-fs-skill-desc">
+                  {selectedItem.skill || `${selectedItem.bonus}。裝備後於戰鬥中提供額外戰力支援。`}
+                </p>
+              </div>
+
+              {/* The other three stats: ATK, DEF, SPD */}
+              <div className="sketch-fs-stats sketch-fs-stats--weapon">
+                {['atk', 'def', 'spd'].map((key) => {
+                  const Icon = STAT_ICONS[key];
+                  const bonusVal = getItemBonus(selectedItem, key);
+                  const hasBonus = bonusVal > 0;
+                  const maxRef = STAT_MAX_LIMITS[key] || 100;
+                  const fillWidth = hasBonus ? Math.min(100, Math.max(0, (bonusVal / maxRef) * 100)) : 0;
+                  const displayBonus = hasBonus
+                    ? (key === 'spd' ? `+${bonusVal}%` : `+${bonusVal}`)
+                    : (key === 'spd' ? '+0%' : '+0');
+
+                  return (
+                    <div className={`sketch-stat-row ${hasBonus ? 'is-boosted' : ''}`} key={key}>
+                      <div className="sketch-stat-label-wrap">
+                        <span className="sketch-stat-label">
+                          <Icon size={12} />
+                          {key.toUpperCase()} :
+                        </span>
+                        {/* Blue handwritten-style arrow callout matching sketch */}
+                        {hasBonus && (
+                          <span className="sketch-increase-callout">
+                            ➔
+                          </span>
+                        )}
+                      </div>
+                      <strong className={`sketch-stat-val ${hasBonus ? 'text-[#35d9ff]' : 'text-[#56655c]'}`}>
+                        {displayBonus}
+                      </strong>
+                      <div className="sketch-stat-bar-track">
+                        <div
+                          className={`sketch-stat-bar-fill ${hasBonus ? 'is-bonus-fill' : ''}`}
+                          style={{ width: `${fillWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Right Hero Column: Speech Bubble positioned directly above Weapon Art */}
             <div className="sketch-fs-hero-col">
-              {/* Speech Bubble: centered above weapon with downward tail */}
-              <div className="sketch-speech-bubble sketch-speech-bubble--item">
-                <p>「{selectedItem.quote || '只要砍得夠快，敵人就追不上。'}」</p>
-                <span className="sketch-bubble-tail sketch-bubble-tail--item" />
-              </div>
+              <DetailSpeechBubble
+                statsRef={weaponStatsRef}
+                containerRef={weaponMainRef}
+                quote={selectedItem.quote || '只要砍得夠快，敵人就追不上。'}
+                isWeapon
+              />
 
               {/* Big Weapon Art */}
               <div className="sketch-fs-character sketch-fs-weapon-art">

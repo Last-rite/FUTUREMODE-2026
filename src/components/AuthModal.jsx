@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, KeyRound, LogIn, UserPlus, UserRound } from 'lucide-react';
 import BrandLockup from './BrandLockup.jsx';
+import { startBackgroundPreload } from '../utils/assetPreloader.js';
 
 const sanitizeName = (val) => val.replace(/[^\p{Script=Han}a-zA-Z0-9]/gu, '').slice(0, 16);
 
@@ -13,6 +14,10 @@ export default function AuthModal({ onLoginSuccess }) {
   const [popupError, setPopupError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isComposingRef = useRef(false);
+
+  useEffect(() => {
+    startBackgroundPreload();
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

@@ -11,6 +11,7 @@ import BrandLockup from './components/BrandLockup.jsx';
 import { demoApi } from './demo-backend/api.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
 import { getActiveTeam } from './utils/teamStorage.js';
+import { startBackgroundPreload, preloadGameDataAssets } from './utils/assetPreloader.js';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -27,10 +28,14 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Start preloading images in the background early (from boot / login screen)
+    startBackgroundPreload();
+
     const bootstrap = async () => {
       const session = getAuthCookie();
       if (!session?.id) { setView('auth'); return; }
       const gameData = await demoApi.getGameData(session.id);
+      preloadGameDataAssets(gameData);
       setCurrentUser(session); setData(gameData); setView('home');
     };
     bootstrap();
@@ -41,6 +46,7 @@ export default function App() {
       ? await demoApi.register(username, password, displayName)
       : await demoApi.login(username, password);
     const gameData = await demoApi.getGameData(user.id);
+    preloadGameDataAssets(gameData);
     setAuthCookie(user); setCurrentUser(user); setData(gameData); setView('home');
   };
   const handleSignOut = () => { clearAuthCookie(); setCurrentUser(null); setView('auth'); };

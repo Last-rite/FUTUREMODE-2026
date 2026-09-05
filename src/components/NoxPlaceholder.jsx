@@ -3,9 +3,11 @@ import { Cat } from 'lucide-react';
 import nxc1_64 from '../assets/nxc_1.png';
 import nxc2_64 from '../assets/nxc_2.png';
 import nxc3_64 from '../assets/nxc_3.png';
+import nxc4_64 from '../assets/nxc_4.png';
 import nxc1_128 from '../assets/nxc_1_128.png';
 import nxc2_128 from '../assets/nxc_2_128.png';
 import nxc3_128 from '../assets/nxc_3_128.png';
+import nxc4_128 from '../assets/nxc_4_128.png';
 
 const AVATARS_64 = {
   '01': nxc1_64,
@@ -14,6 +16,8 @@ const AVATARS_64 = {
   '2': nxc2_64,
   '03': nxc3_64,
   '3': nxc3_64,
+  '04': nxc4_64,
+  '4': nxc4_64,
 };
 
 const AVATARS_128 = {
@@ -23,6 +27,8 @@ const AVATARS_128 = {
   '2': nxc2_128,
   '03': nxc3_128,
   '3': nxc3_128,
+  '04': nxc4_128,
+  '4': nxc4_128,
 };
 
 export function getPetAvatar(pet, size = 'md') {
@@ -33,7 +39,8 @@ export function getPetAvatar(pet, size = 'md') {
   const code = String(pet.code || '').trim();
   let matchedCode = code;
   if (!matchedCode || !AVATARS_64[matchedCode]) {
-    if (pet.name?.includes('FUTURE') || pet.idString?.includes('tech')) matchedCode = '02';
+    if (pet.name?.includes('HARD') || pet.idString?.includes('hard') || pet.idString?.includes('tank')) matchedCode = '04';
+    else if (pet.name?.includes('FUTURE') || pet.idString?.includes('tech')) matchedCode = '02';
     else if (pet.name?.includes('COOL') || pet.idString?.includes('rush')) matchedCode = '03';
     else if (pet.name?.includes('NOXCAT') || pet.idString?.includes('core')) matchedCode = '01';
   }

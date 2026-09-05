@@ -1,6 +1,7 @@
 import nxc1 from '../assets/nxc_1.png';
 import nxc2 from '../assets/nxc_2.png';
 import nxc3 from '../assets/nxc_3.png';
+import nxc4 from '../assets/nxc_4.png';
 import enemyDoggo from '../assets/enemy_doggo_64.png';
 import enemyPig from '../assets/enemy_pig_64.png';
 
@@ -20,6 +21,8 @@ const PRELOADED = {
   '2': createImg(nxc2),
   '03': createImg(nxc3),
   '3': createImg(nxc3),
+  '04': createImg(nxc4),
+  '4': createImg(nxc4),
   'doggo': createImg(enemyDoggo),
   'pig': createImg(enemyPig),
 };
@@ -44,6 +47,7 @@ export function getBallImage(ball) {
     const code = String(ball.code || '').trim();
     if (PRELOADED[code]) return PRELOADED[code];
 
+    if (ball.name?.includes('HARD') || ball.idString?.includes('hard') || ball.idString?.includes('tank')) return PRELOADED['04'];
     if (ball.name?.includes('FUTURE') || ball.idString?.includes('tech')) return PRELOADED['02'];
     if (ball.name?.includes('COOL') || ball.idString?.includes('rush')) return PRELOADED['03'];
     if (ball.name?.includes('NOXCAT') || ball.idString?.includes('core')) return PRELOADED['01'];
