@@ -752,7 +752,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                   <button
                     type="button"
                     className="sketch-slot-remove-btn"
-                    style={{ borderColor: '#35d9ff', color: '#35d9ff' }}
+                    style={{ '--remove-accent': '#35d9ff', color: '#35d9ff' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (pet) handleEquip(pet.id, item.id);
@@ -982,6 +982,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               className="sketch-fs-close-btn"
               onClick={() => setSelectedPet(null)}
               aria-label="關閉"
+              autoFocus
             >
               <X size={22} />
             </button>
@@ -1067,6 +1068,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               className="sketch-fs-close-btn"
               onClick={() => setSelectedItem(null)}
               aria-label="關閉"
+              autoFocus
             >
               <X size={22} />
             </button>

@@ -60,6 +60,11 @@ export default function App() {
 
   useEffect(() => () => sound.stopMusic(), []);
 
+  useEffect(() => () => {
+    transitionTimeoutsRef.current.forEach((id) => clearTimeout(id));
+    transitionTimeoutsRef.current = [];
+  }, []);
+
   const handleLoginSuccess = async ({ mode, username, password, displayName }) => {
     const user = mode === 'register'
       ? await demoApi.register(username, password, displayName)

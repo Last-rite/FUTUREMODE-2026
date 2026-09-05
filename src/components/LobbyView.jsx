@@ -114,12 +114,24 @@ export default function LobbyView({ user, data, onStartGame, onSignOut }) {
 
       {/* Incomplete Team Warning Dialog */}
       {showIncompleteWarning && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-xs bg-[#0c131a] border border-[#ffaa00] rounded-2xl p-5 shadow-[0_0_24px_rgba(255,170,0,0.3)] text-center flex flex-col items-center gap-3">
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setShowIncompleteWarning(false)}
+        >
+          <div
+            className="w-full max-w-xs bg-[#0c131a] border border-[#ffaa00] rounded-2xl p-5 shadow-[0_0_24px_rgba(255,170,0,0.3)] text-center flex flex-col items-center gap-3"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="incomplete-team-title"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setShowIncompleteWarning(false);
+            }}
+          >
             <div className="w-12 h-12 rounded-full bg-[#ffaa00]/15 text-[#ffaa00] grid place-items-center mb-1">
               <AlertTriangle size={26} />
             </div>
-            <h2 className="text-base font-bold text-[#ffdd55] tracking-wide">
+            <h2 id="incomplete-team-title" className="text-base font-bold text-[#ffdd55] tracking-wide">
               隊伍尚未滿員
             </h2>
             <p className="text-xs text-[#a0b0c0] leading-relaxed">
@@ -129,13 +141,14 @@ export default function LobbyView({ user, data, onStartGame, onSignOut }) {
             <div className="flex gap-2.5 w-full mt-2">
               <button
                 onClick={() => setShowIncompleteWarning(false)}
-                className="flex-1 py-2 rounded-xl text-xs font-bold text-[#8090a0] bg-[#16222f] hover:bg-[#1f2f40] active:scale-95 transition-all"
+                autoFocus
+                className="flex-1 min-h-11 py-2 rounded-xl text-xs font-bold text-[#8090a0] bg-[#16222f] hover:bg-[#1f2f40] active:scale-95 transition-all"
               >
                 返回整隊
               </button>
               <button
                 onClick={handleConfirmStart}
-                className="flex-1 py-2 rounded-xl text-xs font-bold text-black bg-[#ffaa00] hover:bg-[#ffbb22] shadow-[0_0_12px_rgba(255,170,0,0.5)] active:scale-95 transition-all"
+                className="flex-1 min-h-11 py-2 rounded-xl text-xs font-bold text-black bg-[#ffaa00] hover:bg-[#ffbb22] shadow-[0_0_12px_rgba(255,170,0,0.5)] active:scale-95 transition-all"
               >
                 確認出戰
               </button>

@@ -443,13 +443,18 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
         <div className="sheet-backdrop" onClick={() => setShowCreate(false)}>
           <form
             className="detail-sheet create-trade-sheet sketch-create-trade"
-            aria-label="發起以物易物交易"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-trade-title"
             onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setShowCreate(false);
+            }}
             onSubmit={submitTrade}
           >
             <header className="trade-form-header">
               <div>
-                <h2>以物易物</h2>
+                <h2 id="create-trade-title">以物易物</h2>
                 <small className="text-[#7da087] font-mono text-[11px] block mt-1">
                   雙方確認後自動互換資產
                 </small>
@@ -459,6 +464,7 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
                 className="sheet-close"
                 onClick={() => setShowCreate(false)}
                 aria-label="關閉"
+                autoFocus
               >
                 <X size={18} />
               </button>

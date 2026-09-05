@@ -424,7 +424,6 @@ function getRackScale(queueLength, availableWidth) {
 
 export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBattleComplete }) {
   const canvasRef = useRef(null);
-  const engineRef = useRef(null);
 
   const [snapshot, setSnapshot] = useState({
     round: 1,
@@ -490,21 +489,10 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
       onLog: () => {},
     });
 
-    engineRef.current = engine;
-
     return () => {
       engine.destroy();
     };
   }, [playerTeam, dungeon]);
-
-
-  const handleDebugKillOpponents = () => {
-    engineRef.current?.debugKillOpponents();
-  };
-
-  const handleDebugKillPlayer = () => {
-    engineRef.current?.debugKillPlayer();
-  };
 
   const topBar = snapshot.topBarInfo || snapshot.boss;
   const topBarRatio = topBar ? Math.max(0, Math.min(100, (topBar.ratio ?? (topBar.hp / (topBar.maxHp || 1))) * 100)) : 0;
@@ -717,29 +705,11 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1.5">
-              {/* DEBUG: Ugly yellow insta-kill buttons for testing rewards/settlement screen */}
-              <button
-                onClick={handleDebugKillOpponents}
-                aria-label="Debug: Insta Kill Opponent"
-                title="[DEBUG] Insta-kill all opponents"
-                className="px-1.5 py-1 text-[10px] font-black font-mono tracking-tight bg-[#ffff00] hover:bg-[#ffe600] active:scale-95 text-black border-2 border-[#b8860b] rounded shadow-[0_0_8px_rgba(255,255,0,0.85)] cursor-pointer select-none leading-none"
-              >
-                KILL OPP
-              </button>
-              <button
-                onClick={handleDebugKillPlayer}
-                aria-label="Debug: Insta Kill My Pieces"
-                title="[DEBUG] Insta-kill all my pieces"
-                className="px-1.5 py-1 text-[10px] font-black font-mono tracking-tight bg-[#ffff00] hover:bg-[#ffe600] active:scale-95 text-black border-2 border-[#b8860b] rounded shadow-[0_0_8px_rgba(255,255,0,0.85)] cursor-pointer select-none leading-none"
-              >
-                KILL ME
-              </button>
-
               <button
                 onClick={() => setShowHelp(true)}
                 aria-label="Info & Rules"
                 title="Game Rules"
-                className="p-1.5 rounded-lg bg-[#0e1620] hover:bg-[#162232] text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60 cursor-pointer"
+                className="w-11 h-11 grid place-items-center rounded-lg bg-[#0e1620] hover:bg-[#162232] text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60 cursor-pointer"
               >
                 <HelpCircle size={15} />
               </button>
@@ -752,9 +722,16 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
           <div
             className={`battle-settlement ${gameOver.winner === 'PLAYER' ? 'is-victory' : 'is-defeat'}`}
             onClick={onExitToLobby}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onExitToLobby?.();
+              }
+            }}
             role="dialog"
             aria-modal="true"
             aria-label={gameOver.winner === 'PLAYER' ? '戰鬥勝利' : '戰鬥失敗'}
+            tabIndex={0}
           >
             <div className="settlement-container">
               {/* Top Rail with Parallelogram Notch */}
@@ -812,7 +789,7 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
 
               {/* Tap to leave prompt */}
               <div className="settlement-tap-prompt">
-                Tap to leave
+                點擊返回
               </div>
             </div>
           </div>
@@ -820,16 +797,30 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
 
         {/* ── Help / Rules Modal ── */}
         {showHelp && (
-          <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-[#0b121a] border border-[#1f3144] rounded-2xl p-5 shadow-2xl text-left flex flex-col gap-3">
+          <div
+            className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setShowHelp(false)}
+          >
+            <div
+              className="w-full max-w-sm bg-[#0b121a] border border-[#1f3144] rounded-2xl p-5 shadow-2xl text-left flex flex-col gap-3"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="battle-rules-title"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setShowHelp(false);
+              }}
+            >
               <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 font-mono">
+                <h3 id="battle-rules-title" className="text-sm font-bold text-white tracking-wider flex items-center gap-2 font-mono">
                   <HelpCircle size={16} className="text-[#00ff66]" />
-                  Monster Strike Initiative Rules
+                  戰鬥規則
                 </h3>
                 <button
                   onClick={() => setShowHelp(false)}
-                  className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                  className="w-11 h-11 grid place-items-center text-slate-400 hover:text-white cursor-pointer"
+                  aria-label="關閉戰鬥規則"
+                  autoFocus
                 >
                   <X size={18} />
                 </button>
@@ -839,34 +830,33 @@ export default function GameView({ dungeon, playerTeam = [], onExitToLobby, onBa
                 <div className="flex items-start gap-2 bg-[#0e1620] p-2.5 rounded-lg border border-slate-800">
                   <Swords size={18} className="text-[#00ff66] shrink-0 mt-0.5" />
                   <div>
-                    <b className="text-white font-mono">Initiative Order (Left to Right):</b>
+                    <b className="text-white font-mono">行動順序</b>
                     <br />
-                    The leftmost character card always takes the active turn. Once its launch and collisions conclude, it rotates to the back of the line.
+                    最左側角色先行動；瞄準並發射後，回合結束時會移到隊列尾端。
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2 bg-[#0e1620] p-2.5 rounded-lg border border-slate-800">
                   <Shield size={18} className="text-[#00ff66] shrink-0 mt-0.5" />
                   <div>
-                    <b className="text-white font-mono">Individual Liquid Health:</b>
+                    <b className="text-white font-mono">角色生命</b>
                     <br />
-                    Each character has their own liquid flask and individual HP bar displayed below their portrait. When an orb reaches 0 HP, it shatters and is removed from the queue!
+                    每位角色都有獨立生命值；生命歸零後會退出戰場與行動隊列。
                   </div>
                 </div>
 
                 <div className="bg-[#0e1620] p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-400 font-mono">
-                  <b className="text-[#00ff66]">⚙️ Backdoor Variable:</b>
+                  <b className="text-[#00ff66]">特殊技能</b>
                   <br />
-                  Change <code className="text-white">TEAM_SIZE = {TEAM_SIZE}</code> in{' '}
-                  <code className="text-[#00ff66]">src/game/constants.js</code> to adjust team sizes without touching the UI!
+                  角色碰撞敵人或牆壁時可能觸發專屬效果，請留意戰場提示。
                 </div>
               </div>
 
               <button
                 onClick={() => setShowHelp(false)}
-                className="w-full mt-2 py-2 rounded-lg bg-[#172331] hover:bg-[#1f3144] text-white font-semibold text-xs tracking-wider font-mono cursor-pointer"
+                className="w-full min-h-11 mt-2 py-2 rounded-lg bg-[#172331] hover:bg-[#1f3144] text-white font-semibold text-xs tracking-wider font-mono cursor-pointer"
               >
-                Close
+                關閉
               </button>
             </div>
           </div>

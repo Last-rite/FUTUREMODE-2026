@@ -186,7 +186,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-brandbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 4px; }
 .sketch-brandbar__actions { display: flex; align-items: center; gap: 8px; }
 .sketch-main-title { margin: 0; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-style: italic; font-weight: 900; font-size: 22px; letter-spacing: .06em; color: var(--text); }
-.sketch-icon-button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 8px; background: transparent; color: #8d9b91; cursor: pointer; transition: color .15s ease, transform .15s ease; }
+.sketch-icon-button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: none; border-radius: 8px; background: transparent; color: #8d9b91; cursor: pointer; transition: color .15s ease, transform .15s ease; }
 .sketch-icon-button:active { transform: scale(.92); color: var(--green); }
 .sketch-playerbar { display: flex; align-items: center; justify-content: space-between; min-height: 30px; padding: 0 4px; border: none; color: #aab5ad; font-family: 'Chakra Petch', 'Noto Sans TC', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: .04em; }
 .sketch-playerbar strong { display: flex; align-items: center; gap: 5px; color: var(--green); font-size: 12px; }
@@ -264,14 +264,14 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 
 /* Angled Tabs for Loadouts 1 2 3 4 5 (Inactive tabs have NO borders) */
 .sketch-tabs-strip { display: flex; align-items: flex-end; justify-content: space-around; flex: 1; height: 44px; border-bottom: 2px solid #233027; }
-.sketch-tab-btn { min-width: 0; padding: 0; font-family: ui-monospace, monospace; cursor: pointer; transition: color .15s; }
+.sketch-tab-btn { min-width: 44px; min-height: 44px; padding: 0; font-family: ui-monospace, monospace; cursor: pointer; transition: color .15s; }
 
 /* Active tab: Angled trapezoidal folder tab: / 1 \ with green accent */
 .sketch-tab-btn.is-active { position: relative; height: 44px; width: clamp(40px, 11vw, 52px); background: #0e1d13; color: var(--green); border: none; clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); font-weight: 950; font-size: 15px; box-shadow: inset 0 2px 0 var(--green); }
 .sketch-tab-btn.is-active::after { content: ''; position: absolute; inset: 0; clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); border-top: 2px solid var(--green); pointer-events: none; }
 
 /* Inactive tabs: NO BORDER, transparent background, text sitting on baseline */
-.sketch-tab-btn.is-inactive { height: 36px; width: clamp(34px, 9vw, 44px); background: transparent !important; border: none !important; box-shadow: none !important; color: #5f7065; font-weight: 800; font-size: 13px; }
+.sketch-tab-btn.is-inactive { height: 44px; width: clamp(44px, 11vw, 52px); background: transparent !important; border: none !important; box-shadow: none !important; color: #5f7065; font-weight: 800; font-size: 13px; }
 .sketch-tab-btn.is-inactive:hover { color: #a4b8ab; }
 
 /* Battle Party Loadout Area */
@@ -291,17 +291,17 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 
 .sketch-slot-remove-btn {
   position: absolute;
-  top: -4px;
-  right: -2px;
+  top: -15px;
+  right: -13px;
   z-index: 12;
   display: grid;
   place-items: center;
-  width: 22px !important;
-  height: 22px !important;
-  min-width: 22px !important;
-  min-height: 22px !important;
-  max-width: 22px !important;
-  max-height: 22px !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
   aspect-ratio: 1 / 1 !important;
   flex-shrink: 0 !important;
   box-sizing: border-box !important;
@@ -309,18 +309,22 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   margin: 0 !important;
   line-height: 1 !important;
   border-radius: 50% !important;
-  border: 1px solid #3d4a41;
-  background: #090e0b;
+  border: 0;
+  background: transparent;
   color: #7d8f83;
   cursor: pointer;
-  transition: all .15s;
-  overflow: hidden;
+  transition: color .15s, transform .15s;
+  overflow: visible;
 }
+.sketch-slot-remove-btn::before { content: ''; position: absolute; inset: 11px; border: 1px solid var(--remove-accent, #3d4a41); border-radius: 50%; background: #090e0b; transition: border-color .15s, background-color .15s, box-shadow .15s; }
 .sketch-slot-remove-btn svg {
   flex-shrink: 0;
   display: block;
+  position: relative;
+  z-index: 1;
 }
-.sketch-slot-remove-btn:hover { border-color: #ff4757; color: #ff4757; background: #1f0b0e; box-shadow: 0 0 8px rgba(255,71,87,.5); transform: scale(1.12); }
+.sketch-slot-remove-btn:hover { color: #ff4757; transform: scale(1.08); }
+.sketch-slot-remove-btn:hover::before { border-color: #ff4757; background: #1f0b0e; box-shadow: 0 0 8px rgba(255,71,87,.5); }
 .sketch-vault-token[draggable="true"] { cursor: grab; user-select: none; -webkit-user-select: none; }
 .sketch-vault-token[draggable="true"]:active { cursor: grabbing; }
 .sketch-vault-token.is-dragging { opacity: .35; transform: scale(.92); }
@@ -458,7 +462,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-slot-empty-weapon small { font: 750 7px/1 ui-monospace, monospace; }
 
 /* Secondary Small Circle Badge State */
-.slot-morph-node.is-secondary { width: 34px; height: 34px; aspect-ratio: 1 / 1; flex-shrink: 0; z-index: 4; border: 2px solid #344039; background: #080d0a; }
+.slot-morph-node.is-secondary { width: 44px; height: 44px; aspect-ratio: 1 / 1; flex-shrink: 0; z-index: 4; border: 2px solid #344039; background: #080d0a; }
 .slot-morph-node.is-secondary:active { transform: scale(.92); }
 
 .slot-morph-node--weapon.is-secondary { box-shadow: 0 0 0 3px #050705; }
@@ -542,7 +546,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 /* Topbar: Title "標題" centered, Close "✕" at right */
 .sketch-fs-topbar { position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-bottom: 6px; }
 .sketch-fs-title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font: 950 14px/1 ui-monospace, monospace; color: #bac8bf; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
-.sketch-fs-close-btn { margin-left: auto; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #334438; border-radius: 0; background: #080f0b; color: #9aa89f; cursor: pointer; transition: color .15s, border-color .15s; }
+.sketch-fs-close-btn { margin-left: auto; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #334438; border-radius: 0; background: #080f0b; color: #9aa89f; cursor: pointer; transition: color .15s, border-color .15s; }
 .sketch-fs-close-btn:hover { color: var(--green); border-color: var(--green); }
 
 /* Name rail: follows the hand-drawn angled banner without compressing Latin names. */

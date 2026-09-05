@@ -5,6 +5,7 @@ import BottomNav from '../../src/components/BottomNav.jsx';
 import Toast from '../../src/components/Toast.jsx';
 import BrandLockup from '../../src/components/BrandLockup.jsx';
 import AuthModal from '../../src/components/AuthModal.jsx';
+import BattleTransitionOverlay from '../../src/components/BattleTransitionOverlay.jsx';
 
 describe('UI Components', () => {
   describe('BrandLockup', () => {
@@ -44,6 +45,19 @@ describe('UI Components', () => {
 
       fireEvent.click(screen.getByText('交易'));
       expect(onNavigate).toHaveBeenCalledWith('trade');
+    });
+  });
+
+  describe('BattleTransitionOverlay', () => {
+    it('can be dismissed with the keyboard', () => {
+      const onDismiss = vi.fn();
+      render(<BattleTransitionOverlay onDismiss={onDismiss} />);
+
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Skip combat transition' }), {
+        key: 'Enter',
+      });
+
+      expect(onDismiss).toHaveBeenCalledTimes(1);
     });
   });
 
