@@ -142,22 +142,24 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
   // Custom scrollbar & wheel isolation state
   const scrollRef = useRef(null);
   const vaultWrapperRef = useRef(null);
+  const FIXED_THUMB_HEIGHT = 44; // Fixed height in px matching hand-drawn sketch proportions
   const trackRef = useRef(null);
-  const [thumbMetrics, setThumbMetrics] = useState({ heightPercent: 25, topPercent: 0 });
+  const [thumbMetrics, setThumbMetrics] = useState({ topPx: 0, isScrollable: true, progress: 0 });
   const [isDraggingThumb, setIsDraggingThumb] = useState(false);
   const dragStartYRef = useRef(0);
   const dragStartScrollTopRef = useRef(0);
 
   const updateScrollMetrics = useCallback(() => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || !trackRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const trackHeight = trackRef.current.clientHeight;
     const maxScroll = scrollHeight - clientHeight;
-    const progress = maxScroll > 0 ? scrollTop / maxScroll : 0;
-    const heightPercent = scrollHeight > clientHeight
-      ? Math.max(14, Math.min(75, (clientHeight / scrollHeight) * 100))
-      : 100;
-    const topPercent = progress * (100 - heightPercent);
-    setThumbMetrics({ heightPercent, topPercent });
+    const maxTravel = Math.max(0, trackHeight - FIXED_THUMB_HEIGHT);
+
+    const progress = maxScroll > 0 ? Math.min(1, Math.max(0, scrollTop / maxScroll)) : 0;
+    const topPx = progress * maxTravel;
+    const isScrollable = maxScroll > 0 && maxTravel > 0;
+    setThumbMetrics({ topPx, isScrollable, progress });
   }, []);
 
   const handleScroll = () => {
@@ -227,12 +229,10 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       const trackHeight = trackRef.current.clientHeight;
       const { scrollHeight, clientHeight } = scrollRef.current;
       const maxScroll = scrollHeight - clientHeight;
-      if (maxScroll <= 0 || trackHeight <= 0) return;
+      const maxTravel = trackHeight - FIXED_THUMB_HEIGHT;
+      if (maxScroll <= 0 || maxTravel <= 0) return;
 
-      const thumbHeight = (thumbMetrics.heightPercent / 100) * trackHeight;
-      const maxTravel = trackHeight - thumbHeight;
-      if (maxTravel <= 0) return;
-
+      // Variable sensitivity: deltaY maps to content scroll proportional to maxTravel
       const scrollRatio = deltaY / maxTravel;
       scrollRef.current.scrollTop = dragStartScrollTopRef.current + scrollRatio * maxScroll;
     };
@@ -258,7 +258,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [isDraggingThumb, thumbMetrics.heightPercent]);
+  }, [isDraggingThumb]);
 
   // Clicking on track jumps to position
   const handleTrackClick = (e) => {
@@ -266,12 +266,15 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
     if (!scrollRef.current || !trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const clickY = e.clientY - rect.top;
-    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
+    const trackHeight = trackRef.current.clientHeight;
+    const maxTravel = trackHeight - FIXED_THUMB_HEIGHT;
     const { scrollHeight, clientHeight } = scrollRef.current;
     const maxScroll = scrollHeight - clientHeight;
-    if (maxScroll > 0) {
-      scrollRef.current.scrollTo({ top: ratio * maxScroll, behavior: 'smooth' });
-    }
+    if (maxTravel <= 0 || maxScroll <= 0) return;
+
+    const targetThumbTop = Math.max(0, Math.min(maxTravel, clickY - FIXED_THUMB_HEIGHT / 2));
+    const ratio = targetThumbTop / maxTravel;
+    scrollRef.current.scrollTo({ top: ratio * maxScroll, behavior: 'smooth' });
   };
 
   // Sync loadout 1 to backend demo API
@@ -792,19 +795,19 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             )}
           </div>
 
-          {/* Hand-drawn rail: draggable thumb and tap-to-jump track. */}
+          {/* Hand-drawn rail: fixed-size draggable thumb with center vertical accent line matching pet_screen_example.jpg */}
           <div className="sketch-custom-scrollbar" aria-hidden="true">
             <div className="sketch-scroll-track" ref={trackRef} onClick={handleTrackClick}>
               <div
-                className={`sketch-scroll-thumb ${isDraggingThumb ? 'is-dragging' : ''} ${thumbMetrics.heightPercent >= 99 ? 'is-static' : ''}`}
+                className={`sketch-scroll-thumb ${isDraggingThumb ? 'is-dragging' : ''} ${!thumbMetrics.isScrollable ? 'is-static' : ''}`}
                 style={{
-                  height: `${thumbMetrics.heightPercent}%`,
-                  top: `${thumbMetrics.topPercent}%`,
+                  height: `${FIXED_THUMB_HEIGHT}px`,
+                  transform: `translateY(${thumbMetrics.topPx}px)`,
                 }}
                 onMouseDown={handleThumbMouseDown}
                 onTouchStart={handleThumbTouchStart}
               >
-                <div className="sketch-thumb-grip" />
+                <div className="sketch-thumb-line" />
               </div>
             </div>
           </div>

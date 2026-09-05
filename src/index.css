@@ -486,18 +486,20 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-vault-empty-circle small { font: 700 6px/1 ui-monospace, monospace; }
 .item-bonus-pill { display: inline-block; padding: 1px 4px; border: 1px solid #1a382c; border-radius: 4px; color: #35d9ff; font: 850 7px/1 ui-monospace, monospace; background: #061513; }
 
-/* Hand-drawn scrollbar from the collection sketch: narrow rail and pointed grip. */
+/* Hand-drawn scrollbar from pet_screen_example.jpg: narrow rail, fixed-size pointed cartridge, single vertical center line */
 .sketch-custom-scrollbar { display: flex; justify-content: center; width: 14px; padding-block: 4px; background: transparent; border: 0; user-select: none; -webkit-user-select: none; touch-action: none; overscroll-behavior: contain; }
-.sketch-scroll-track { position: relative; flex: 1; width: 12px; background: linear-gradient(90deg, transparent 5px, #344139 5px 7px, transparent 7px); cursor: pointer; user-select: none; }
-.sketch-scroll-track::before, .sketch-scroll-track::after { content: ''; position: absolute; left: 2px; width: 8px; height: 2px; background: #344139; }
+.sketch-scroll-track { position: relative; flex: 1; width: 12px; background: linear-gradient(90deg, transparent 5px, #2b3930 5px 7px, transparent 7px); cursor: pointer; user-select: none; }
+.sketch-scroll-track::before, .sketch-scroll-track::after { content: ''; position: absolute; left: 2px; width: 8px; height: 2px; background: #3b4e42; }
 .sketch-scroll-track::before { top: 0; }
 .sketch-scroll-track::after { bottom: 0; }
-.sketch-scroll-thumb { position: absolute; left: -7px; right: -7px; min-height: 34px; cursor: grab; user-select: none; touch-action: none; }
-.sketch-scroll-thumb::before { content: ''; position: absolute; inset: 0 7px; clip-path: polygon(50% 0, 100% 17%, 100% 83%, 50% 100%, 0 83%, 0 17%); background: var(--green); box-shadow: 0 0 8px rgba(0,255,102,.38); }
+.sketch-scroll-thumb { position: absolute; left: 50%; top: 0; width: 12px; height: 44px; margin-left: -6px; cursor: grab; user-select: none; touch-action: none; will-change: transform; transition: opacity .15s ease; }
+.sketch-scroll-thumb::before { content: ''; position: absolute; inset: 0; clip-path: polygon(50% 0%, 100% 15%, 100% 85%, 50% 100%, 0% 85%, 0% 15%); background: var(--green); box-shadow: 0 0 8px rgba(0,255,102,.45); }
 .sketch-scroll-thumb.is-dragging { cursor: grabbing; }
-.sketch-scroll-thumb.is-dragging::before { background: #72ff9d; box-shadow: 0 0 12px rgba(0,255,102,.58); }
+.sketch-scroll-thumb.is-dragging::before { background: #72ff9d; box-shadow: 0 0 14px rgba(0,255,102,.7); }
 .sketch-scroll-thumb.is-static { opacity: .22; pointer-events: none; }
-.sketch-thumb-grip { position: absolute; z-index: 1; inset: 10px 10px; border-block: 1px solid #063719; background: repeating-linear-gradient(180deg, #063719 0 1px, transparent 1px 3px); pointer-events: none; }
+/* Center vertical accent line from pet_screen_example.jpg (replacing horizontal stripes) */
+.sketch-thumb-line, .sketch-thumb-grip { position: absolute; top: 8px; bottom: 8px; left: 50%; width: 2px; transform: translateX(-50%); background: #04200f; border-radius: 1px; z-index: 2; pointer-events: none; transition: background-color .15s ease; }
+.sketch-scroll-thumb.is-dragging .sketch-thumb-line, .sketch-scroll-thumb.is-dragging .sketch-thumb-grip { background: #021208; }
 
 /* Weapon / Item Artwork Illustration */
 .cyber-item-art { position: relative; display: grid; place-items: center; border: 2px solid #2d4538; border-radius: 50%; background: radial-gradient(circle, #081813 40%, #050705 90%); transition: transform .12s; overflow: hidden; }
@@ -787,8 +789,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   box-shadow: 0 0 8px rgba(53,217,255,0.25);
 }
 
-/* Offer Group (Pet + Weapon) */
-/* Offer Group (Pet + Weapon) - Directly rendered without extra border circles */
+/* Offer Group (Pet + Weapon OR Item) */
 .sketch-trade-offer-group {
   display: flex;
   flex-direction: column;
@@ -801,6 +802,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 38px;
 }
 .sketch-trade-pet-avatar {
   width: 38px;
@@ -828,6 +830,14 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   flex-shrink: 0;
   filter: drop-shadow(0 0 5px rgba(53,217,255,0.6));
 }
+.sketch-trade-item-disc {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0,255,102,0.35));
+}
 
 /* Center Arrow <=> */
 .sketch-trade-arrow-col {
@@ -840,7 +850,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   filter: drop-shadow(0 0 6px rgba(0,255,102,0.4));
 }
 
-/* Request Group (Item x Quantity) - Directly rendered without extra border circles */
+/* Request Group (User OR Item x Quantity) */
 .sketch-trade-req-group {
   display: flex;
   flex-direction: column;
@@ -853,12 +863,13 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   align-items: center;
   justify-content: center;
   gap: 4px;
+  min-height: 38px;
 }
-.sketch-trade-gem-disc {
-  color: var(--green);
+.sketch-trade-user-disc {
+  color: #35d9ff;
   display: grid;
   place-items: center;
-  filter: drop-shadow(0 0 6px rgba(0,255,102,0.4));
+  filter: drop-shadow(0 0 6px rgba(53,217,255,0.4));
 }
 .sketch-trade-qty-pill {
   color: #00ff66;
@@ -875,22 +886,23 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   max-width: 100%;
 }
 .sketch-trade-asset-txt {
-  font: 850 10px/1 ui-monospace, monospace;
-  color: #d4e0d7;
+  font: 850 11px/1.2 ui-monospace, monospace;
+  color: #e2ede5;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 80px;
+  max-width: 90px;
 }
 .sketch-trade-sub-txt {
-  font: 750 8px/1 ui-monospace, monospace;
-  color: #728276;
+  font: 750 9px/1.2 ui-monospace, monospace;
+  color: #7da087;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 90px;
 }
 
-/* Pending actions - Clean borderless actions without cutting the card with lines */
+/* Pending actions */
 .sketch-trade-card__actions {
   grid-column: 1 / -1;
   display: flex;
@@ -901,7 +913,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 }
 .sketch-trade-btn {
   flex: 1;
-  height: 30px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -909,7 +921,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   border-radius: 8px;
   border: none;
   background: #0d1711;
-  font: 850 10px/1 ui-monospace, monospace;
+  font: 850 11px/1 ui-monospace, monospace;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1055,7 +1067,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 }
 .sketch-mourn-title {
   margin: 0;
-  font: 900 11px/1.2 ui-monospace, monospace;
+  font: 900 12px/1.2 ui-monospace, monospace;
   color: #dbe6df;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1064,7 +1076,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 }
 .sketch-mourn-dest-label {
   margin: 0;
-  font: 800 9px/1.2 ui-monospace, monospace;
+  font: 800 10px/1.2 ui-monospace, monospace;
   color: #9cb3a4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1078,7 +1090,7 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
   color: #ff6a85;
 }
 .sketch-mourn-time {
-  font: 700 8px/1 ui-monospace, monospace;
+  font: 700 9px/1 ui-monospace, monospace;
   color: #637569;
 }
 

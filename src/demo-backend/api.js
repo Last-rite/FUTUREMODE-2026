@@ -1,9 +1,11 @@
 import { createDemoDatabase, createStarterRosterForPlayer } from './fixtures.js';
 import { getAuthCookie } from '../utils/cookieStorage.js';
+import { tradeBackend, TransferUnit, TransferTreasure } from './tradeBackend.js';
+import { lostAssetsBackend } from './lostAssetsBackend.js';
 
 // TEST BACKEND ONLY. This async localStorage adapter mirrors a future API
 // boundary so screens can later swap to HTTP without changing their UI logic.
-const DB_KEY = 'futuremode_demo_backend_v4';
+const DB_KEY = 'futuremode_demo_backend_v5';
 const wait = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 const DEMO_PASSWORD = 'demo1234';
 
@@ -228,59 +230,98 @@ export const demoApi = {
     return this.getGameData(activePlayerId);
   },
 
-  async createTrade({ playerId, to_player_id: toPlayerId, unit_id: unitId, treasure_id: treasureId }) {
-    await wait(260);
+  async getTrades(status, playerId) {
+    await wait(100);
     const db = readDb();
-    const suppliedAssetCount = Number(Boolean(unitId)) + Number(Boolean(treasureId));
-    const pet = unitId ? db.pets.find((entry) => entry.id === unitId) : null;
-    const item = treasureId ? db.items.find((entry) => entry.id === treasureId) : null;
-    if (!toPlayerId || suppliedAssetCount !== 1 || (!pet && !item)) throw new Error('交易資料不完整');
-    const equippedItem = pet?.equipped ? db.items.find((entry) => entry.id === pet.equipped) : null;
-    db.trades.unshift({
-      id: `trade-${Date.now()}`,
-      from: (playerId || 'PLAYER').trim().toUpperCase(),
-      to: toPlayerId.trim(),
-      assetType: pet ? 'unit' : 'treasure',
-      offeredPetId: pet?.id || null,
-      offeredItemId: item?.id || null,
-      offer: pet?.name || item?.name,
-      offerPetCode: pet?.code || null,
-      offerWeapon: pet ? (equippedItem?.name || '未裝備') : item?.name,
-      request: toPlayerId.trim(),
-      requestQty: null,
-      status: 'pending',
-      time: '剛剛',
+    const activePlayerId = playerId || getAuthCookie()?.id || null;
+    return tradeBackend.getTrades(db, { playerId: activePlayerId, status });
+  },
+
+  async createTrade({
+    playerId,
+    to_player_id: toPlayerId,
+    unit_id: unitId,
+    treasure_id: treasureId,
+    request_unit_id: requestUnitId,
+    request_treasure_id: requestTreasureId,
+    request_asset_type: requestAssetType,
+    request,
+    request_qty: requestQty,
+  }) {
+    await wait(240);
+    const db = readDb();
+    const activePlayerId = playerId || getAuthCookie()?.id || null;
+    tradeBackend.createTrade(db, {
+      fromPlayerId: activePlayerId,
+      toPlayerId,
+      unitId,
+      treasureId,
+      requestUnitId,
+      requestTreasureId,
+      requestAssetType,
+      request,
+      requestQty,
     });
     writeDb(db);
-    return this.getGameData(playerId);
+    return this.getGameData(activePlayerId);
   },
 
   async resolveTrade(tradeId, status, playerId) {
     await wait(160);
     const db = readDb();
-    const activePlayerId = playerId || getAuthCookie()?.id || 'player-a';
-    const trade = db.trades.find((entry) => entry.id === tradeId);
-    if (trade) {
-      trade.status = status;
-      if (status === 'accepted') {
-        if (trade.offeredPetId) {
-          const pet = db.pets.find((p) => p.id === trade.offeredPetId);
-          if (pet) pet.ownerId = activePlayerId;
-        }
-        if (trade.offeredItemId) {
-          const item = db.items.find((i) => i.id === trade.offeredItemId);
-          if (item) item.ownerId = activePlayerId;
-        }
-      }
+    const activePlayerId = playerId || getAuthCookie()?.id || null;
+    if (status === 'accepted') {
+      tradeBackend.acceptTrade(db, { tradeId, callerPlayerId: activePlayerId });
+    } else if (status === 'rejected') {
+      tradeBackend.rejectTrade(db, { tradeId, callerPlayerId: activePlayerId });
+    } else if (status === 'cancelled') {
+      tradeBackend.cancelTrade(db, { tradeId, callerPlayerId: activePlayerId });
     }
     writeDb(db);
     return this.getGameData(activePlayerId);
+  },
+
+  async acceptTrade(tradeId, playerId) {
+    return this.resolveTrade(tradeId, 'accepted', playerId);
+  },
+
+  async rejectTrade(tradeId, playerId) {
+    return this.resolveTrade(tradeId, 'rejected', playerId);
+  },
+
+  async cancelTrade(tradeId, playerId) {
+    return this.resolveTrade(tradeId, 'cancelled', playerId);
+  },
+
+  async getLostAssets(dungeonId, status) {
+    await wait(100);
+    const db = readDb();
+    return lostAssetsBackend.getLostAssets(db, { dungeonId, status });
+  },
+
+  async claimLostAsset(dungeonId, playerId) {
+    await wait(140);
+    const db = readDb();
+    const activePlayerId = playerId || getAuthCookie()?.id || null;
+    const player = (db.players || []).find((p) => p.id === activePlayerId);
+    const claimed = lostAssetsBackend.claimDungeonLostAsset(db, {
+      dungeonId,
+      winnerPlayerId: activePlayerId,
+      winnerCallsign: player?.gameId || player?.displayName || player?.username,
+    });
+    writeDb(db);
+    return {
+      gameData: await this.getGameData(activePlayerId),
+      claimed,
+    };
   },
 
   async recordBattleResult(result, dungeonId, playerId) {
     await wait(140);
     const db = readDb();
     const activePlayerId = playerId || getAuthCookie()?.id || null;
+    const player = (db.players || []).find((p) => p.id === activePlayerId);
+    const dungeon = (db.dungeons || []).find((d) => d.id === dungeonId);
 
     // 1. Add gold earned to player wallet
     if (result.goldEarned && result.goldEarned > 0) {
@@ -288,37 +329,87 @@ export const demoApi = {
       db.wallet.gold = (Number(db.wallet.gold) || 0) + result.goldEarned;
     }
 
-    // 2. Remove lost equipment from items
+    // 2. Snapshot lost equipment & pets before removal to populate dungeon pool
+    const lostEquipments = [];
     if (result.lostItemIds && result.lostItemIds.length > 0) {
       const lostSet = new Set(result.lostItemIds);
-      db.items = (db.items || []).filter(item => !lostSet.has(item.id) && !lostSet.has(item.idString));
+      (db.items || []).forEach((item) => {
+        if (lostSet.has(item.id) || lostSet.has(item.idString)) {
+          lostEquipments.push(item);
+        }
+      });
+      db.items = (db.items || []).filter(
+        (item) => !lostSet.has(item.id) && !lostSet.has(item.idString)
+      );
       if (db.pets) {
-        db.pets.forEach(p => {
+        db.pets.forEach((p) => {
           if (lostSet.has(p.equipped)) p.equipped = null;
         });
       }
     }
 
-    // 3. Remove lost pets from collection
+    const lostPegs = [];
     if (result.lostPegIds && result.lostPegIds.length > 0) {
       const lostPetSet = new Set(result.lostPegIds);
-      db.pets = (db.pets || []).filter(pet => !lostPetSet.has(pet.id) && !lostPetSet.has(pet.idString));
+      (db.pets || []).forEach((pet) => {
+        if (lostPetSet.has(pet.id) || lostPetSet.has(pet.idString)) {
+          lostPegs.push(pet);
+        }
+      });
+      db.pets = (db.pets || []).filter(
+        (pet) => !lostPetSet.has(pet.id) && !lostPetSet.has(pet.idString)
+      );
     }
-    db.lastBattle = { ...result, dungeonId, settledAt: Date.now(), testOnly: true };
+
+    // 3. Drop into dungeon lost assets pool!
+    if (lostPegs.length > 0 || lostEquipments.length > 0) {
+      lostAssetsBackend.dropLostAssets(db, {
+        dungeonId,
+        dungeonName: dungeon?.name || '深層資料井',
+        playerId: activePlayerId,
+        playerCallsign: player?.gameId || player?.displayName || player?.username,
+        lostPegs: lostPegs.map((p) => ({ petId: p.id, label: p.name, code: p.code })),
+        lostEquipments: lostEquipments.map((e) => ({ itemId: e.id, label: e.name })),
+      });
+    }
+
+    // 4. If player won, rescue any lost asset remaining in this dungeon pool!
+    let rescued = null;
     if (activePlayerId && dungeonId && result?.winner === 'PLAYER') {
       db.dungeonProgress ||= {};
       const solved = new Set(db.dungeonProgress[activePlayerId] || []);
       solved.add(dungeonId);
       db.dungeonProgress[activePlayerId] = [...solved];
+
+      rescued = lostAssetsBackend.claimDungeonLostAsset(db, {
+        dungeonId,
+        winnerPlayerId: activePlayerId,
+        winnerCallsign: player?.gameId || player?.displayName || player?.username,
+      });
     }
+
+    db.lastBattle = {
+      ...result,
+      dungeonId,
+      rescuedAsset: rescued,
+      settledAt: Date.now(),
+      testOnly: true,
+    };
+
     writeDb(db);
     return this.getGameData(activePlayerId);
   },
 
   async reset(playerId) {
     await wait(100);
-    localStorage.removeItem(DB_KEY);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(DB_KEY);
+    }
+    memoryDb = null;
     return this.getGameData(playerId);
   },
 };
+
+export { tradeBackend, lostAssetsBackend, TransferUnit, TransferTreasure };
+
 

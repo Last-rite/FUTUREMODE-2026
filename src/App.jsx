@@ -145,6 +145,7 @@ export default function App() {
               {view === 'trade' && (
                 <TradeView
                   data={data}
+                  currentUser={currentUser}
                   onCreateTrade={handleCreateTrade}
                   onResolveTrade={handleResolveTrade}
                   onMessage={showMessage}
