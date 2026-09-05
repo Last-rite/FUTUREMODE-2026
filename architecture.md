@@ -1,5 +1,7 @@
 # NOXCAT Backend Structure (MVP — blockchain-ready)
 
+> **Implementation status:** 本文件描述未來正式後端。現在前端所使用的 `src/demo-backend/` 是瀏覽器內的測試替身，不是此架構的實作，也不具備任何安全性或資產權威性。測試方式請見 `docs/TEST_BACKEND.md`。
+
 ## Stack
 - **Language**: Go
 - **DB**: PostgreSQL (via `pgxpool`)

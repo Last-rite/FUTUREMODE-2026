@@ -1,203 +1,75 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { decodeJwt } from '../utils/cookieStorage.js';
-import { Gamepad2, Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, Eye, EyeOff, Gamepad2, KeyRound, ShieldCheck, Sparkles, UserRound, Zap } from 'lucide-react';
+import DemoBadge from './DemoBadge.jsx';
+
+const DEMO_ACCOUNTS = [
+  { label: '玩家 A', username: 'neon_mochi' },
+  { label: '玩家 B', username: 'void_rider' },
+];
 
 export default function AuthModal({ onLoginSuccess }) {
-  const googleBtnRef = useRef(null);
-  const [googleUser, setGoogleUser] = useState(null);
-  const [gameId, setGameId] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isGsiReady, setIsGsiReady] = useState(false);
+  const [username, setUsername] = useState('neon_mochi');
+  const [password, setPassword] = useState('demo1234');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-  // Handle Google Credential Response
-  const handleGoogleCallback = (response) => {
-    try {
-      if (!response.credential) {
-        setErrorMsg('No credential received from Google.');
-        return;
-      }
-      const decoded = decodeJwt(response.credential);
-      if (!decoded) {
-        setErrorMsg('Failed to parse Google credentials.');
-        return;
-      }
-
-      setGoogleUser({
-        sub: decoded.sub,
-        email: decoded.email,
-        name: decoded.name,
-        picture: decoded.picture,
-      });
-
-      // Default game handle based on Google name
-      const cleanName = (decoded.name || 'Player')
-        .replace(/\s+/g, '_')
-        .substring(0, 14);
-      setGameId(cleanName);
-      setErrorMsg('');
-    } catch (err) {
-      console.error('Error handling Google response:', err);
-      setErrorMsg('Google authentication failed. Please try again.');
-    }
+  const fillAccount = (account) => {
+    setUsername(account.username);
+    setPassword('demo1234');
+    setError('');
   };
 
-  // Initialize Google Identity Services
-  useEffect(() => {
-    let checkInterval = null;
-
-    const initGsi = () => {
-      if (window.google?.accounts?.id && googleBtnRef.current) {
-        try {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: handleGoogleCallback,
-            auto_select: false,
-          });
-
-          window.google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: 'filled_black',
-            size: 'large',
-            shape: 'pill',
-            text: 'continue_with',
-            width: 280,
-          });
-
-          setIsGsiReady(true);
-          if (checkInterval) clearInterval(checkInterval);
-        } catch (err) {
-          console.warn('GSI render error:', err);
-        }
-      }
-    };
-
-    if (window.google?.accounts?.id) {
-      initGsi();
-    } else {
-      checkInterval = setInterval(initGsi, 200);
-    }
-
-    return () => {
-      if (checkInterval) clearInterval(checkInterval);
-    };
-  }, [clientId, googleUser]);
-
-  // Final step: Confirm custom Game ID
-  const handleConfirmGameId = (e) => {
-    e.preventDefault();
-    const trimmed = gameId.trim();
-    if (!trimmed) {
-      setErrorMsg('Please enter a Game ID to continue.');
-      return;
-    }
-
-    if (trimmed.length > 20) {
-      setErrorMsg('Game ID must be 20 characters or fewer.');
-      return;
-    }
-
-    onLoginSuccess({
-      ...googleUser,
-      gameId: trimmed,
-      createdAt: Date.now(),
-    });
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!username.trim() || !password || isSubmitting) return;
+    setIsSubmitting(true); setError('');
+    try { await onLoginSuccess({ username, password }); }
+    catch (loginError) { setError(loginError.message || '登入失敗'); }
+    finally { setIsSubmitting(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#030508]/90 backdrop-blur-xl">
-      <div className="relative w-full max-w-[400px] rounded-3xl bg-[#080d14] border border-[#172331] shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden p-6 text-center animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Glow ambient effect */}
-        <div className="absolute -top-16 -left-16 w-36 h-36 bg-[#00ff66]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -right-16 w-36 h-36 bg-[#ff2a55]/15 rounded-full blur-3xl pointer-events-none" />
+    <main className="auth-screen">
+      <div className="auth-grid" aria-hidden="true" />
+      <section className="auth-card">
+        <header className="auth-brand">
+          <div className="auth-mark"><Gamepad2 size={22} /></div>
+          <div><div className="eyebrow">NOXCAT NETWORK</div><h1>FUTUREMODE</h1></div>
+          <DemoBadge compact />
+        </header>
 
-        {/* Brand Header */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-[#0e1622] border border-[#00ff66]/40 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(0,255,102,0.25)]">
-            <Gamepad2 className="text-[#00ff66]" size={28} />
-          </div>
-          <h1 className="text-xl font-black font-mono text-white tracking-wider">
-            PEG MARBLE BATTLE
-          </h1>
+        <div className="auth-visual" aria-hidden="true">
+          <div className="auth-orbit auth-orbit--one" /><div className="auth-orbit auth-orbit--two" />
+          <div className="auth-core"><Zap size={36} fill="currentColor" /></div>
+          <span className="auth-coordinate auth-coordinate--left">AUTH // LOCAL</span><span className="auth-coordinate auth-coordinate--right">NODE 0X-27</span>
         </div>
 
-        {errorMsg && (
-          <div className="mb-4 px-3 py-2 rounded-xl bg-[#2b0c14] border border-[#ff2a55]/40 text-[#ff2a55] text-xs font-mono flex items-center gap-2 text-left animate-in fade-in">
-            <AlertCircle size={14} className="shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
+        <div className="auth-copy">
+          <div className="eyebrow eyebrow--green"><Sparkles size={12} /> CAT DROP PROTOCOL</div>
+          <h2>登入駕駛艙</h2>
+          <p>使用帳號與密碼進入。此 Demo 的驗證只在本機執行，正式版本將交由後端處理。</p>
+        </div>
 
-        {/* Google Sign-In */}
-        {!googleUser ? (
-          <div className="flex flex-col items-center justify-center py-4">
-            <div
-              ref={googleBtnRef}
-              className="flex items-center justify-center min-h-[44px]"
-            />
+        <div className="demo-account-pills">
+          {DEMO_ACCOUNTS.map((account) => <button key={account.username} type="button" onClick={() => fillAccount(account)}><UserRound size={13} />{account.label}<span>{account.username}</span></button>)}
+        </div>
 
-            {!isGsiReady && (
-              <div className="text-[11px] font-mono text-slate-500 animate-pulse mt-2">
-                Connecting to Google...
-              </div>
-            )}
-          </div>
-        ) : (
-          /* STEP 2: Choose Game ID */
-          <form onSubmit={handleConfirmGameId} className="flex flex-col items-center gap-4 py-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            {/* User Google Identity Badge */}
-            <div className="w-full bg-[#0d1622] border border-[#1f3144] rounded-2xl p-3 flex items-center gap-3">
-              <img
-                src={googleUser.picture}
-                alt={googleUser.name}
-                className="w-12 h-12 rounded-full border-2 border-[#00ff66] shadow-[0_0_12px_rgba(0,255,102,0.4)] object-cover"
-              />
-              <div className="text-left overflow-hidden">
-                <div className="text-xs font-mono font-bold text-white truncate">
-                  {googleUser.name}
-                </div>
-                <div className="text-[11px] font-mono text-slate-400 truncate">
-                  {googleUser.email}
-                </div>
-                <div className="text-[10px] font-mono text-[#00ff66] flex items-center gap-1 mt-0.5">
-                  <Sparkles size={10} />
-                  <span>Google Account Linked</span>
-                </div>
-              </div>
-            </div>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <label>
+            <span>USERNAME</span>
+            <div className="credential-input"><UserRound size={17} /><input value={username} onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} autoComplete="username" aria-label="帳號" /></div>
+          </label>
+          <label>
+            <span>PASSWORD</span>
+            <div className="credential-input"><KeyRound size={17} /><input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" aria-label="密碼" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>
+          </label>
+          {error && <div className="login-error" role="alert">{error}</div>}
+          <button className="primary-action" type="submit" disabled={!username.trim() || !password || isSubmitting}><span>{isSubmitting ? '驗證測試帳號中…' : '進入遊戲'}</span><ArrowRight size={19} /></button>
+        </form>
 
-            {/* Game ID Input */}
-            <div className="w-full flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-mono font-bold text-slate-300 flex items-center justify-between">
-                <span>CHOOSE YOUR GAME ID:</span>
-                <span className="text-[10px] text-slate-500">{gameId.length}/20</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  maxLength={20}
-                  value={gameId}
-                  onChange={(e) => setGameId(e.target.value)}
-                  placeholder="e.g. CYBER_STRIKER"
-                  autoFocus
-                  required
-                  className="w-full bg-[#070b10] border border-slate-700 focus:border-[#00ff66] rounded-xl px-3 py-2.5 text-sm font-mono text-white placeholder-slate-600 outline-none transition-all shadow-inner focus:shadow-[0_0_15px_rgba(0,255,102,0.2)]"
-                />
-              </div>
-            </div>
-
-            {/* Confirm & Save Button */}
-            <button
-              type="submit"
-              className="w-full mt-2 py-3 rounded-xl bg-[#00ff66] hover:bg-[#10e86b] text-black font-black text-sm tracking-wider uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(0,255,102,0.4)] flex items-center justify-center gap-2 font-mono cursor-pointer"
-            >
-              <span>CONFIRM & ENTER</span>
-              <ArrowRight size={16} />
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+        <footer className="auth-footer"><ShieldCheck size={14} /><span>測試密碼為 <code>demo1234</code>。此版本不連接錢包，也不執行真實交易。</span></footer>
+      </section>
+    </main>
   );
 }

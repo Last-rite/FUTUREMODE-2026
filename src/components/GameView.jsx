@@ -4,7 +4,7 @@ import { sound } from '../game/audio.js';
 import { TEAM_SIZE, W, H, SHOW_BOSS_BAR } from '../game/constants.js';
 import {
   Volume2, VolumeX, RotateCcw, HelpCircle,
-  Trophy, Skull, X, Shield, Swords
+  Trophy, Skull, X, Shield, Swords, ArrowLeft, Gift, MapPin
 } from 'lucide-react';
 
 function SquarcleBall({ char, isCurrent, isPlayer }) {
@@ -166,7 +166,7 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
   );
 }
 
-export default function GameView({ onExitToLobby }) {
+export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
 
@@ -194,6 +194,7 @@ export default function GameView({ onExitToLobby }) {
       },
       onGameOver: (result) => {
         setGameOver(result);
+        onBattleComplete?.(result);
       },
       onLog: () => {},
     });
@@ -222,6 +223,11 @@ export default function GameView({ onExitToLobby }) {
     <div className="relative w-full h-[100dvh] flex items-center justify-center bg-[#05070a] select-none overflow-hidden font-sans">
       {/* ── Main Arcade Phone Frame (NOXCAT Deep Tech Theme) ── */}
       <div className="relative w-full max-w-[480px] h-full max-h-[920px] flex flex-col justify-between items-center shadow-2xl bg-[#080d14] border-x border-[#172331]">
+        <div className="battle-identity">
+          <button onClick={onExitToLobby} aria-label="離開戰鬥"><ArrowLeft size={18} /></button>
+          <div><span>ACTIVE MISSION</span><strong>{dungeon?.name || '零號資料井'}</strong></div>
+          <div className="battle-live"><i /> LIVE</div>
+        </div>
         
         {/* ── Boss HP Bar (Top Header OUTSIDE the battle area) ── */}
         {SHOW_BOSS_BAR && boss && (
@@ -371,11 +377,16 @@ export default function GameView({ onExitToLobby }) {
                   : `All your capsules shattered in Round ${gameOver.round}!`}
               </p>
 
+              <div className="battle-result-assets">
+                <div><Gift size={17} /><span>{gameOver.winner === 'PLAYER' ? '測試獎勵已寫入' : '本局沒有取得獎勵'}</span></div>
+                <div><MapPin size={17} /><span>{dungeon?.name || '零號資料井'}</span></div>
+              </div>
+
               <button
                 onClick={onExitToLobby}
                 className="w-full py-3 rounded-xl bg-[#00ff66] hover:bg-[#10e86b] text-black font-black text-sm tracking-wider uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(0,255,102,0.4)] cursor-pointer font-mono"
               >
-                Return to Lobby
+                返回主畫面
               </button>
             </div>
           </div>
