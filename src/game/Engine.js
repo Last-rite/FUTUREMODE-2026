@@ -868,22 +868,22 @@ export class GameEngine {
       this.drawComboMeter(ctx, this.hitCount, this.comboTeamColor, this.hitAlpha, scale);
     }
 
-    // 3. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow)
-    if (this.state === 'PLAYER_AIM' && this.dragStart && this.aimPt && this.activeBall) {
-      this.drawSlingshot(ctx, this.dragStart, this.aimPt);
-    }
-
-    // 4. AI Aim Preview
-    if (this.aiAimPreview) {
-      this.drawAiAimPreview(ctx, this.aiAimPreview);
-    }
-
-    // 5. Draw Balls (Circular Glass Capsules with Sloshing Liquid)
+    // 3. Draw Balls (Circular Glass Capsules with Sloshing Liquid)
     const active = this.activeBall;
     for (const ball of this.balls) {
       if (ball.alive) {
         ball.draw(ctx, ball === active);
       }
+    }
+
+    // 4. Slingshot Aiming Visuals for Player (Monster Strike Phantom Arrow) - Layered on top of balls
+    if (this.state === 'PLAYER_AIM' && this.dragStart && this.aimPt && this.activeBall) {
+      this.drawSlingshot(ctx, this.dragStart, this.aimPt);
+    }
+
+    // 5. AI Aim Preview - Layered on top of balls
+    if (this.aiAimPreview) {
+      this.drawAiAimPreview(ctx, this.aiAimPreview);
     }
 
     // 6. Impact Rings (Shockwaves)

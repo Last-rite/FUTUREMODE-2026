@@ -1,8 +1,8 @@
 import nxc1 from '../assets/nxc_1.png';
 import nxc2 from '../assets/nxc_2.png';
 import nxc3 from '../assets/nxc_3.png';
-import enemyDoggo from '../assets/enemy_doggo_128.png';
-import enemyPig from '../assets/enemy_pig_128.png';
+import enemyDoggo from '../assets/enemy_doggo_64.png';
+import enemyPig from '../assets/enemy_pig_64.png';
 
 const imageCache = new Map();
 
