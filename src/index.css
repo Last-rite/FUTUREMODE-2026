@@ -304,11 +304,14 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-scroll-thumb { position: absolute; left: 2px; right: 2px; height: 32px; background: var(--green); border-radius: 2px; box-shadow: 0 0 8px rgba(0,255,102,.55); cursor: pointer; transition: top .1s ease-out; }
 .sketch-thumb-grip { position: absolute; inset: 6px 2px; border-block: 1px solid #052611; background: repeating-linear-gradient(180deg, #052611 0 2px, transparent 2px 4px); }
 
-/* Weapon / Item Artwork SVG Illustration */
-.cyber-item-art { position: relative; display: grid; place-items: center; border: 2px solid #2d4538; border-radius: 50%; background: radial-gradient(circle, #081813 40%, #050705 90%); transition: transform .12s; }
+/* Weapon / Item Artwork Illustration */
+.cyber-item-art { position: relative; display: grid; place-items: center; border: 2px solid #2d4538; border-radius: 50%; background: radial-gradient(circle, #081813 40%, #050705 90%); transition: transform .12s; overflow: hidden; }
 .cyber-item-art--md { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); }
 .cyber-item-art--hero { width: min(58vw, 240px); height: min(58vw, 240px); border-color: #35d9ff; box-shadow: 0 0 35px rgba(53,217,255,.2); }
 .cyber-item-art .item-svg { width: 75%; height: 75%; }
+.cyber-item-art .item-img { width: 78%; height: 78%; object-fit: contain; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 0 10px rgba(0,255,102,.35)); }
+.cyber-item-art--hero .item-img { width: 84%; height: 84%; filter: drop-shadow(0 0 28px rgba(0,255,102,.5)); }
+.pixelated { image-rendering: pixelated; image-rendering: crisp-edges; }
 .cyber-item-art__code { position: absolute; bottom: 3px; font: 900 6px/1 ui-monospace, monospace; color: #87998e; letter-spacing: .08em; }
 
 /* FULL-SCREEN DETAIL VIEW (Matching pet_detail_example.jpg & weapon_detail_example.jpg) */

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowLeftRight, ArrowRight, Cat, Check, ChevronDown, Gem, LockKeyhole, Plus, Swords, UserRound, Waves, X } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import swordImg from '../assets/sword_128.png';
+import shieldImg from '../assets/shield_128.png';
 
 // Stylized Tombstone Cross icon matching sketch †
 function TombstoneIcon({ size = 20, className = '' }) {
@@ -118,7 +120,11 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
                         <NoxPlaceholder pet={petObj} size="sm" />
                       </div>
                       <div className="sketch-trade-weapon-badge" title={trade.offerWeapon || '攜帶武器'}>
-                        <Swords size={13} />
+                        <img
+                          src={trade.offerWeapon?.includes('盾') ? shieldImg : swordImg}
+                          alt={trade.offerWeapon || '武器'}
+                          className="w-3.5 h-3.5 object-contain pixelated"
+                        />
                       </div>
                     </div>
                     <div className="sketch-trade-label-group">
@@ -204,7 +210,11 @@ export default function TradeView({ data, onCreateTrade, onResolveTrade, onMessa
                       <NoxPlaceholder pet={petObj} size="sm" muted />
                     ) : (
                       <div className="sketch-mourn-weapon-icon" title={asset.name}>
-                        <Swords size={22} />
+                        <img
+                          src={(asset.name?.includes('盾') || asset.iconType === 'shield') ? shieldImg : swordImg}
+                          alt={asset.name}
+                          className="w-6 h-6 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,255,102,0.3)]"
+                        />
                       </div>
                     )}
                   </div>

@@ -13,20 +13,22 @@ import {
   Zap,
 } from 'lucide-react';
 import NoxPlaceholder from './NoxPlaceholder.jsx';
+import swordImg from '../assets/sword_128.png';
+import shieldImg from '../assets/shield_128.png';
 
 const STAT_ICONS = { hp: Shield, atk: Swords, def: Shield, spd: Zap };
 
 // Custom cyber weapon illustration component
 export function ItemIllustration({ item, size = 'lg' }) {
-  const isBlade = item?.type === 'WEAPON' || item?.id?.includes('blade');
-  const isShield = item?.type === 'GEAR' || item?.id?.includes('shield');
+  const isBlade = item?.type === 'WEAPON' || item?.id?.includes('blade') || item?.name?.includes('劍');
+  const isShield = item?.type === 'GEAR' || item?.id?.includes('shield') || item?.name?.includes('盾');
   const isHome = item?.type === 'TREASURE' || item?.id?.includes('home');
 
   if (size === 'sm') {
     return (
       <span className="sketch-mini-item-icon">
-        {isBlade && <Swords size={12} />}
-        {isShield && <Shield size={12} />}
+        {isBlade && <img src={swordImg} alt={item?.name || '劍'} className="w-3.5 h-3.5 object-contain pixelated" />}
+        {isShield && <img src={shieldImg} alt={item?.name || '盾'} className="w-3.5 h-3.5 object-contain pixelated" />}
         {isHome && <Gem size={12} />}
         {!isBlade && !isShield && !isHome && <Gem size={12} />}
       </span>
@@ -36,48 +38,18 @@ export function ItemIllustration({ item, size = 'lg' }) {
   return (
     <div className={`cyber-item-art cyber-item-art--${size}`}>
       {isBlade && (
-        <svg viewBox="0 0 100 100" className="item-svg item-svg--blade">
-          <defs>
-            <linearGradient id="bladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#35d9ff" />
-              <stop offset="60%" stopColor="#00ff66" />
-              <stop offset="100%" stopColor="#052e16" />
-            </linearGradient>
-            <filter id="bladeGlow">
-              <feGaussianBlur stdDeviation="3" result="glow" />
-              <feMerge>
-                <feMergeNode in="glow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <line x1="18" y1="82" x2="82" y2="18" stroke="url(#bladeGrad)" strokeWidth="6" strokeLinecap="square" filter="url(#bladeGlow)" />
-          <polygon points="82,18 70,16 84,30" fill="#35d9ff" />
-          <line x1="32" y1="52" x2="48" y2="68" stroke="#00ff66" strokeWidth="6" strokeLinecap="square" />
-          <circle cx="20" cy="80" r="5" fill="#35d9ff" />
-          <circle cx="50" cy="50" r="2" fill="#fff" />
-          <circle cx="68" cy="32" r="2" fill="#fff" />
-        </svg>
+        <img
+          src={swordImg}
+          alt={item?.name || '劍'}
+          className="item-img"
+        />
       )}
       {isShield && (
-        <svg viewBox="0 0 100 100" className="item-svg item-svg--shield">
-          <defs>
-            <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#00ff66" />
-              <stop offset="100%" stopColor="#0f381e" />
-            </linearGradient>
-            <filter id="shieldGlow">
-              <feGaussianBlur stdDeviation="3" result="glow" />
-              <feMerge>
-                <feMergeNode in="glow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <polygon points="50,15 82,28 72,70 50,88 28,70 18,28" fill="rgba(0,255,102,0.12)" stroke="url(#shieldGrad)" strokeWidth="4" filter="url(#shieldGlow)" />
-          <polygon points="50,28 70,37 63,64 50,75 37,64 30,37" fill="none" stroke="#00ff66" strokeWidth="2" strokeDasharray="3 3" />
-          <circle cx="50" cy="50" r="6" fill="#00ff66" />
-        </svg>
+        <img
+          src={shieldImg}
+          alt={item?.name || '盾'}
+          className="item-img"
+        />
       )}
       {isHome && (
         <svg viewBox="0 0 100 100" className="item-svg item-svg--home">
