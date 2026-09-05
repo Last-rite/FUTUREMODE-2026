@@ -4,7 +4,8 @@ import { sound } from '../game/audio.js';
 import { TEAM_SIZE, W, H, SHOW_TOP_BAR } from '../game/constants.js';
 import {
   Volume2, VolumeX, RotateCcw, HelpCircle,
-  Skull, X, Shield, Swords, Coins, Gift, MapPin
+  Skull, X, Shield, Swords, Coins, Gift, MapPin,
+  Cat, ShieldPlus
 } from 'lucide-react';
 
 /**
@@ -189,6 +190,60 @@ function SquarcleBall({ char, isCurrent, isPlayer }) {
         height={58}
         className="w-[58px] h-[58px] block rounded-2xl bg-[#060a0f]"
       />
+    </div>
+  );
+}
+
+function SettlementRail({ type = 'top', color = '#00ff66' }) {
+  const isTop = type === 'top';
+  return (
+    <div className={`settlement-rail settlement-rail--${type}`}>
+      <svg viewBox="0 0 320 18" className="settlement-rail-svg" preserveAspectRatio="none">
+        {isTop ? (
+          <>
+            <line x1="0" y1="4" x2="210" y2="4" stroke={color} strokeWidth="2" />
+            <polygon points="216,1 234,1 228,7 210,7" fill="none" stroke={color} strokeWidth="1.8" />
+            <line x1="238" y1="4" x2="320" y2="4" stroke={color} strokeWidth="2" />
+            <line x1="0" y1="12" x2="320" y2="12" stroke={color} strokeWidth="2" />
+          </>
+        ) : (
+          <>
+            <line x1="0" y1="6" x2="320" y2="6" stroke={color} strokeWidth="2" />
+            <line x1="0" y1="14" x2="88" y2="14" stroke={color} strokeWidth="2" />
+            <polygon points="94,11 112,11 106,17 88,17" fill="none" stroke={color} strokeWidth="1.8" />
+            <line x1="116" y1="14" x2="320" y2="14" stroke={color} strokeWidth="2" />
+          </>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+function SettlementHexToken({ type = 'cat', variant = 'gain', label = '' }) {
+  const isGain = variant === 'gain';
+  const color = isGain ? '#00ff66' : '#ff2a55';
+
+  return (
+    <div className={`settlement-hex-item is-${variant}`}>
+      <div className="settlement-hex-shape">
+        <svg viewBox="0 0 66 76" className="settlement-hex-svg">
+          <polygon
+            points="33,3 63,19 63,57 33,73 3,57 3,19"
+            fill="rgba(4, 9, 6, 0.9)"
+            stroke={color}
+            strokeWidth="2.4"
+          />
+        </svg>
+        <div className="settlement-hex-icon" style={{ color }}>
+          {type === 'cat' && <Cat size={26} strokeWidth={2.2} />}
+          {type === 'sword' && <Swords size={26} strokeWidth={2.2} />}
+          {type === 'shield' && <ShieldPlus size={26} strokeWidth={2.2} />}
+          {type === 'lost-cat' && <Cat size={26} strokeWidth={2.2} />}
+        </div>
+      </div>
+      <span className="settlement-hex-tag" style={{ color }}>
+        {isGain ? '獲得' : '失去'}
+      </span>
     </div>
   );
 }
@@ -448,15 +503,58 @@ export default function GameView({ dungeon, onExitToLobby, onBattleComplete }) {
 
         {/* ── Settlement screen, based on docs/game-design/settlement_screen_example.jpg ── */}
         {gameOver && (
-          <div className={`battle-settlement ${gameOver.winner === 'PLAYER' ? 'is-victory' : 'is-defeat'}`}>
-            <div className="battle-settlement__lines" aria-hidden="true"><i /><i /><i /></div>
-            <p>ROUND {gameOver.round} · {dungeon?.name || '零號資料井'}</p>
-            <h2><span>〈</span>{gameOver.winner === 'PLAYER' ? 'VICTORY' : 'DEFEAT'}<span>〉</span></h2>
-            <div className="battle-settlement__assets">
-              <div className="is-gain"><span>{gameOver.winner === 'PLAYER' ? <Gift size={28} /> : <Skull size={28} />}</span><strong>{gameOver.winner === 'PLAYER' ? '+ LOOT' : 'NO LOOT'}</strong></div>
-              <div className="is-place"><span><MapPin size={28} /></span><strong>STAGE {dungeon?.chapter || '01'}</strong></div>
+          <div
+            className={`battle-settlement ${gameOver.winner === 'PLAYER' ? 'is-victory' : 'is-defeat'}`}
+            onClick={onExitToLobby}
+            role="dialog"
+            aria-modal="true"
+            aria-label={gameOver.winner === 'PLAYER' ? '戰鬥勝利' : '戰鬥失敗'}
+          >
+            <div className="settlement-container">
+              {/* Top Rail with Parallelogram Notch */}
+              <SettlementRail
+                type="top"
+                color={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
+              />
+
+              {/* Title Banner with Background Watermark Polygon */}
+              <div className="settlement-banner">
+                <div className="settlement-watermark" aria-hidden="true">
+                  <svg viewBox="0 0 280 100" className="settlement-watermark-svg">
+                    <polygon
+                      points="140,2 276,50 200,98 80,98 4,50"
+                      fill="none"
+                      stroke={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
+                      strokeWidth="1.2"
+                      strokeDasharray="6 4"
+                      opacity="0.32"
+                    />
+                  </svg>
+                </div>
+                <h2 className="settlement-title">
+                  《{gameOver.winner === 'PLAYER' ? 'VICTORY' : 'DEFEAT'}》
+                </h2>
+              </div>
+
+              {/* Bottom Rail with Parallelogram Notch */}
+              <SettlementRail
+                type="bottom"
+                color={gameOver.winner === 'PLAYER' ? '#00ff66' : '#ff2a55'}
+              />
+
+              {/* Hexagon Asset Tokens: 3 Green (Gain), 1 Red (Lost) matching sketch */}
+              <div className="settlement-hex-cluster">
+                <SettlementHexToken type="cat" variant="gain" label="NOXCAT" />
+                <SettlementHexToken type="sword" variant="gain" label="武器" />
+                <SettlementHexToken type="shield" variant="gain" label="道具" />
+                <SettlementHexToken type="lost-cat" variant="lost" label="走失" />
+              </div>
+
+              {/* Bottom prompt: ' Tap to leave ' */}
+              <p className="settlement-tap-prompt">
+                &apos; Tap to leave &apos;
+              </p>
             </div>
-            <button onClick={onExitToLobby}>點擊離開</button>
           </div>
         )}
 
