@@ -337,9 +337,11 @@ export class Ball {
     ctx.textBaseline = 'middle';
 
     // Label ("1b", "2c", etc.) centered inside the dark core
-    ctx.font = '900 16px monospace';
+    ctx.font = '900 16px Arial, Helvetica, sans-serif';
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.strokeText(this.label, this.x, this.y - 2);
     ctx.fillStyle = COLORS.WHITE;
     ctx.fillText(this.label, this.x, this.y - 2);
@@ -361,13 +363,29 @@ export class Ball {
       hpColor = `rgb(255, ${g}, ${b})`;
     }
 
-    const hpRingY = this.y + (innerR + R) * 0.5; // Exactly centered on lower ring band (38px)
-    ctx.font = '900 24px monospace';
-    ctx.strokeStyle = '#05070a';
+    const hpRingY = this.y + 35; // Optical center on lower ring band
+    ctx.save();
+    ctx.translate(this.x, hpRingY);
+    ctx.scale(1.0, 1.1);
+    ctx.font = '900 24px Arial, Helvetica, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = 5;
-    ctx.strokeText(`${this.hp}`, this.x, hpRingY);
+
+    // Optical centering to compensate for digit shape asymmetry and canvas baseline droop
+    const metrics = ctx.measureText(`${this.hp}`);
+    const ox = (metrics.actualBoundingBoxLeft !== undefined && metrics.actualBoundingBoxRight !== undefined)
+      ? (metrics.actualBoundingBoxLeft - metrics.actualBoundingBoxRight) * 0.5
+      : 0;
+    const oy = -1.5;
+
+    ctx.strokeText(`${this.hp}`, ox, oy);
     ctx.fillStyle = hpColor;
-    ctx.fillText(`${this.hp}`, this.x, hpRingY);
+    ctx.fillText(`${this.hp}`, ox, oy);
+    ctx.restore();
 
     ctx.restore();
   }
