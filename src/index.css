@@ -165,106 +165,666 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-start { justify-self: center; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; width: min(78%, 300px); min-height: 58px; padding: 0 13px; border: 2px solid #001a0a; border-radius: 0; background: var(--green); color: #001407; box-shadow: 5px 5px 0 #0d361b; font: 950 18px/1 ui-monospace, monospace; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
 .sketch-start small { justify-self: end; font-size: 9px; }
 .sketch-start:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #0d361b; filter: brightness(.86); }
-.sketch-bottom-nav.bottom-nav { left: 0; right: 0; bottom: 0; min-height: calc(72px + env(safe-area-inset-bottom)); padding: 5px 14px max(7px, env(safe-area-inset-bottom)); border: 0; border-top: 2px solid #2a352d; border-radius: 0; background: #080b09; box-shadow: 0 -8px 30px rgba(0,0,0,.65); backdrop-filter: none; }
-.sketch-bottom-nav.bottom-nav button { min-height: 58px; border-radius: 0; color: #667169; }
-.sketch-bottom-nav.bottom-nav button small { font: 800 8px/1 ui-monospace, monospace; letter-spacing: .06em; }
+.sketch-bottom-nav.bottom-nav { left: 0; right: 0; bottom: 0; min-height: calc(72px + env(safe-area-inset-bottom)); padding: 6px 14px max(8px, env(safe-area-inset-bottom)); border: 0; border-top: 2px solid #2a352d; border-radius: 0; background: #080b09; box-shadow: 0 -8px 30px rgba(0,0,0,.65); backdrop-filter: none; }
+.sketch-bottom-nav.bottom-nav button { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 0; color: #667169; }
+.sketch-bottom-nav.bottom-nav button small { font: 850 9px/1 ui-monospace, monospace; letter-spacing: .06em; margin-top: 5px; position: relative; z-index: 2; }
 .sketch-bottom-nav.bottom-nav button.is-active { color: var(--green); background: transparent; }
-.sketch-bottom-nav__icon { width: 42px !important; height: 36px !important; border-radius: 0 !important; }
-.sketch-bottom-nav button.is-active .sketch-bottom-nav__icon { position: relative; background: transparent !important; box-shadow: none !important; }
-.sketch-bottom-nav button.is-active .sketch-bottom-nav__icon::before { content: ''; position: absolute; inset: -7px -12px; z-index: -1; border: 2px solid var(--green); transform: skewX(-12deg); background: #0b1710; }
+.sketch-bottom-nav__icon { position: relative; display: grid; place-items: center; width: 36px !important; height: 28px !important; border-radius: 0 !important; }
+.sketch-bottom-nav button.is-active .sketch-bottom-nav__icon { background: transparent !important; box-shadow: none !important; }
+.sketch-bottom-nav button.is-active .sketch-bottom-nav__icon::before { content: ''; position: absolute; inset: -4px -10px 0px -10px; z-index: -1; border: 2px solid var(--green); transform: skewX(-12deg); background: #0b1710; }
 @media (max-height: 700px) { .sketch-home { gap: 6px; } .sketch-brandbar { min-height: 40px; } .sketch-mission__heading { min-height: 62px; } .sketch-mission__node { width: 126px; } .sketch-party__member:nth-child(2) { transform: translateY(-10px); } .sketch-start { min-height: 50px; } }
 
-/* Pet screen: three circular party slots over a dense four-column vault */
-.sketch-collection, .sketch-trade { padding: var(--safe-top) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
-.sketch-feature-brand { display: flex; align-items: center; justify-content: space-between; min-height: 54px; border-bottom: 1px solid #2b342d; }
-.sketch-feature-brand > div { display: grid; }
-.sketch-feature-brand strong { font: 950 14px/1 ui-monospace, monospace; }
-.sketch-feature-brand span { margin-top: 5px; color: var(--green); font: 800 9px/1 ui-monospace, monospace; letter-spacing: .08em; }
-.sketch-loadout-tabs { display: grid; grid-template-columns: 1.25fr repeat(5, 1fr); gap: 4px; margin: 12px 0; }
-.sketch-loadout-tabs button { min-width: 0; min-height: 44px; border: 1px solid #29332c; border-radius: 0; background: #090d0a; color: #758078; font: 900 12px/1 ui-monospace, monospace; }
-.sketch-loadout-tabs button.is-active { border-color: var(--green); background: var(--green); color: #001407; box-shadow: 3px 3px 0 #12361e; }
-.sketch-loadout { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; min-height: 180px; padding: 16px 5px 14px; border-block: 2px solid #2d382f; background: radial-gradient(circle at 50% 45%, rgba(0,255,102,.08), transparent 58%); }
-.sketch-loadout__slot { position: relative; display: grid; place-items: center; }
-.sketch-loadout__slot:nth-child(2) { transform: translateY(-10px); }
-.sketch-loadout__slot > button { position: relative; display: grid; place-items: center; width: clamp(82px, 25vw, 108px); aspect-ratio: 1; padding: 0; border: 2px solid #344039; border-radius: 50%; background: #070a08; color: #47534b; }
-.sketch-loadout__slot > button.is-filled { border-color: var(--pet-accent); box-shadow: 0 0 0 5px #050705, 0 0 0 6px color-mix(in srgb, var(--pet-accent) 40%, transparent); }
-.sketch-loadout__slot > button:active { transform: scale(.94); }
-.sketch-loadout__slot .nox-avatar { width: 100%; height: 100%; border: 0; border-radius: 50%; }
-.sketch-loadout__slot > button > span { position: absolute; top: -4px; left: -2px; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--pet-accent); border-radius: 50%; background: #050705; color: var(--pet-accent); font: 900 10px/1 ui-monospace, monospace; }
-.sketch-equipped { position: absolute; right: 0; bottom: -7px; display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid #344039; border-radius: 50%; background: #080b09; color: #4c5950; }
-.sketch-equipped.is-equipped { border-color: var(--green); color: var(--green); box-shadow: 0 0 12px rgba(0,255,102,.2); }
-.sketch-vault-switch { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #2d382f; }
-.sketch-vault-switch button { min-height: 45px; border: 0; border-radius: 0; border-bottom: 3px solid transparent; background: transparent; color: #6f7b73; font: 900 10px/1 ui-monospace, monospace; }
-.sketch-vault-switch button.is-active { border-bottom-color: var(--green); color: var(--green); }
-.sketch-vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 7px; padding: 14px 1px; }
-.sketch-vault-token { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #e8ede9; text-align: center; }
-.sketch-vault-token:active .nox-avatar, .sketch-vault-token:active .sketch-item-token { transform: scale(.91); }
-.sketch-vault-token .nox-avatar, .sketch-item-token { width: clamp(62px, 19vw, 78px); height: clamp(62px, 19vw, 78px); border-width: 2px; border-radius: 50%; transition: transform .12s; }
-.sketch-vault-token.is-selected .nox-avatar { box-shadow: 0 0 0 3px #050705, 0 0 0 5px var(--pet-accent), 0 0 17px color-mix(in srgb, var(--pet-accent) 30%, transparent); }
+/* Pet screen: collection view starts directly with loadouts */
+.sketch-collection { padding: max(14px, var(--safe-top)) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
+.sketch-trade { padding: var(--safe-top) 14px calc(var(--safe-bottom) + 92px); background: #050705; }
+
+/* Loadout Tabs & Interactive Circular Switcher */
+.sketch-loadout-tabs { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 14px; }
+
+/* The Big Circle + Small Overlapping Circle Mode Switcher */
+.sketch-circle-switcher { position: relative; width: 52px; height: 44px; padding: 0 !important; border: 1px solid #29332c !important; background: #070c08 !important; overflow: hidden; cursor: pointer; flex-shrink: 0; }
+.sketch-circle-switcher:active { transform: scale(.94); }
+.sketch-circle-switcher .circle-node { position: absolute; display: grid; place-items: center; border-radius: 50%; transition: width .32s cubic-bezier(0.34, 1.56, 0.64, 1), height .32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.sketch-circle-switcher .circle-node--pet { border: 2px solid var(--green); background: #08150d; color: var(--green); bottom: 4px; left: 4px; transform-origin: bottom left; }
+.sketch-circle-switcher .circle-node--item { border: 2px solid #35d9ff; background: #081720; color: #35d9ff; bottom: 4px; right: 4px; transform-origin: bottom right; }
+
+/* In Pet Mode: Pet circle is large from bottom-left; Weapon circle is small at bottom-right */
+.sketch-circle-switcher.is-pets-active .circle-node--pet { width: 32px; height: 32px; z-index: 2; box-shadow: 0 0 10px rgba(0,255,102,.45); }
+.sketch-circle-switcher.is-pets-active .circle-node--item { width: 18px; height: 18px; z-index: 3; box-shadow: 0 0 0 2px #070c08; }
+
+/* In Weapon Mode: Weapon circle is large from bottom-right; Pet circle is small at bottom-left */
+.sketch-circle-switcher.is-weapons-active .circle-node--item { width: 32px; height: 32px; z-index: 2; box-shadow: 0 0 10px rgba(53,217,255,.45); }
+.sketch-circle-switcher.is-weapons-active .circle-node--pet { width: 18px; height: 18px; z-index: 3; box-shadow: 0 0 0 2px #070c08; }
+
+/* Angled Tabs for Loadouts 1 2 3 4 5 (Inactive tabs have NO borders) */
+.sketch-tabs-strip { display: flex; align-items: flex-end; justify-content: space-around; flex: 1; height: 44px; border-bottom: 2px solid #233027; }
+.sketch-tab-btn { min-width: 0; padding: 0; font-family: ui-monospace, monospace; cursor: pointer; transition: color .15s; }
+
+/* Active tab: Angled trapezoidal folder tab: / 1 \ with green accent */
+.sketch-tab-btn.is-active { position: relative; height: 44px; width: clamp(40px, 11vw, 52px); background: #0e1d13; color: var(--green); border: none; clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); font-weight: 950; font-size: 15px; box-shadow: inset 0 2px 0 var(--green); }
+.sketch-tab-btn.is-active::after { content: ''; position: absolute; inset: 0; clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%); border-top: 2px solid var(--green); pointer-events: none; }
+
+/* Inactive tabs: NO BORDER, transparent background, text sitting on baseline */
+.sketch-tab-btn.is-inactive { height: 36px; width: clamp(34px, 9vw, 44px); background: transparent !important; border: none !important; box-shadow: none !important; color: #5f7065; font-weight: 800; font-size: 13px; }
+.sketch-tab-btn.is-inactive:hover { color: #a4b8ab; }
+
+/* Battle Party Loadout Area */
+.sketch-loadout { display: grid; gap: 8px; padding: 12px 6px 14px; border-block: 2px solid #2d382f; background: radial-gradient(circle at 50% 45%, rgba(0,255,102,.07), transparent 60%); }
+.sketch-loadout--weapon-mode { background: radial-gradient(circle at 50% 45%, rgba(53,217,255,.07), transparent 60%); }
+.sketch-loadout__indicator { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
+.sketch-loadout__indicator span { font: 900 11px/1 ui-monospace, monospace; color: #9bb0a2; letter-spacing: .08em; }
+.sketch-anim-swap-btn { padding: 4px 9px; border: 1px solid #334438; border-radius: 20px; background: #090f0b; color: var(--green); font: 850 9px/1 ui-monospace, monospace; cursor: pointer; transition: all .15s; }
+.sketch-anim-swap-btn:hover { border-color: var(--green); box-shadow: 0 0 8px rgba(0,255,102,.3); }
+
+/* Slots Container & Morphing Circles with Corner-Anchored Pivots */
+.sketch-loadout__slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; min-height: 145px; }
+.sketch-loadout__slot { position: relative; width: clamp(88px, 26vw, 110px); height: 110px; }
+.sketch-loadout__slot:nth-child(2) { transform: translateY(-8px); }
+
+.slot-morph-node { position: absolute; display: grid; place-items: center; border-radius: 50%; padding: 0; cursor: pointer; transition: width .36s cubic-bezier(0.34, 1.56, 0.64, 1), height .36s cubic-bezier(0.34, 1.56, 0.64, 1), bottom .36s cubic-bezier(0.34, 1.56, 0.64, 1), right .36s cubic-bezier(0.34, 1.56, 0.64, 1), left .36s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .25s, box-shadow .25s; }
+
+/* Pet Circle: Pivots from bottom-left corner */
+.slot-morph-node--pet { bottom: 8px; left: 6px; transform-origin: bottom left; }
+.slot-morph-node--pet.is-secondary { bottom: 16px; left: 16px; }
+
+/* Weapon Circle: When secondary, tucked into 4 o'clock flank of pet circle instead of extreme bottom-right */
+.slot-morph-node--weapon { bottom: 8px; right: 6px; transform-origin: bottom right; }
+.slot-morph-node--weapon.is-secondary { bottom: 16px; right: 16px; }
+
+/* Primary Large Circle State */
+.slot-morph-node.is-primary { width: clamp(80px, 24vw, 96px); height: clamp(80px, 24vw, 96px); z-index: 2; border: 2px solid #344039; background: #070a08; }
+.slot-morph-node--pet.is-primary.is-filled { border-color: var(--pet-accent, #00ff66); box-shadow: 0 0 0 4px #050705, 0 0 0 6px color-mix(in srgb, var(--pet-accent, #00ff66) 35%, transparent); }
+.slot-morph-node--weapon.is-primary.is-filled { border-color: #35d9ff; box-shadow: 0 0 0 4px #050705, 0 0 0 6px rgba(53,217,255,.35); }
+.slot-morph-node.is-primary:active { filter: brightness(1.1); }
+.slot-morph-node .nox-avatar { width: 100%; height: 100%; border: 0; border-radius: 50%; }
+
+.sketch-slot-idx { position: absolute; top: -3px; left: -2px; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--pet-accent, #00ff66); border-radius: 50%; background: #050705; color: var(--pet-accent, #00ff66); font: 900 10px/1 ui-monospace, monospace; }
+.sketch-slot-empty-plus { font-size: 26px; font-weight: 300; color: #2e3b32; }
+.sketch-slot-weapon-fill { display: grid; place-items: center; gap: 2px; }
+.sketch-slot-weapon-fill small { font: 850 8px/1 ui-monospace, monospace; color: #35d9ff; }
+.sketch-slot-empty-weapon { display: grid; place-items: center; gap: 2px; color: #3a473f; }
+.sketch-slot-empty-weapon small { font: 750 7px/1 ui-monospace, monospace; }
+
+/* Secondary Small Circle Badge State */
+.slot-morph-node.is-secondary { width: 32px; height: 32px; z-index: 4; border: 2px solid #344039; background: #080d0a; }
+.slot-morph-node.is-secondary:active { transform: scale(.92); }
+
+.slot-morph-node--weapon.is-secondary { box-shadow: 0 0 0 3px #050705; }
+.slot-morph-node--weapon.is-secondary.is-filled { border-color: #35d9ff; color: #35d9ff; background: #07151e; box-shadow: 0 0 0 3px #050705, 0 0 8px rgba(53,217,255,.3); }
+
+.slot-morph-node--pet.is-secondary { box-shadow: 0 0 0 3px #050705; border-color: var(--pet-accent, #00ff66); color: var(--pet-accent, #00ff66); background: #08150e; }
+
+/* Vault Grid Section & Custom Cyberpunk Scrollbar */
+.sketch-vault-section { margin-top: 10px; display: grid; gap: 8px; }
+.sketch-vault-header { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.sketch-vault-title { font: 950 12px/1 ui-monospace, monospace; color: #cfd8d2; letter-spacing: .06em; }
+.sketch-vault-count { font: 800 9px/1 ui-monospace, monospace; color: var(--green); }
+.sketch-vault-wrapper { display: flex; gap: 6px; position: relative; height: 280px; }
+.sketch-vault-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px; scrollbar-width: none; -ms-overflow-style: none; }
+.sketch-vault-scroll::-webkit-scrollbar { display: none; }
+.sketch-vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 7px; }
+.sketch-vault-token { min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #e8ede9; text-align: center; cursor: pointer; }
+.sketch-vault-token:active .nox-avatar, .sketch-vault-token:active .cyber-item-art { transform: scale(.91); }
+.sketch-vault-token .nox-avatar { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); border-width: 2px; border-radius: 50%; transition: transform .12s; }
+.sketch-vault-token.is-selected .nox-avatar { box-shadow: 0 0 0 3px #050705, 0 0 0 5px var(--pet-accent, #00ff66), 0 0 17px color-mix(in srgb, var(--pet-accent, #00ff66) 30%, transparent); }
 .sketch-vault-token strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 850 8px/1 ui-monospace, monospace; }
 .sketch-vault-token > span { color: #718078; font: 750 7px/1 ui-monospace, monospace; }
 .sketch-vault-token .nox-avatar__placeholder { display: none; }
-.sketch-vault-token.is-empty { min-height: 92px; align-content: center; border: 1px dashed #263029; border-radius: 50%; color: #354139; }
-.sketch-vault-token.is-empty i { font: 300 24px/1 sans-serif; font-style: normal; }
+.sketch-vault-token.is-empty { min-height: 84px; align-content: center; border: 1px dashed #263029; border-radius: 50%; color: #354139; }
+.sketch-vault-token.is-empty i { font: 300 22px/1 sans-serif; font-style: normal; }
 .sketch-vault-token.is-empty small { font: 700 6px/1 ui-monospace, monospace; }
-.sketch-item-token { display: grid; place-items: center; border: 2px solid #4b5a50; background: #090d0a; color: var(--green); }
-.sketch-item-token small { position: absolute; margin-top: 40px; color: #718078; font: 700 5px/1 ui-monospace, monospace; }
+.item-bonus-pill { display: inline-block; padding: 1px 4px; border: 1px solid #1a382c; border-radius: 4px; color: #35d9ff; font: 850 7px/1 ui-monospace, monospace; background: #061513; }
 
-/* Full-screen pet detail silhouette from the hand sketch */
-.sketch-pet-detail { position: absolute; z-index: 40; inset: 0; display: grid; grid-template-rows: auto minmax(0,1fr) auto; padding: var(--safe-top) 16px calc(var(--safe-bottom) + 16px); overflow: hidden; background: radial-gradient(circle at 76% 57%, color-mix(in srgb, var(--pet-accent) 13%, transparent), transparent 34%), #050705; animation: detailPageIn .22s ease-out; }
-@keyframes detailPageIn { from { opacity: 0; transform: translateX(10px); } }
-.sketch-pet-detail__close { position: absolute; z-index: 3; top: var(--safe-top); right: 14px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #334038; border-radius: 0; background: #090d0a; }
-.sketch-pet-detail > header { min-height: 112px; display: grid; align-content: center; padding-right: 52px; }
-.sketch-pet-detail > header small { color: var(--pet-accent); font: 800 8px/1 ui-monospace, monospace; letter-spacing: .13em; }
-.sketch-pet-detail > header h2 { width: fit-content; max-width: 95%; margin: 8px 0 0; padding: 10px 38px 10px 12px; font-size: clamp(24px, 8vw, 37px); line-height: .95; background: #e8eee9; color: #050705; clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 50%, calc(100% - 28px) 100%, 0 100%); }
-.sketch-pet-detail__body { position: relative; min-height: 0; border: 2px solid #303a32; overflow: hidden; }
-.sketch-detail-stats { position: absolute; z-index: 3; top: 8%; left: 12px; width: 44%; display: grid; gap: 15px; }
-.sketch-detail-stats > div { display: grid; grid-template-columns: 1fr auto; gap: 5px 8px; }
-.sketch-detail-stats span { display: flex; align-items: center; gap: 5px; color: #bac4bd; font: 850 9px/1 ui-monospace, monospace; }
-.sketch-detail-stats strong { color: var(--pet-accent); font: 950 12px/1 ui-monospace, monospace; }
-.sketch-detail-stats i { grid-column: 1/-1; height: 6px; border: 1px solid #48554c; transform: skewX(28deg); overflow: hidden; }
-.sketch-detail-stats b { display: block; height: 100%; background: var(--pet-accent); }
-.sketch-pet-detail blockquote { position: absolute; z-index: 4; top: 28%; right: 10px; width: 45%; margin: 0; padding: 13px; border: 2px solid var(--pet-accent); border-radius: 50%; background: #090d0a; color: #d8dfda; font-size: 10px; line-height: 1.5; text-align: center; }
-.sketch-detail-character { position: absolute; right: -20px; bottom: 5%; }
-.sketch-detail-character .nox-avatar { width: min(60vw, 270px); height: min(60vw, 270px); border: 2px solid var(--pet-accent); border-radius: 42% 42% 8% 42%; }
-.sketch-detail-skill { position: absolute; z-index: 5; left: 13px; bottom: 8%; width: 48%; display: grid; gap: 6px; padding: 10px; border-left: 3px solid var(--pet-accent); background: rgba(5,7,5,.82); }
-.sketch-detail-skill small { color: var(--pet-accent); font: 900 9px/1 ui-monospace, monospace; }
-.sketch-detail-skill strong { font-size: 10px; line-height: 1.5; }
-.sketch-detail-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; border: 0; border-radius: 0; background: var(--pet-accent); color: #001407; font: 950 12px/1 ui-monospace, monospace; }
-.sketch-detail-action.is-remove { border: 1px solid #425047; background: #101611; color: #d3dbd5; }
+/* Custom Hand-Drawn Styled Cyberpunk Scrollbar */
+.sketch-custom-scrollbar { display: flex; flex-direction: column; align-items: center; width: 18px; background: #070b08; border: 1px solid #212c24; }
+.sketch-scroll-arrow { display: grid; place-items: center; width: 100%; height: 18px; padding: 0; border: 0; background: #0c130e; color: #6e7f73; cursor: pointer; }
+.sketch-scroll-arrow:hover { color: var(--green); }
+.sketch-scroll-track { position: relative; flex: 1; width: 100%; background: #060907; overflow: hidden; }
+.sketch-scroll-thumb { position: absolute; left: 2px; right: 2px; height: 32px; background: var(--green); border-radius: 2px; box-shadow: 0 0 8px rgba(0,255,102,.55); cursor: pointer; transition: top .1s ease-out; }
+.sketch-thumb-grip { position: absolute; inset: 6px 2px; border-block: 1px solid #052611; background: repeating-linear-gradient(180deg, #052611 0 2px, transparent 2px 4px); }
 
-/* Trade and lost screens: visual asset routes rather than dashboard cards */
-.sketch-trade-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: 10px 0 14px; border-bottom: 2px solid #303a32; }
-.sketch-trade-tabs button { min-height: 58px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-bottom: 4px solid transparent; border-radius: 0; background: transparent; color: #647067; font: 900 11px/1 ui-monospace, monospace; }
-.sketch-trade-tabs button.is-active { border-bottom-color: var(--green); color: var(--green); background: rgba(0,255,102,.04); }
-.sketch-trade-list { position: relative; display: grid; gap: 11px; padding-bottom: 70px; }
-.sketch-trade-row { position: relative; display: grid; grid-template-columns: 43px 1fr; gap: 3px 9px; padding: 10px; border: 2px solid #303a32; background: #080b09; }
-.sketch-trade-status { grid-row: 1 / 3; align-self: center; display: grid; place-items: center; width: 39px; height: 39px; border: 2px solid var(--amber); border-radius: 50%; color: var(--amber); }
-.sketch-trade-row.is-accepted .sketch-trade-status { border-color: var(--green); color: var(--green); }
-.sketch-trade-row.is-rejected .sketch-trade-status { border-color: var(--red); color: var(--red); }
-.sketch-trade-user { display: flex; align-items: center; gap: 5px; min-width: 0; color: #aeb9b1; }
-.sketch-trade-user span { overflow: hidden; text-overflow: ellipsis; font: 850 8px/1 ui-monospace, monospace; }
-.sketch-trade-user small { margin-left: auto; color: #69756d; font-size: 7px; }
-.sketch-trade-assets { display: grid; grid-template-columns: 1fr 36px 1fr; align-items: center; gap: 3px; }
-.sketch-asset-disc { min-width: 0; min-height: 75px; display: grid; place-items: center; align-content: center; gap: 5px; border: 2px solid #3b493f; border-radius: 50%; background: #050705; color: var(--green); }
-.sketch-asset-disc--item { color: #9fe7ff; border-color: #315260; }
-.sketch-asset-disc small { width: 100%; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b4beb7; font: 750 6px/1 ui-monospace, monospace; text-align: center; }
-.sketch-exchange-arrow { display: grid; place-items: center; color: var(--green); }
-.sketch-trade-row footer { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.sketch-trade-row footer button { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid #344039; border-radius: 0; background: #0c110d; color: #a4afa7; font: 850 8px/1 ui-monospace, monospace; }
-.sketch-trade-row footer button:last-child { border-color: var(--green); color: var(--green); }
-.sketch-floating-plus { position: sticky; z-index: 4; bottom: 82px; grid-column: 1; justify-self: end; display: grid; place-items: center; width: 60px; height: 60px; margin: -42px 2px 0 0; border: 2px solid #001407; border-radius: 50%; background: var(--green); color: #001407; box-shadow: 4px 4px 0 #174425; }
-.sketch-floating-plus:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 #174425; }
-.sketch-lost-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-.sketch-lost-card { display: grid; grid-template-columns: 1fr 25px 1fr; align-items: center; justify-items: center; gap: 4px; min-width: 0; padding: 11px 7px; border: 2px solid #303a32; background: #080b09; }
-.sketch-lost-card .nox-avatar { width: 62px; height: 62px; border-radius: 50%; }
-.sketch-lost-card .nox-avatar__placeholder { display: none; }
-.sketch-lost-route { color: var(--red); }
-.sketch-lost-place { display: grid; place-items: center; width: 54px; height: 54px; border: 2px solid #526057; border-radius: 50%; color: #bac3bc; }
-.sketch-lost-card h3, .sketch-lost-card p, .sketch-lost-card > small { grid-column: 1/-1; max-width: 100%; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
-.sketch-lost-card h3 { margin-top: 5px; font: 900 9px/1 ui-monospace, monospace; }
-.sketch-lost-card p { color: var(--red); font: 800 8px/1 ui-monospace, monospace; }
-.sketch-lost-card > small { color: #68736b; font-size: 7px; }
+/* Weapon / Item Artwork SVG Illustration */
+.cyber-item-art { position: relative; display: grid; place-items: center; border: 2px solid #2d4538; border-radius: 50%; background: radial-gradient(circle, #081813 40%, #050705 90%); transition: transform .12s; }
+.cyber-item-art--md { width: clamp(58px, 18vw, 74px); height: clamp(58px, 18vw, 74px); }
+.cyber-item-art--hero { width: min(58vw, 240px); height: min(58vw, 240px); border-color: #35d9ff; box-shadow: 0 0 35px rgba(53,217,255,.2); }
+.cyber-item-art .item-svg { width: 75%; height: 75%; }
+.cyber-item-art__code { position: absolute; bottom: 3px; font: 900 6px/1 ui-monospace, monospace; color: #87998e; letter-spacing: .08em; }
+
+/* FULL-SCREEN DETAIL VIEW (Matching pet_detail_example.jpg & weapon_detail_example.jpg) */
+.sketch-fullscreen-detail { position: absolute; inset: 0; z-index: 70; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: max(16px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); background: rgba(4, 7, 5, 0.94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); animation: fullDetailIn .22s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto; scrollbar-width: none; }
+.sketch-fullscreen-detail::-webkit-scrollbar { display: none; }
+@keyframes fullDetailIn { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: scale(1); } }
+
+.sketch-fullscreen-detail--pet { background: radial-gradient(circle at 75% 60%, color-mix(in srgb, var(--pet-accent, #00ff66) 16%, transparent), #050806 72%); }
+.sketch-fullscreen-detail--weapon { background: radial-gradient(circle at 75% 60%, rgba(53,217,255,.16), #050806 72%); }
+
+/* Topbar: Title "標題" centered, Close "✕" at right */
+.sketch-fs-topbar { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-bottom: 6px; }
+.sketch-fs-title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font: 950 14px/1 ui-monospace, monospace; color: #bac8bf; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+.sketch-fs-close-btn { margin-left: auto; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #334438; border-radius: 0; background: #080f0b; color: #9aa89f; cursor: pointer; transition: color .15s, border-color .15s; }
+.sketch-fs-close-btn:hover { color: var(--green); border-color: var(--green); }
+
+/* Angled Name Banner with Chevrons: "名字 >>" */
+.sketch-fs-name-row { margin-bottom: 12px; }
+.sketch-name-banner { display: inline-flex; align-items: center; gap: 8px; padding: 8px 30px 8px 14px; background: #e8eee9; color: #050705; clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%); }
+.sketch-name-banner h2 { margin: 0; font: 950 clamp(22px, 6vw, 30px)/1 ui-monospace, monospace; letter-spacing: -.02em; }
+.sketch-banner-chevron { font: 950 20px/1 ui-monospace, monospace; color: #050705; letter-spacing: -2px; }
+.sketch-name-banner--item { background: #35d9ff; }
+
+/* Main Area: Full vertical expanse */
+.sketch-fs-main { position: relative; flex: 1; min-height: 320px; display: flex; flex-direction: column; justify-content: space-between; }
+
+/* Stats Column with Slanted Gauges & Blue "增加量" Callout */
+.sketch-fs-stats { position: relative; z-index: 4; width: 50%; display: grid; gap: 14px; margin-top: 10px; }
+.sketch-stat-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 6px; align-items: baseline; }
+.sketch-stat-label-wrap { display: flex; align-items: center; gap: 5px; }
+.sketch-stat-label { display: flex; align-items: center; gap: 4px; font: 850 10px/1 ui-monospace, monospace; color: #a4b3a8; }
+.sketch-stat-val { justify-self: end; font: 950 13px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); }
+.sketch-stat-bar-track { grid-column: 1 / -1; height: 6px; border: 1px solid #334438; transform: skewX(-20deg); overflow: hidden; background: #080f0b; }
+.sketch-stat-bar-fill { height: 100%; background: var(--pet-accent, #00ff66); transition: width .3s ease; }
+
+/* The handwritten style "增加量" annotation pointing to boosted stats */
+.sketch-increase-callout { color: #35d9ff; font: 950 8px/1 ui-monospace, monospace; padding: 1px 4px; border: 1px dashed #35d9ff; border-radius: 3px; background: rgba(53,217,255,.1); white-space: nowrap; animation: pulseCallout 1.8s ease-in-out infinite; }
+@keyframes pulseCallout { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+.is-bonus-fill { background: #35d9ff !important; box-shadow: 0 0 8px rgba(53,217,255,.6); }
+
+/* The Speech Bubble (幹話氣泡) with Pointer Tail */
+.sketch-speech-bubble { position: absolute; z-index: 6; top: 0; right: 4px; width: 45%; padding: 12px 14px; border: 2px solid var(--pet-accent, #00ff66); border-radius: 14px; background: #08100b; color: #e1ebe3; box-shadow: 0 6px 24px rgba(0,0,0,.65); }
+.sketch-speech-bubble--item { border-color: #35d9ff; background: #081218; }
+.sketch-speech-bubble p { margin: 0; font: 750 10px/1.45 ui-monospace, monospace; text-align: center; }
+.sketch-bubble-tail { position: absolute; bottom: -11px; right: 28px; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 11px solid var(--pet-accent, #00ff66); }
+.sketch-bubble-tail::after { content: ''; position: absolute; bottom: 2px; left: -7px; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid #08100b; }
+.sketch-bubble-tail--item { border-top-color: #35d9ff; }
+.sketch-bubble-tail--item::after { border-top-color: #081218; }
+
+/* Large Character/Weapon Art Display */
+.sketch-fs-character { position: absolute; right: -12px; bottom: 8px; z-index: 2; pointer-events: none; }
+.sketch-fs-character .nox-avatar { width: min(58vw, 250px); height: min(58vw, 250px); border: 2px solid var(--pet-accent, #00ff66); border-radius: 50%; box-shadow: 0 0 35px color-mix(in srgb, var(--pet-accent, #00ff66) 30%, transparent); }
+
+/* Skill & Special Description at Bottom-Left */
+.sketch-fs-skill { position: relative; z-index: 5; margin-top: auto; width: 54%; display: grid; gap: 4px; padding: 10px 12px; border-left: 3px solid var(--pet-accent, #00ff66); background: rgba(5,8,6,.88); }
+.sketch-fs-skill-title { font: 900 9px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); letter-spacing: .08em; }
+.sketch-fs-skill-desc { margin: 0; font: 750 9px/1.45 ui-monospace, monospace; color: #cfd8d1; }
+
+/* Bottom Action Footer */
+.sketch-fs-footer { margin-top: 14px; display: grid; gap: 8px; z-index: 10; }
+.sketch-fs-action-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border: 0; border-radius: 0; background: var(--pet-accent, #00ff66); color: #001407; font: 950 13px/1 ui-monospace, monospace; cursor: pointer; transition: filter .15s; }
+.sketch-fs-action-btn:hover { filter: brightness(1.08); }
+.sketch-fs-action-btn.is-remove { background: #131b15; border: 1px solid #36443a; color: #c4d0c7; }
+.sketch-fs-action-btn--weapon { background: #35d9ff; color: #041b24; }
+
+.sketch-equip-picker-line { display: grid; gap: 6px; }
+.sketch-equip-picker-line small { font: 850 8px/1 ui-monospace, monospace; color: #85968b; }
+.sketch-target-pets { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.sketch-target-btn { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid #2b392f; border-radius: 4px; background: #0a110d; color: #9ab0a1; font: 850 8px/1 ui-monospace, monospace; cursor: pointer; }
+.sketch-target-btn.is-selected { border-color: #35d9ff; background: #071720; color: #35d9ff; }
+.sketch-target-btn.is-current { border-color: var(--green); }
+
+
+
+/* ==========================================================================
+   Trade and Lost Screens (Faithfully matching trade_example.jpg & mourn_example.jpg)
+   ========================================================================== */
+
+/* Screen Topbar (Centered title matching "標題" in sketch) */
+.sketch-screen-topbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0 12px;
+}
+.sketch-screen-title {
+  font: 950 18px/1.2 ui-monospace, 'Courier New', monospace;
+  letter-spacing: 0.16em;
+  color: #d8e5dc;
+  text-shadow: 0 0 12px rgba(0,255,102,0.25);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* Angled Tabs matching sketch: Active has angled border /  \, Inactive has NO border */
+.sketch-trade-tabs-strip {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 18px;
+  border-bottom: 2px solid #28352b;
+  position: relative;
+}
+.sketch-trade-tab-btn {
+  position: relative;
+  flex: 1;
+  max-width: 170px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  color: #68796d;
+  cursor: pointer;
+  border: none;
+  display: grid;
+  place-items: center;
+  font: 900 12px/1 ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sketch-trade-tab-btn .sketch-tab-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+  transition: color 0.18s;
+}
+/* Inactive tab: Absolutely NO border! */
+.sketch-trade-tab-btn.is-inactive {
+  opacity: 0.55;
+}
+.sketch-trade-tab-btn.is-inactive:hover {
+  opacity: 0.9;
+  color: #a4b4a9;
+}
+/* Active tab: Angled folder trapezoid with bold border and glow! */
+.sketch-trade-tab-btn.is-active {
+  color: var(--green);
+  opacity: 1;
+}
+.sketch-trade-tab-btn.is-active::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -2px 0;
+  background: #0b150e;
+  border: 2px solid var(--green);
+  border-bottom: 2px solid #0b150e;
+  clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+  z-index: 1;
+  box-shadow: 0 -3px 12px rgba(0,255,102,0.18);
+}
+
+/* ==========================================================================
+   Market View: matching trade_example.jpg
+   ========================================================================== */
+.sketch-trade-list-container {
+  position: relative;
+  padding-bottom: 84px;
+}
+.sketch-trade-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sketch-trade-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid #28362d;
+  border-radius: 16px;
+  background: #080d0a;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: border-color 0.2s, transform 0.15s;
+}
+.sketch-trade-card:hover {
+  border-color: #3b4e41;
+}
+.sketch-trade-card.is-accepted {
+  border-color: rgba(0,255,102,0.35);
+  background: linear-gradient(135deg, rgba(0,255,102,0.04) 0%, #080d0a 100%);
+}
+.sketch-trade-card.is-rejected {
+  border-color: rgba(255,42,85,0.25);
+  background: linear-gradient(135deg, rgba(255,42,85,0.03) 0%, #080d0a 100%);
+}
+
+/* Left Status Disc */
+.sketch-trade-actor-col {
+  display: grid;
+  place-items: center;
+}
+.sketch-trade-status-disc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid #3e4e43;
+  background: #070a08;
+  color: #9cb0a2;
+}
+.sketch-trade-status-disc.is-accepted {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 10px rgba(0,255,102,0.35);
+}
+.sketch-trade-status-disc.is-rejected {
+  border-color: var(--red);
+  color: var(--red);
+  box-shadow: 0 0 10px rgba(255,42,85,0.3);
+}
+.sketch-trade-status-disc.is-pending {
+  border-color: #35d9ff;
+  color: #35d9ff;
+  box-shadow: 0 0 8px rgba(53,217,255,0.25);
+}
+
+/* Offer Group (Pet + Weapon) */
+.sketch-trade-offer-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.sketch-trade-offer-visuals {
+  position: relative;
+  display: inline-block;
+}
+.sketch-trade-pet-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #2f3e34;
+  background: #040805;
+}
+.sketch-trade-pet-avatar .nox-avatar {
+  width: 100%;
+  height: 100%;
+}
+.sketch-trade-pet-avatar .nox-avatar__placeholder {
+  display: none;
+}
+.sketch-trade-weapon-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #081720;
+  border: 1.5px solid #35d9ff;
+  color: #35d9ff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 6px rgba(53,217,255,0.4);
+}
+
+/* Center Arrow <=> */
+.sketch-trade-arrow-col {
+  display: grid;
+  place-items: center;
+  color: var(--green);
+  padding: 0 2px;
+}
+.sketch-trade-arrow-icon {
+  filter: drop-shadow(0 0 6px rgba(0,255,102,0.4));
+}
+
+/* Request Group (Item x Quantity) */
+.sketch-trade-req-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.sketch-trade-req-visuals {
+  position: relative;
+  display: inline-block;
+}
+.sketch-trade-gem-disc {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #081512;
+  border: 2px solid #2e4d3c;
+  color: var(--green);
+  display: grid;
+  place-items: center;
+}
+.sketch-trade-qty-pill {
+  position: absolute;
+  bottom: -4px;
+  right: -8px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: #00ff66;
+  color: #030804;
+  font: 900 9px/1.1 ui-monospace, monospace;
+  box-shadow: 0 0 6px rgba(0,255,102,0.5);
+}
+
+/* Labels below discs */
+.sketch-trade-label-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+.sketch-trade-asset-txt {
+  font: 850 10px/1 ui-monospace, monospace;
+  color: #d4e0d7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+.sketch-trade-sub-txt {
+  font: 750 8px/1 ui-monospace, monospace;
+  color: #728276;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pending actions */
+.sketch-trade-card__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #1a261e;
+}
+.sketch-trade-btn {
+  flex: 1;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid #324437;
+  background: #0b120d;
+  font: 850 10px/1 ui-monospace, monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sketch-trade-btn--reject {
+  color: #ff5f7a;
+  border-color: rgba(255,42,85,0.4);
+}
+.sketch-trade-btn--reject:hover {
+  background: rgba(255,42,85,0.15);
+  border-color: #ff2a55;
+}
+.sketch-trade-btn--accept {
+  color: var(--green);
+  border-color: rgba(0,255,102,0.4);
+}
+.sketch-trade-btn--accept:hover {
+  background: rgba(0,255,102,0.15);
+  border-color: #00ff66;
+}
+
+/* 3D Isometric Raised FAB (+) matching trade_example.jpg bottom right */
+.sketch-3d-fab-btn {
+  position: fixed;
+  right: max(16px, calc((100vw - 480px)/2 + 16px));
+  bottom: calc(var(--safe-bottom) + 84px);
+  z-index: 50;
+  width: 66px;
+  height: 52px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sketch-3d-fab-btn:hover {
+  transform: translateY(-2px);
+}
+.sketch-3d-fab-btn:active {
+  transform: translateY(3px);
+}
+.sketch-3d-fab-surface {
+  position: absolute;
+  inset: 0 0 8px 0;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #113821 0%, #0a2415 100%);
+  border: 2px solid var(--green);
+  color: var(--green);
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  box-shadow: 0 0 14px rgba(0,255,102,0.35);
+  transition: background 0.15s;
+}
+.sketch-3d-fab-btn:hover .sketch-3d-fab-surface {
+  background: linear-gradient(145deg, #16472a 0%, #0d301c 100%);
+}
+.sketch-3d-fab-shadow {
+  position: absolute;
+  inset: 8px 0 0 0;
+  border-radius: 12px;
+  background: #031409;
+  border: 2px solid #00501f;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   Mourn / Lost View: 2-Column Grid matching mourn_example.jpg
+   ========================================================================== */
+.sketch-mourn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-bottom: 40px;
+}
+.sketch-mourn-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 8px;
+  border: 2px solid #29382e;
+  border-radius: 16px;
+  background: #080d0a;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  transition: border-color 0.2s, transform 0.15s;
+}
+.sketch-mourn-card:hover {
+  border-color: #3b5243;
+}
+.sketch-mourn-card.is-claimed {
+  border-color: rgba(53,217,255,0.25);
+  background: linear-gradient(160deg, rgba(53,217,255,0.03) 0%, #080d0a 100%);
+}
+.sketch-mourn-card.is-in_pool {
+  border-color: rgba(255,42,85,0.25);
+  background: linear-gradient(160deg, rgba(255,42,85,0.03) 0%, #080d0a 100%);
+}
+
+.sketch-mourn-trio {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.sketch-mourn-disc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid #334438;
+  background: #050806;
+}
+.sketch-mourn-disc--asset {
+  overflow: hidden;
+}
+.sketch-mourn-disc--asset .nox-avatar {
+  width: 100%;
+  height: 100%;
+}
+.sketch-mourn-disc--asset .nox-avatar__placeholder {
+  display: none;
+}
+.sketch-mourn-weapon-icon {
+  color: #35d9ff;
+  display: grid;
+  place-items: center;
+}
+.sketch-mourn-tombstone {
+  color: #ff3b60;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 0 6px rgba(255,59,96,0.5));
+}
+.sketch-mourn-disc--dest.is-claimed {
+  border-color: #35d9ff;
+  color: #35d9ff;
+  box-shadow: 0 0 8px rgba(53,217,255,0.3);
+}
+.sketch-mourn-disc--dest.is-in_pool {
+  border-color: #ff5f7a;
+  color: #ff5f7a;
+  box-shadow: 0 0 8px rgba(255,95,122,0.3);
+}
+
+.sketch-mourn-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  text-align: center;
+}
+.sketch-mourn-title {
+  margin: 0;
+  font: 900 11px/1.2 ui-monospace, monospace;
+  color: #dbe6df;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.sketch-mourn-dest-label {
+  margin: 0;
+  font: 800 9px/1.2 ui-monospace, monospace;
+  color: #9cb3a4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.sketch-mourn-card.is-claimed .sketch-mourn-dest-label {
+  color: #35d9ff;
+}
+.sketch-mourn-card.is-in_pool .sketch-mourn-dest-label {
+  color: #ff6a85;
+}
+.sketch-mourn-time {
+  font: 700 8px/1 ui-monospace, monospace;
+  color: #637569;
+}
+
 .sketch-create-trade { border-radius: 0; border-color: #334039; background: #080b09; }
 .sketch-create-trade > small { color: var(--green); font: 850 8px/1 ui-monospace, monospace; }
 

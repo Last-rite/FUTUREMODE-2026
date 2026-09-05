@@ -2,14 +2,19 @@ import { createDemoDatabase } from './fixtures.js';
 
 // TEST BACKEND ONLY. This async localStorage adapter mirrors a future API
 // boundary so screens can later swap to HTTP without changing their UI logic.
-const DB_KEY = 'futuremode_demo_backend_v1';
+const DB_KEY = 'futuremode_demo_backend_v2';
 const wait = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 const DEMO_PASSWORD = 'demo1234';
 
 function readDb() {
   try {
     const saved = localStorage.getItem(DB_KEY);
-    return saved ? JSON.parse(saved) : createDemoDatabase();
+    if (!saved) {
+      const fresh = createDemoDatabase();
+      writeDb(fresh);
+      return fresh;
+    }
+    return JSON.parse(saved);
   } catch {
     return createDemoDatabase();
   }
@@ -41,12 +46,39 @@ export const demoApi = {
     }
     return writeDb(db);
   },
+  async equipItem(petId, itemId) {
+    await wait(120);
+    const db = readDb();
+    const pet = db.pets.find((entry) => entry.id === petId);
+    if (!pet) throw new Error('找不到此 NOXCAT');
+    if (pet.equipped === itemId) {
+      pet.equipped = null;
+    } else {
+      // Unequip if another pet has it
+      db.pets.forEach((p) => {
+        if (p.equipped === itemId) p.equipped = null;
+      });
+      pet.equipped = itemId;
+    }
+    return writeDb(db);
+  },
   async createTrade({ playerId, offeredPetId, requestedItemId }) {
     await wait(260);
     const db = readDb();
     const pet = db.pets.find((entry) => entry.id === offeredPetId);
     const item = db.items.find((entry) => entry.id === requestedItemId);
-    db.trades.unshift({ id: `trade-${Date.now()}`, from: playerId.trim().toUpperCase(), offer: pet?.name || 'NOXCAT', request: item?.name || '道具', status: 'pending', time: '剛剛' });
+    const equippedItem = pet?.equipped ? db.items.find((entry) => entry.id === pet.equipped) : null;
+    db.trades.unshift({
+      id: `trade-${Date.now()}`,
+      from: playerId.trim().toUpperCase(),
+      offer: pet?.name || 'NOXCAT',
+      offerPetCode: pet?.code || '01',
+      offerWeapon: equippedItem?.name || '像素短劍',
+      request: item?.name || '道具',
+      requestQty: 2,
+      status: 'pending',
+      time: '剛剛',
+    });
     return writeDb(db);
   },
   async resolveTrade(tradeId, status) {

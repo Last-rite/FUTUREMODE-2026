@@ -38,6 +38,11 @@ export default function App() {
     setData(nextData);
   };
 
+  const handleEquipItem = async (petId, itemId) => {
+    const nextData = await demoApi.equipItem(petId, itemId);
+    setData(nextData);
+  };
+
   const handleCreateTrade = async (trade) => {
     const nextData = await demoApi.createTrade(trade);
     setData(nextData);
@@ -65,7 +70,7 @@ export default function App() {
       <div className="phone-shell">
         <div className="view-transition" key={view}>
           {view === 'home' && <LobbyView user={currentUser} data={data} onStartGame={(dungeon) => { setActiveDungeon(dungeon); setView('game'); }} onSignOut={handleSignOut} onReset={handleReset} />}
-          {view === 'collection' && <CollectionView data={data} onToggleParty={handleToggleParty} onMessage={showMessage} />}
+          {view === 'collection' && <CollectionView data={data} onToggleParty={handleToggleParty} onEquipItem={handleEquipItem} onMessage={showMessage} />}
           {view === 'trade' && <TradeView data={data} onCreateTrade={handleCreateTrade} onResolveTrade={handleResolveTrade} onMessage={showMessage} />}
         </div>
         <BottomNav active={view} onNavigate={setView} />

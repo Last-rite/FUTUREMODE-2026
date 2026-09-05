@@ -1,10 +1,10 @@
 import React from 'react';
-import { Cat, House, Repeat2 } from 'lucide-react';
+import { Cat, HandCoins, House } from 'lucide-react';
 
 const ITEMS = [
   { id: 'collection', label: '收藏', icon: Cat },
   { id: 'home', label: '主畫面', icon: House },
-  { id: 'trade', label: '交易', icon: Repeat2 },
+  { id: 'trade', label: '交易', icon: HandCoins },
 ];
 
 export default function BottomNav({ active, onNavigate }) {
