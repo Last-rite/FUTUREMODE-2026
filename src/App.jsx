@@ -6,6 +6,7 @@ import TradeView from './components/TradeView.jsx';
 import GameView from './components/GameView.jsx';
 import BottomNav from './components/BottomNav.jsx';
 import Toast from './components/Toast.jsx';
+import BattleTransitionOverlay from './components/BattleTransitionOverlay.jsx';
 import { demoApi } from './demo-backend/api.js';
 import { getAuthCookie, setAuthCookie, clearAuthCookie } from './utils/cookieStorage.js';
 
@@ -14,6 +15,7 @@ export default function App() {
   const [data, setData] = useState(null);
   const [view, setView] = useState('loading');
   const [activeDungeon, setActiveDungeon] = useState(null);
+  const [isEnteringBattle, setIsEnteringBattle] = useState(false);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
@@ -60,22 +62,68 @@ export default function App() {
     showMessage('測試資料已重置');
   };
 
+  const handleStartGame = (dungeon) => {
+    setActiveDungeon(dungeon);
+    setIsEnteringBattle(true);
+    // Switch to game screen mid-transition (220ms) behind closed shutters
+    setTimeout(() => {
+      setView('game');
+    }, 220);
+    // Complete 0.5s transition cleanly
+    setTimeout(() => {
+      setIsEnteringBattle(false);
+    }, 500);
+  };
+
   if (view === 'loading') return <div className="boot-screen"><span className="boot-logo">FM</span><span>LOADING LOCAL NODE</span><div className="boot-line"><i /></div></div>;
   if (!currentUser || view === 'auth') return <AuthModal onLoginSuccess={handleLoginSuccess} />;
   if (!data) return null;
-  if (view === 'game') return <GameView user={currentUser} dungeon={activeDungeon} onExitToLobby={() => setView('home')} onBattleComplete={(result) => demoApi.recordBattleResult(result, activeDungeon?.id)} />;
 
   return (
-    <div className="app-viewport">
-      <div className="phone-shell">
-        <div className="view-transition" key={view}>
-          {view === 'home' && <LobbyView user={currentUser} data={data} onStartGame={(dungeon) => { setActiveDungeon(dungeon); setView('game'); }} onSignOut={handleSignOut} onReset={handleReset} />}
-          {view === 'collection' && <CollectionView data={data} onToggleParty={handleToggleParty} onEquipItem={handleEquipItem} onMessage={showMessage} />}
-          {view === 'trade' && <TradeView data={data} onCreateTrade={handleCreateTrade} onResolveTrade={handleResolveTrade} onMessage={showMessage} />}
+    <>
+      {view === 'game' ? (
+        <GameView
+          user={currentUser}
+          dungeon={activeDungeon}
+          onExitToLobby={() => setView('home')}
+          onBattleComplete={(result) => demoApi.recordBattleResult(result, activeDungeon?.id)}
+        />
+      ) : (
+        <div className="app-viewport">
+          <div className="phone-shell">
+            <div className="view-transition" key={view}>
+              {view === 'home' && (
+                <LobbyView
+                  user={currentUser}
+                  data={data}
+                  onStartGame={handleStartGame}
+                  onSignOut={handleSignOut}
+                  onReset={handleReset}
+                />
+              )}
+              {view === 'collection' && (
+                <CollectionView
+                  data={data}
+                  onToggleParty={handleToggleParty}
+                  onEquipItem={handleEquipItem}
+                  onMessage={showMessage}
+                />
+              )}
+              {view === 'trade' && (
+                <TradeView
+                  data={data}
+                  onCreateTrade={handleCreateTrade}
+                  onResolveTrade={handleResolveTrade}
+                  onMessage={showMessage}
+                />
+              )}
+            </div>
+            <BottomNav active={view} onNavigate={setView} />
+            {toast && <Toast key={toast.key} message={toast.message} tone={toast.tone} onDone={() => setToast(null)} />}
+          </div>
         </div>
-        <BottomNav active={view} onNavigate={setView} />
-        {toast && <Toast key={toast.key} message={toast.message} tone={toast.tone} onDone={() => setToast(null)} />}
-      </div>
-    </div>
+      )}
+      {isEnteringBattle && <BattleTransitionOverlay dungeon={activeDungeon} />}
+    </>
   );
 }

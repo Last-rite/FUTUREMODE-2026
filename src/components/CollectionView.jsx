@@ -42,7 +42,6 @@ export function ItemIllustration({ item, size = 'lg' }) {
         {isShield && <img src={shieldImg} alt={item?.name || '盾'} className="sketch-slot-weapon-full-img pixelated" />}
         {isHome && <img src={gemImg} alt={item?.name || '寶石'} className="sketch-slot-weapon-full-img pixelated" />}
         {!isBlade && !isShield && !isHome && <Gem size={52} className="text-[#35d9ff]" />}
-        <span className="sketch-slot-bonus-tag">{item?.bonus}</span>
       </div>
     );
   }
@@ -465,6 +464,7 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
             const pet = team[slot];
             const item = data.items.find((entry) => entry.id === pet?.equipped);
             const isSlotDragOver = dragOverSlot === slot;
+            const slotName = isPetMode ? (pet ? pet.name : '未配置') : (item ? item.name : (pet ? '未裝備' : '空位'));
 
             return (
               <div
@@ -575,6 +575,14 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
                     <>{item ? <ItemIllustration item={item} size="sm" /> : <Plus size={12} />}</>
                   )}
                 </button>
+
+                {/* Name displayed outside the circle frame */}
+                <div
+                  className={`sketch-slot-name-tag ${(isPetMode ? !pet : !item) ? 'is-empty' : ''}`}
+                  title={slotName}
+                >
+                  {slotName}
+                </div>
               </div>
             );
           })}
@@ -757,21 +765,24 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               })}
             </div>
 
-            {/* Speech Bubble: "每隻獨一無二的幹話" with pointer tail pointing to character */}
-            <div className="sketch-speech-bubble">
-              <p>「{selectedPet.quote}」</p>
-              <span className="sketch-bubble-tail" />
-            </div>
-
-            {/* Large Character Art on bottom right */}
-            <div className="sketch-fs-character">
-              <NoxPlaceholder pet={selectedPet} size="hero" />
-            </div>
-
             {/* Special Skill and Description on bottom left */}
             <div className="sketch-fs-skill">
               <span className="sketch-fs-skill-title">特殊技能</span>
               <p className="sketch-fs-skill-desc">{selectedPet.skill}</p>
+            </div>
+
+            {/* Right Hero Column: Speech Bubble positioned directly above Character Art */}
+            <div className="sketch-fs-hero-col">
+              {/* Speech Bubble: "每隻獨一無二的幹話" centered above character with downward tail */}
+              <div className="sketch-speech-bubble">
+                <p>「{selectedPet.quote}」</p>
+                <span className="sketch-bubble-tail" />
+              </div>
+
+              {/* Large Character Art */}
+              <div className="sketch-fs-character">
+                <NoxPlaceholder pet={selectedPet} size="hero" />
+              </div>
             </div>
           </div>
         </section>
@@ -844,23 +855,26 @@ export default function CollectionView({ data, onToggleParty, onEquipItem, onMes
               })}
             </div>
 
-            {/* Speech Bubble: "每隻獨一無二的幹話" with tail pointing to weapon */}
-            <div className="sketch-speech-bubble sketch-speech-bubble--item">
-              <p>「{selectedItem.quote || '只要砍得夠快，敵人就追不上。'}」</p>
-              <span className="sketch-bubble-tail sketch-bubble-tail--item" />
-            </div>
-
-            {/* Big Weapon Art on bottom right */}
-            <div className="sketch-fs-character sketch-fs-weapon-art">
-              <ItemIllustration item={selectedItem} size="hero" />
-            </div>
-
             {/* Special Effect & Description on bottom left */}
             <div className="sketch-fs-skill">
               <span className="sketch-fs-skill-title">特殊效果</span>
               <p className="sketch-fs-skill-desc">
                 {selectedItem.skill || `${selectedItem.bonus}。裝備後於戰鬥中提供額外戰力支援。`}
               </p>
+            </div>
+
+            {/* Right Hero Column: Speech Bubble positioned directly above Weapon Art */}
+            <div className="sketch-fs-hero-col">
+              {/* Speech Bubble: centered above weapon with downward tail */}
+              <div className="sketch-speech-bubble sketch-speech-bubble--item">
+                <p>「{selectedItem.quote || '只要砍得夠快，敵人就追不上。'}」</p>
+                <span className="sketch-bubble-tail sketch-bubble-tail--item" />
+              </div>
+
+              {/* Big Weapon Art */}
+              <div className="sketch-fs-character sketch-fs-weapon-art">
+                <ItemIllustration item={selectedItem} size="hero" />
+              </div>
             </div>
           </div>
         </section>

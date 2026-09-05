@@ -238,8 +238,8 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .sketch-anim-swap-btn:hover { border-color: var(--green); box-shadow: 0 0 8px rgba(0,255,102,.3); }
 
 /* Slots Container & Morphing Circles with Corner-Anchored Pivots */
-.sketch-loadout__slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; min-height: 145px; }
-.sketch-loadout__slot { position: relative; width: clamp(88px, 26vw, 110px); height: 110px; transition: transform .2s ease, outline-color .2s ease; border-radius: 12px; }
+.sketch-loadout__slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; min-height: 155px; }
+.sketch-loadout__slot { position: relative; width: clamp(88px, 26vw, 110px); height: 124px; transition: transform .2s ease, outline-color .2s ease; border-radius: 12px; }
 .sketch-loadout__slot:nth-child(2) { transform: translateY(-8px); }
 .sketch-loadout__slot.is-drop-target { outline: 2px dashed rgba(0, 255, 102, 0.45); outline-offset: 4px; }
 .sketch-loadout--weapon-mode .sketch-loadout__slot.is-drop-target { outline: 2px dashed rgba(53, 217, 255, 0.45); }
@@ -261,12 +261,12 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .slot-morph-node { position: absolute; display: grid; place-items: center; border-radius: 50%; aspect-ratio: 1 / 1; flex-shrink: 0; padding: 0; cursor: pointer; transition: width .36s cubic-bezier(0.34, 1.56, 0.64, 1), height .36s cubic-bezier(0.34, 1.56, 0.64, 1), bottom .36s cubic-bezier(0.34, 1.56, 0.64, 1), right .36s cubic-bezier(0.34, 1.56, 0.64, 1), left .36s cubic-bezier(0.34, 1.56, 0.64, 1), border-color .25s, box-shadow .25s; }
 
 /* Pet Circle: Pivots from bottom-left corner */
-.slot-morph-node--pet { bottom: 8px; left: 6px; transform-origin: bottom left; }
-.slot-morph-node--pet.is-secondary { bottom: 0px; left: -2px; }
+.slot-morph-node--pet { bottom: 20px; left: 6px; transform-origin: bottom left; }
+.slot-morph-node--pet.is-secondary { bottom: 14px; left: -2px; }
 
 /* Weapon Circle: When secondary, tucked into outer corner */
-.slot-morph-node--weapon { bottom: 8px; right: 6px; transform-origin: bottom right; }
-.slot-morph-node--weapon.is-secondary { bottom: 0px; right: -2px; }
+.slot-morph-node--weapon { bottom: 20px; right: 6px; transform-origin: bottom right; }
+.slot-morph-node--weapon.is-secondary { bottom: 14px; right: -2px; }
 
 /* Primary Large Circle State */
 .slot-morph-node.is-primary { width: clamp(80px, 24vw, 96px); height: clamp(80px, 24vw, 96px); aspect-ratio: 1 / 1; flex-shrink: 0; z-index: 2; border: 2px solid #344039; background: #070a08; }
@@ -274,6 +274,36 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .slot-morph-node--weapon.is-primary.is-filled { border-color: #35d9ff; box-shadow: 0 0 0 4px #050705, 0 0 0 6px rgba(53,217,255,.35); background: radial-gradient(circle, #091c28 40%, #05090e 92%); }
 .slot-morph-node.is-primary:active { filter: brightness(1.1); }
 .slot-morph-node .nox-avatar { width: 100%; height: 100%; aspect-ratio: 1 / 1; border: 0; border-radius: 50%; }
+
+/* Name Tag Displayed Outside the Circle Thumbnail Frame */
+.sketch-slot-name-tag {
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  text-align: center;
+  font-family: ui-monospace, 'Impact', sans-serif;
+  font-weight: 850;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #cfdcd2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95);
+  z-index: 10;
+}
+.sketch-loadout--weapon-mode .sketch-slot-name-tag {
+  color: #92e5f8;
+}
+.sketch-slot-name-tag.is-empty {
+  color: #435449;
+  font-weight: 700;
+  font-size: 10px;
+}
 
 /* Solid textured number without circular frame */
 .sketch-slot-idx {
@@ -440,23 +470,72 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 @keyframes pulseCallout { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
 .is-bonus-fill { background: #35d9ff !important; box-shadow: 0 0 8px rgba(53,217,255,.6); }
 
-/* The Speech Bubble (幹話氣泡) with Pointer Tail */
-.sketch-speech-bubble { position: absolute; z-index: 6; top: 0; right: 4px; width: 45%; padding: 12px 14px; border: 2px solid var(--pet-accent, #00ff66); border-radius: 14px; background: #08100b; color: #e1ebe3; box-shadow: 0 6px 24px rgba(0,0,0,.65); }
+/* Hero Column on Right in Detail Views (Speech bubble directly above Art) */
+.sketch-fs-hero-col {
+  position: absolute;
+  right: 0;
+  bottom: 12px;
+  width: min(50vw, 230px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* The Speech Bubble (幹話氣泡) directly above Character/Weapon with Downward Centered Pointer Tail */
+.sketch-speech-bubble {
+  position: relative;
+  z-index: 6;
+  width: 95%;
+  padding: 10px 12px;
+  border: 2px solid var(--pet-accent, #00ff66);
+  border-radius: 13px;
+  background: #08100b;
+  color: #e1ebe3;
+  box-shadow: 0 6px 20px rgba(0,0,0,.65);
+  margin-bottom: 8px;
+  pointer-events: auto;
+}
 .sketch-speech-bubble--item { border-color: #35d9ff; background: #081218; }
-.sketch-speech-bubble p { margin: 0; font: 750 10px/1.45 ui-monospace, monospace; text-align: center; }
-.sketch-bubble-tail { position: absolute; bottom: -11px; right: 28px; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 11px solid var(--pet-accent, #00ff66); }
-.sketch-bubble-tail::after { content: ''; position: absolute; bottom: 2px; left: -7px; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid #08100b; }
+.sketch-speech-bubble p { margin: 0; font: 750 10.5px/1.45 ui-monospace, monospace; text-align: center; }
+.sketch-bubble-tail {
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 11px solid var(--pet-accent, #00ff66);
+}
+.sketch-bubble-tail::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: -7px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid #08100b;
+}
 .sketch-bubble-tail--item { border-top-color: #35d9ff; }
 .sketch-bubble-tail--item::after { border-top-color: #081218; }
 
 /* Large Character/Weapon Art Display in Detail Views (Borderless matching sketches) */
-.sketch-fs-character { position: absolute; right: -8px; bottom: 8px; z-index: 2; pointer-events: none; display: grid; place-items: center; }
-.sketch-fs-character .nox-avatar { width: min(60vw, 250px); height: min(60vw, 250px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
-.sketch-fs-character .nox-avatar svg { width: min(52vw, 210px); height: min(52vw, 210px); color: var(--pet-accent, #00ff66); filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 50%, transparent)); }
+.sketch-fs-character {
+  position: relative;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.sketch-fs-character .nox-avatar { width: min(48vw, 210px); height: min(48vw, 210px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.sketch-fs-character .nox-avatar svg { width: min(42vw, 185px); height: min(42vw, 185px); color: var(--pet-accent, #00ff66); filter: drop-shadow(0 0 24px color-mix(in srgb, var(--pet-accent, #00ff66) 50%, transparent)); }
 .sketch-fs-character .nox-avatar .nox-avatar__scan { display: none; }
 .sketch-fs-character .nox-avatar .nox-avatar__placeholder { display: none; }
-.sketch-fs-character .nox-avatar .nox-avatar__code { position: absolute; bottom: 4px; right: 20px; font: 900 10px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); letter-spacing: .1em; opacity: 0.6; }
-.sketch-fs-weapon-art .cyber-item-art { width: min(60vw, 250px); height: min(60vw, 250px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.sketch-fs-character .nox-avatar .nox-avatar__code { position: absolute; bottom: 4px; right: 16px; font: 900 10px/1 ui-monospace, monospace; color: var(--pet-accent, #00ff66); letter-spacing: .1em; opacity: 0.6; }
+.sketch-fs-weapon-art .cyber-item-art { width: min(48vw, 210px); height: min(48vw, 210px); border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
 .sketch-fs-weapon-art .cyber-item-art .item-img { width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(0 0 26px rgba(53, 217, 255, 0.5)); }
 
 /* Skill & Special Description at Bottom-Left */
@@ -1091,3 +1170,190 @@ canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 .auth-visual { background: radial-gradient(circle, rgba(0,255,102,.13), transparent 54%); }
 .auth-core { border-radius: 50%; }
 @media (max-width: 360px) { .sketch-vault-grid { gap-inline: 4px; } .sketch-vault-token .nox-avatar, .sketch-item-token { width: 58px; height: 58px; } .sketch-loadout__slot > button { width: 78px; } }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   0.5s CYBER BATTLE TRANSITION OVERLAY
+   ════════════════════════════════════════════════════════════════════════════ */
+.battle-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Shutters closing from top and bottom */
+.battle-shutter {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 52%;
+  z-index: 2;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
+}
+
+.battle-shutter--top {
+  top: 0;
+  background: linear-gradient(180deg, #020504 0%, #060e0a 85%, #081a12 100%);
+  border-bottom: 3px solid #00ff66;
+  box-shadow: 0 4px 25px rgba(0, 255, 102, 0.45);
+  animation: shutterTop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+.battle-shutter--bottom {
+  bottom: 0;
+  background: linear-gradient(0deg, #020504 0%, #060e0a 85%, #081720 100%);
+  border-top: 3px solid #35d9ff;
+  box-shadow: 0 -4px 25px rgba(53, 217, 255, 0.45);
+  animation: shutterBottom 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes shutterTop {
+  0% { transform: translateY(-100%); }
+  35% { transform: translateY(0); }
+  60% { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+@keyframes shutterBottom {
+  0% { transform: translateY(100%); }
+  35% { transform: translateY(0); }
+  60% { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
+.battle-shutter-stripe {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.08) 10px,
+    rgba(255, 255, 255, 0.08) 20px
+  );
+}
+.battle-shutter--top .battle-shutter-stripe { bottom: 0; }
+.battle-shutter--bottom .battle-shutter-stripe { top: 0; }
+
+/* Glowing speedlines slashing diagonally */
+.battle-speedlines {
+  position: absolute;
+  inset: -50px;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.battle-speedline {
+  position: absolute;
+  height: 3px;
+  width: 150%;
+  background: linear-gradient(90deg, transparent, #00ff66, #ffffff, #35d9ff, transparent);
+  transform: rotate(-18deg);
+  opacity: 0;
+  animation: speedlineStreak 0.4s ease-out forwards;
+}
+.battle-speedline.line-1 { top: 25%; animation-delay: 0.05s; }
+.battle-speedline.line-2 { top: 45%; height: 5px; animation-delay: 0.1s; filter: drop-shadow(0 0 10px #35d9ff); }
+.battle-speedline.line-3 { top: 58%; height: 4px; animation-delay: 0.14s; filter: drop-shadow(0 0 10px #00ff66); }
+.battle-speedline.line-4 { top: 75%; animation-delay: 0.18s; }
+
+@keyframes speedlineStreak {
+  0% { transform: rotate(-18deg) translateX(-80%); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: rotate(-18deg) translateX(80%); opacity: 0; }
+}
+
+/* Center HUD Banner */
+.battle-transition-center {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  animation: hudPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes hudPop {
+  0% { transform: scale(1.6); opacity: 0; filter: blur(8px); }
+  25% { transform: scale(1); opacity: 1; filter: blur(0); }
+  70% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; filter: blur(6px); }
+}
+
+.battle-hud-content {
+  background: rgba(4, 10, 7, 0.92);
+  border: 2px solid #00ff66;
+  padding: 10px 24px;
+  text-align: center;
+  box-shadow: 0 0 35px rgba(0, 255, 102, 0.45), inset 0 0 15px rgba(0, 255, 102, 0.2);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+
+.battle-hud-sub {
+  font-family: ui-monospace, monospace;
+  font-weight: 900;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #ff3366;
+  text-shadow: 0 0 8px rgba(255, 51, 102, 0.7);
+  margin-bottom: 2px;
+}
+
+.battle-hud-title {
+  font-family: 'Impact', ui-monospace, sans-serif;
+  font-size: 28px;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-shadow:
+    0 0 15px #00ff66,
+    0 0 30px rgba(0, 255, 102, 0.6),
+    2px 2px 0 #000;
+}
+
+.battle-hud-target {
+  font-family: ui-monospace, monospace;
+  font-weight: 850;
+  font-size: 11px;
+  color: #9ab3a3;
+  letter-spacing: 0.12em;
+  margin-top: 2px;
+}
+
+.battle-hud-bracket {
+  width: 14px;
+  height: 48px;
+  border: 3px solid #35d9ff;
+}
+.battle-hud-bracket--left {
+  border-right: none;
+}
+.battle-hud-bracket--right {
+  border-left: none;
+}
+
+/* White flash at mid transition */
+.battle-transition-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  background: #ffffff;
+  pointer-events: none;
+  animation: transitionFlash 0.5s ease-out forwards;
+}
+
+@keyframes transitionFlash {
+  0% { opacity: 0; }
+  25% { opacity: 0.35; }
+  35% { opacity: 0.1; }
+  55% { opacity: 0.25; }
+  100% { opacity: 0; }
+}
+
