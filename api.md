@@ -462,11 +462,11 @@ Response: `200 OK`
 {"trades":[]}
 ```
 
-### `GET /players/{player_id}/trade-assets`
+### `GET /players/{player}/trade-assets`
 
-Returns only the player's currently transferable units and treasures for exact
-ID selection. The caller must be authenticated. This read does not reserve the
-target player's assets.
+`player` may be an exact username or canonical player UUID. Returns the resolved
+player identity and only currently transferable units and treasures for exact-ID
+selection. The caller must be authenticated. This read does not reserve assets.
 
 ### `POST /trades`
 

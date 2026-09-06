@@ -195,7 +195,7 @@ describe('httpApi adapter', () => {
   };
   const fetchImpl = vi.fn(async (url, options) => {
     if (url === `/players/${otherPlayerId}/trade-assets`) {
-      return jsonResponse({ units: [], treasures: [requestedTreasure] });
+      return jsonResponse({ player: { id: otherPlayerId, username: 'test2' }, units: [], treasures: [requestedTreasure] });
     }
     if (url === '/trades' && options.method === 'POST') {
       submitted = JSON.parse(options.body);
@@ -206,6 +206,7 @@ describe('httpApi adapter', () => {
   const api = createHttpApi({ fetchImpl, baseUrl: '' });
 
   const inventory = await api.getTradeAssets(otherPlayerId);
+  expect(inventory).toMatchObject({ playerId: otherPlayerId, username: 'test2' });
   expect(inventory.items[0]).toMatchObject({ id: treasureId, name: '像素劍', atkBonus: 2 });
   await api.createTrade({
     playerId,

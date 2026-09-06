@@ -97,5 +97,39 @@ describe('UI Components', () => {
         })
       );
     });
+
+    it('matches backend credential validation before registration', async () => {
+      const onLoginSuccess = vi.fn();
+      const { container } = render(<AuthModal onLoginSuccess={onLoginSuccess} />);
+
+      fireEvent.click(screen.getByRole('tab', { name: /創建新帳號/i }));
+      fireEvent.change(screen.getByPlaceholderText('帳號'), { target: { value: 'player_two' } });
+      fireEvent.change(screen.getByPlaceholderText('密碼'), { target: { value: 'short' } });
+      fireEvent.change(screen.getByPlaceholderText('玩家暱稱'), { target: { value: '玩家二' } });
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]'));
+      });
+
+      expect(onLoginSuccess).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent('密碼需為 8–72 bytes');
+    });
+
+    it('translates backend field validation into an actionable message', async () => {
+      const onLoginSuccess = vi.fn().mockRejectedValue({
+        message: 'request validation failed',
+        fields: { username: 'must be 3 to 32 ASCII letters, digits, or underscores' },
+      });
+      const { container } = render(<AuthModal onLoginSuccess={onLoginSuccess} />);
+
+      fireEvent.click(screen.getByRole('tab', { name: /創建新帳號/i }));
+      fireEvent.change(screen.getByPlaceholderText('帳號'), { target: { value: 'player_three' } });
+      fireEvent.change(screen.getByPlaceholderText('密碼'), { target: { value: 'secret123' } });
+      fireEvent.change(screen.getByPlaceholderText('玩家暱稱'), { target: { value: '玩家三' } });
+      await act(async () => {
+        fireEvent.click(container.querySelector('button[type="submit"]'));
+      });
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('帳號需為 3–32 個英文字母、數字或底線');
+    });
   });
 });

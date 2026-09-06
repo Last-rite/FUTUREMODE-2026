@@ -3,6 +3,7 @@ package httpapi
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Ian747-tw/noxcat_game_backend/internal/domain"
 )
@@ -222,16 +223,27 @@ func (s *Server) listTradeAssets(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requirePrincipal(w, r); !ok {
 		return
 	}
-	playerID := r.PathValue("player_id")
-	if !isUUID(playerID) {
-		s.writeValidationError(w, r, map[string]string{"player_id": "must be a canonical UUID"})
-		return
-	}
 	if s.store == nil {
 		s.writeInternalError(w, r, "list_trade_assets", unexpectedNil("store"))
 		return
 	}
-	inventory, err := s.store.ListTradeAssets(r.Context(), playerID)
+	identifier := strings.TrimSpace(r.PathValue("player"))
+	var player domain.Player
+	var err error
+	if isUUID(identifier) {
+		player, err = s.store.PlayerByID(r.Context(), identifier)
+	} else {
+		if !usernamePattern.MatchString(identifier) {
+			s.writeValidationError(w, r, map[string]string{"player": "must be a username or canonical UUID"})
+			return
+		}
+		player, err = s.store.PlayerByUsername(r.Context(), identifier)
+	}
+	if err != nil {
+		s.writeStoreError(w, r, opDefault, err)
+		return
+	}
+	inventory, err := s.store.ListTradeAssets(r.Context(), player.ID)
 	if err != nil {
 		s.writeStoreError(w, r, opDefault, err)
 		return
@@ -244,7 +256,11 @@ func (s *Server) listTradeAssets(w http.ResponseWriter, r *http.Request) {
 	for index, treasure := range inventory.Treasures {
 		treasures[index] = toTreasureResponse(treasure)
 	}
-	s.writeJSON(w, http.StatusOK, map[string]any{"units": units, "treasures": treasures})
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"player":    map[string]string{"id": player.ID, "username": player.Username},
+		"units":     units,
+		"treasures": treasures,
+	})
 }
 
 func (s *Server) changeTradeStatus(w http.ResponseWriter, r *http.Request, accept bool) {

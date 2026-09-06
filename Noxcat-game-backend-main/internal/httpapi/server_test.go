@@ -658,21 +658,49 @@ func TestTreasureAndTradeEndpoints(t *testing.T) {
 		}
 	})
 	t.Run("list trade assets allows authenticated counterparty lookup", func(t *testing.T) {
-		fs := &fakeStore{listTradeAssets: func(_ context.Context, id string) (domain.TradeInventory, error) {
-			if id != otherID {
-				t.Fatalf("player id = %q", id)
-			}
-			return domain.TradeInventory{
-				Units:     []domain.Unit{{ID: unitID, OwnerID: otherID}},
-				Treasures: []domain.Treasure{{ID: treasureID, OwnerID: otherID}},
-			}, nil
-		}}
+		fs := &fakeStore{
+			playerByID: func(_ context.Context, id string) (domain.Player, error) {
+				if id != otherID {
+					t.Fatalf("player id lookup = %q", id)
+				}
+				return domain.Player{ID: otherID, Username: "counterparty"}, nil
+			},
+			listTradeAssets: func(_ context.Context, id string) (domain.TradeInventory, error) {
+				if id != otherID {
+					t.Fatalf("player id = %q", id)
+				}
+				return domain.TradeInventory{
+					Units:     []domain.Unit{{ID: unitID, OwnerID: otherID}},
+					Treasures: []domain.Treasure{{ID: treasureID, OwnerID: otherID}},
+				}, nil
+			},
+		}
 		response := request(t, testServer(fs), "GET", "/players/"+otherID+"/trade-assets", "", true)
 		assertResponse(t, response, 200, "")
-		if !strings.Contains(response.Body.String(), unitID) || !strings.Contains(response.Body.String(), treasureID) {
+		if !strings.Contains(response.Body.String(), `"username":"counterparty"`) || !strings.Contains(response.Body.String(), unitID) || !strings.Contains(response.Body.String(), treasureID) {
 			t.Fatalf("trade inventory response = %s", response.Body.String())
 		}
-		assertResponse(t, request(t, testServer(&fakeStore{}), "GET", "/players/not-a-uuid/trade-assets", "", true), 400, "invalid_request")
+
+		byUsername := &fakeStore{
+			playerByUsername: func(_ context.Context, username string) (domain.Player, error) {
+				if username != "counterparty" {
+					t.Fatalf("username lookup = %q", username)
+				}
+				return domain.Player{ID: otherID, Username: username}, nil
+			},
+			listTradeAssets: func(_ context.Context, id string) (domain.TradeInventory, error) {
+				if id != otherID {
+					t.Fatalf("resolved player id = %q", id)
+				}
+				return domain.TradeInventory{}, nil
+			},
+		}
+		usernameResponse := request(t, testServer(byUsername), "GET", "/players/counterparty/trade-assets", "", true)
+		assertResponse(t, usernameResponse, 200, "")
+		if !strings.Contains(usernameResponse.Body.String(), `"id":"`+otherID+`"`) {
+			t.Fatalf("username inventory response = %s", usernameResponse.Body.String())
+		}
+		assertResponse(t, request(t, testServer(&fakeStore{}), "GET", "/players/not-valid!/trade-assets", "", true), 400, "invalid_request")
 	})
 	t.Run("create and accept map ownership differently", func(t *testing.T) {
 		create := &fakeStore{createTrade: func(context.Context, domain.NewTrade) (domain.Trade, error) {

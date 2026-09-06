@@ -4,6 +4,26 @@ import BrandLockup from './BrandLockup.jsx';
 import { startBackgroundPreload } from '../utils/assetPreloader.js';
 
 const sanitizeName = (val) => val.replace(/[^\p{Script=Han}a-zA-Z0-9]/gu, '').slice(0, 16);
+const usernamePattern = /^[a-z0-9_]{3,32}$/;
+
+const passwordByteLength = (value) => new TextEncoder().encode(value).length;
+
+function credentialValidationMessage(username, password) {
+  if (!usernamePattern.test(username)) {
+    return '帳號需為 3–32 個英文字母、數字或底線';
+  }
+  const byteLength = passwordByteLength(password);
+  if (byteLength < 8 || byteLength > 72) {
+    return '密碼需為 8–72 bytes';
+  }
+  return '';
+}
+
+function backendValidationMessage(error) {
+  if (error?.fields?.username) return '帳號需為 3–32 個英文字母、數字或底線';
+  if (error?.fields?.password) return '密碼需為 8–72 bytes';
+  return error?.message || '創建帳號失敗';
+}
 
 export default function AuthModal({ onLoginSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
@@ -22,6 +42,11 @@ export default function AuthModal({ onLoginSuccess }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!username.trim() || !password || isSubmitting) return;
+    const credentialError = credentialValidationMessage(username, password);
+    if (credentialError) {
+      setPopupError(credentialError);
+      return;
+    }
     if (mode === 'register') {
       const cleanName = sanitizeName(displayName);
       if (!cleanName) {
@@ -42,7 +67,7 @@ export default function AuthModal({ onLoginSuccess }) {
       if (mode === 'login') {
         setPopupError('本帳號不存在或密碼不正確');
       } else {
-        setPopupError(loginError.message || '創建帳號失敗');
+        setPopupError(backendValidationMessage(loginError));
       }
     } finally {
       setIsSubmitting(false);
@@ -98,8 +123,10 @@ export default function AuthModal({ onLoginSuccess }) {
                 autoComplete="username"
                 placeholder="帳號"
                 aria-label="帳號"
+                maxLength={32}
               />
             </div>
+            {mode === 'register' && <small className="auth-field-hint">3–32 個英文字母、數字或底線</small>}
           </label>
 
           <label>
@@ -122,6 +149,7 @@ export default function AuthModal({ onLoginSuccess }) {
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
             </div>
+            {mode === 'register' && <small className="auth-field-hint">8–72 bytes</small>}
           </label>
 
           {mode === 'register' && (

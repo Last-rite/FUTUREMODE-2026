@@ -528,9 +528,10 @@ Response: `200 OK`
 Every trade includes an ordered `requested_assets` array. An empty array is a
 one-way gift; a non-empty array is a bidirectional exchange.
 
-### `GET /players/{player_id}/trade-assets`
+### `GET /players/{player}/trade-assets`
 
-Returns only the target player's assets that are currently eligible for a
+`player` may be an exact username or canonical player UUID. The response
+includes the resolved player id and username, and only assets currently eligible for a
 trade: living, non-permanent, inactive units without equipment, plus unequipped
 treasures. Assets reserved by another pending offer are omitted. Any
 authenticated player may query this restricted view to select exact asset IDs;

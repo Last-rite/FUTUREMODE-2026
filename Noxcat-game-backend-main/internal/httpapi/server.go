@@ -135,7 +135,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /players/{player_id}/units", s.listUnits)
 	mux.HandleFunc("GET /players/{player_id}/treasures", s.listTreasures)
 	mux.HandleFunc("GET /players/{player_id}/loadouts", s.listLoadouts)
-	mux.HandleFunc("GET /players/{player_id}/trade-assets", s.listTradeAssets)
+	mux.HandleFunc("GET /players/{player}/trade-assets", s.listTradeAssets)
 	mux.HandleFunc("PUT /players/{player_id}/loadouts/{slot}", s.setLoadoutSlot)
 	mux.HandleFunc("PUT /players/{player_id}/loadouts/active", s.setActiveLoadout)
 	mux.HandleFunc("PUT /players/{player_id}/loadout", s.setLoadout)

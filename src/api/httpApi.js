@@ -309,9 +309,11 @@ export function createHttpApi({
       return response.trades.map((trade) => tradeFromApi(trade, data.pets, data.items));
     },
 
-    async getTradeAssets(playerId) {
-      const response = await request(`/players/${playerId}/trade-assets`);
+    async getTradeAssets(playerIdentifier) {
+      const response = await request(`/players/${encodeURIComponent(playerIdentifier)}/trade-assets`);
       return {
+        playerId: response.player?.id || playerIdentifier,
+        username: response.player?.username || '',
         pets: response.units.map(petFromUnit),
         items: response.treasures.map(itemFromTreasure),
       };

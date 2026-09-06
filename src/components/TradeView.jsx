@@ -112,13 +112,13 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
   });
   const [submitting, setSubmitting] = useState(false);
   const [loadingCounterparty, setLoadingCounterparty] = useState(false);
-  const [counterpartyAssets, setCounterpartyAssets] = useState({ playerId: '', pets: [], items: [] });
+  const [counterpartyAssets, setCounterpartyAssets] = useState({ identifier: '', playerId: '', username: '', pets: [], items: [] });
   const transferableAssets = form.offerType === 'unit' ? transferableUnits : transferableTreasures;
   const requestedOptions = form.requestType === 'unit' ? counterpartyAssets.pets : counterpartyAssets.items;
-  const counterpartyLoaded = Boolean(form.toPlayerId.trim() && counterpartyAssets.playerId === form.toPlayerId.trim());
+  const counterpartyLoaded = Boolean(form.toPlayerId.trim() && counterpartyAssets.identifier === form.toPlayerId.trim() && counterpartyAssets.playerId);
   const canSubmit = Boolean(
-    form.toPlayerId.trim() && form.offerId && !submitting &&
-    (form.tradeMode === 'gift' || (counterpartyLoaded && form.requestedIds.length > 0))
+    counterpartyLoaded && form.offerId && !submitting &&
+    (form.tradeMode === 'gift' || form.requestedIds.length > 0)
   );
 
   const selectOfferType = (offerType) => {
@@ -135,16 +135,25 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
   };
 
   const loadCounterpartyAssets = async () => {
-    const playerId = form.toPlayerId.trim();
-    if (!playerId) return;
+    const identifier = form.toPlayerId.trim();
+    if (!identifier) return;
     setLoadingCounterparty(true);
     try {
-      const inventory = await onLoadTradeAssets(playerId);
-      setCounterpartyAssets({ playerId, pets: inventory?.pets || [], items: inventory?.items || [] });
+      const inventory = await onLoadTradeAssets(identifier);
+      if (!inventory?.playerId) throw new Error('後端未回傳玩家識別資料');
+      if (String(inventory.playerId).toLowerCase() === myPlayerId) throw new Error('不能與自己的帳號交易');
+      setCounterpartyAssets({
+        identifier,
+        playerId: inventory.playerId,
+        username: inventory.username || identifier,
+        pets: inventory?.pets || [],
+        items: inventory?.items || [],
+      });
       setForm((current) => ({ ...current, requestedIds: [] }));
     } catch (err) {
-      setCounterpartyAssets({ playerId: '', pets: [], items: [] });
-      onMessage(err?.message || '無法讀取對方可交易資產', 'error');
+      setCounterpartyAssets({ identifier: '', playerId: '', username: '', pets: [], items: [] });
+      const message = err?.code === 'player_not_found' ? '找不到此玩家帳號' : err?.message || '無法確認交易對象';
+      onMessage(message, 'error');
     } finally {
       setLoadingCounterparty(false);
     }
@@ -155,7 +164,7 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
     setSubmitting(true);
     try {
     await onCreateTrade({
-        to_player_id: form.toPlayerId.trim(),
+        to_player_id: counterpartyAssets.playerId,
         ...(form.offerType === 'unit'
           ? { unit_id: form.offerId }
           : { treasure_id: form.offerId }),
@@ -593,31 +602,33 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
 
             {/* Target Player */}
             <label>
-              <span>指定對象玩家 ID</span>
+              <span>指定對象帳號或玩家 ID</span>
               <div className="callsign-input">
                 <UserRound size={17} />
         <input
           value={form.toPlayerId}
           onChange={(event) => {
           setForm({ ...form, toPlayerId: event.target.value.trimStart(), requestedIds: [] });
-          setCounterpartyAssets({ playerId: '', pets: [], items: [] });
+          setCounterpartyAssets({ identifier: '', playerId: '', username: '', pets: [], items: [] });
           }}
                   autoComplete="off"
-          placeholder="輸入對方 UUID"
+          placeholder="例如 test2 或玩家 UUID"
                   required
         />
         </div>
       </label>
-      {form.tradeMode === 'exchange' && (
-        <button
-          type="button"
-          className="trade-counterparty-load"
-          onClick={loadCounterpartyAssets}
-          disabled={!form.toPlayerId.trim() || loadingCounterparty}
-        >
-          {loadingCounterparty ? '讀取中…' : counterpartyLoaded ? '重新讀取對方資產' : '讀取對方可交易資產'}
-        </button>
-      )}
+      <button
+        type="button"
+        className="trade-counterparty-load"
+        onClick={loadCounterpartyAssets}
+        disabled={!form.toPlayerId.trim() || loadingCounterparty}
+      >
+        {loadingCounterparty
+          ? '確認中…'
+          : counterpartyLoaded
+            ? `已確認：${counterpartyAssets.username}`
+            : '確認玩家並讀取可交易資產'}
+      </button>
 
             {/* Section 1: Offer Asset (我方出資) */}
             <div className="border border-[#28362d] rounded-xl p-3 mb-3 bg-[#050906]">
@@ -689,7 +700,7 @@ export default function TradeView({ data, currentUser, onCreateTrade, onResolveT
         {form.tradeMode === 'gift' ? (
         <div className="trade-request-empty">接受後，資產只會移交給對方。</div>
         ) : !counterpartyLoaded ? (
-        <div className="trade-request-empty">先輸入玩家 ID 並讀取資產，再選擇交換標的。</div>
+        <div className="trade-request-empty">先輸入對方帳號或 UUID 並確認玩家，再選擇交換標的。</div>
         ) : (
         <>
           <fieldset className="trade-asset-type !mb-2">

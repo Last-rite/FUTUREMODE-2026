@@ -32,6 +32,8 @@ function renderTradeView(overrides = {}) {
     onCreateTrade: vi.fn().mockResolvedValue(data),
     onResolveTrade: vi.fn(),
     onLoadTradeAssets: vi.fn().mockResolvedValue({
+      playerId: other,
+      username: 'test2',
       pets: [{ id: requestedUnit, name: 'HARD NOXCAT', level: 4 }],
       items: [],
     }),
@@ -46,9 +48,9 @@ function renderTradeView(overrides = {}) {
 describe('TradeView exact asset exchange', () => {
   it('loads the recipient inventory and submits exact requested IDs', async () => {
     const props = renderTradeView();
-    fireEvent.change(screen.getByPlaceholderText('輸入對方 UUID'), { target: { value: other } });
-    fireEvent.click(screen.getByRole('button', { name: '讀取對方可交易資產' }));
-    await waitFor(() => expect(props.onLoadTradeAssets).toHaveBeenCalledWith(other));
+    fireEvent.change(screen.getByPlaceholderText('例如 test2 或玩家 UUID'), { target: { value: 'test2' } });
+    fireEvent.click(screen.getByRole('button', { name: '確認玩家並讀取可交易資產' }));
+    await waitFor(() => expect(props.onLoadTradeAssets).toHaveBeenCalledWith('test2'));
 
     fireEvent.click(screen.getAllByRole('button', { name: 'NOXCAT' }).at(-1));
     const selects = screen.getAllByRole('combobox');
@@ -64,8 +66,10 @@ describe('TradeView exact asset exchange', () => {
 
   it('keeps one-way gifting explicit with an empty requested bundle', async () => {
     const props = renderTradeView();
-    fireEvent.change(screen.getByPlaceholderText('輸入對方 UUID'), { target: { value: other } });
+    fireEvent.change(screen.getByPlaceholderText('例如 test2 或玩家 UUID'), { target: { value: 'test2' } });
     fireEvent.click(screen.getByRole('button', { name: '單向贈與' }));
+    fireEvent.click(screen.getByRole('button', { name: '確認玩家並讀取可交易資產' }));
+    await waitFor(() => expect(props.onLoadTradeAssets).toHaveBeenCalledWith('test2'));
     fireEvent.click(screen.getByRole('button', { name: '送出贈與請求' }));
 
     await waitFor(() => expect(props.onCreateTrade).toHaveBeenCalledWith({
@@ -73,6 +77,6 @@ describe('TradeView exact asset exchange', () => {
       unit_id: offeredUnit,
       requested_assets: [],
     }));
-    expect(props.onLoadTradeAssets).not.toHaveBeenCalled();
+    expect(props.onLoadTradeAssets).toHaveBeenCalledTimes(1);
   });
 });
