@@ -142,7 +142,6 @@
 | **程序化音效** | 彈珠碰撞、反彈、擊中與陣亡打擊音 | Web Audio API (純程式碼振盪器合成) | 團隊自行以 JavaScript 程式化合成，無外部版權依賴 |
 | **向量圖示** | HUD 武器、防具、金幣與選單圖示 | Lucide React | [ISC License](https://lucide.dev/license)（開源授權） |
 | **字體資源** | 像素與科技感字體家族 | Google Fonts (Silkscreen, Orbitron, Inter) | [SIL Open Font License 1.1](https://openfontlicense.org/)（開源免費商用） |
-| **雲端部署服務** | 雲端容器託管與自動化 CI/CD | Zeabur | 大會贊助額度與平台免費方案提供 |
 
 ## 團隊成員
 
