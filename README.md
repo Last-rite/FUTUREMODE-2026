@@ -116,21 +116,17 @@
 
 ### 未來工作與後續規劃 (Future Work & Roadmap)
 
-1. **正式後端上線與雲端資料庫維運（Production Rollout）**
-   - 將現有 Go／PostgreSQL 同源部署套用到正式環境，建立備份、還原演練與監控。
-   - 保持交易與戰鬥 mutation 的既有固定鎖序與 PostgreSQL deadlock／競態測試。
-   - 依實際流量補充 rate limit；MVP 暫不加入 refresh token、outbox 或交易金幣功能。
-2. **Web3 智能合約與 NOXCAT 錢包整合（Web3 & Token Economy）**
+1. **Web3 智能合約與 NOXCAT 錢包整合（Web3 & Token Economy）**
    - 將寵物與稀有裝備鑄造成為鏈上 NFT。
    - 深度對接 NOXCAT 官方電子錢包，支援一鍵 Web3 簽名登入與鏈上資產劃轉。
    - 引入原生代幣作為地牢門票、道具交易與通關獎勵媒介。
-3. **即時多人連線 PvP 與好友助戰（Real-Time Multiplayer & Social）**
+2. **即時多人連線 PvP 與好友助戰（Real-Time Multiplayer & Social）**
    - 實作 1v1 即時天梯對戰，落實「獲勝者可贏取敗者掉落地牢的寵物／物品」之刺激玩法。
    - 開放社群好友助戰機制，借用好友強力寵物突破高難度地牢。
-4. **AI 驅動動態生成遊戲內容（AI-Generated Content）**
+3. **AI 驅動動態生成遊戲內容（AI-Generated Content）**
    - 整合生成式 AI，根據玩家冒險進度動態生成獨特像素外觀的 NOXCAT 變體、裝備背景故事與隨機屬性詞條。
    - 動態生成地牢關卡障礙與個性化 Boss 對白。
-5. **豐富化關卡機制與養成系統（Combat Depth & Progression）**
+4. **豐富化關卡機制與養成系統（Combat Depth & Progression）**
    - 加入傳送門、彈力加速帶、尖刺陷阱與隨機炸彈等多元場地機制。
    - 加入更多角色與裝備，附有更多獨特的特性，深化彈射時的策略性，不會無腦拉滿彈射。
 
