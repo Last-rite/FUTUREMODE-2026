@@ -24,7 +24,6 @@
 | **前端框架與工程化** | React 19、Vite 6、Tailwind CSS v4 | 響應式手機視口容器、單頁應用（SPA）路由切換、Cyberpunk 風格 HUD 元件化開發與模組熱重載 |
 | **遊戲引擎與繪圖** | HTML5 Canvas 2D API | 自研 60/120 FPS 高效能彈性碰撞物理循環、反向彈射瞄準軌跡、動態液態波紋（Liquid Ring）與破片粒子系統 |
 | **程序化音效系統** | Web Audio API | 以純程式碼振盪器合成碰撞、打擊反饋與陣亡破裂音效，免載入外部音訊資源，實現零延遲體驗 |
-| **使用者與狀態管理** | Google Identity Services (OAuth 2.0)、Cookie / LocalStorage | 支援 Google 快速登入與訪客模式，兼具 1 天會話保持與本機模擬數據持久化 |
 | **圖示庫** | Lucide React | 提供現代化科技感向量圖示（武器、道具、戰鬥與導覽選單） |
 | **測試後端（Demo）** | Browser Mock Backend (`src/demo-backend/`) | 瀏覽器端非同步 API 替身，支援帳號登入、隊伍編組、地牢共享戰利品池結算與玩家間交易流轉 |
 | **正式後端** | Go (Golang) + PostgreSQL (`pgxpool`) + WebSocket | 已實作 JWT 鑑權、五組編隊、戰鬥工作階段、裝備效果、具 reservation 的原子雙向交易與即時交易通知 |
