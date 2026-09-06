@@ -28,7 +28,7 @@
 | **圖示庫** | Lucide React | 提供現代化科技感向量圖示（武器、道具、戰鬥與導覽選單） |
 | **測試後端（Demo）** | Browser Mock Backend (`src/demo-backend/`) | 瀏覽器端非同步 API 替身，支援帳號登入、隊伍編組、地牢共享戰利品池結算與玩家間交易流轉 |
 | **正式後端** | Go (Golang) + PostgreSQL (`pgxpool`) + WebSocket | 已實作 JWT 鑑權、五組編隊、戰鬥工作階段、裝備效果、具 reservation 的原子雙向交易與即時交易通知 |
-| **雲端部署（Sponsor）** | Zeabur | 雲端一鍵自動化 Git CI/CD 部署、自動 HTTPS / SSL 憑證與邊緣網路託管 |
+| **雲端部署（Sponsor）** | http tunnel | |
 
 ## 安裝與執行
 
@@ -105,16 +105,13 @@
 
 ### 目前已知限制 (Current Limitations)
 
-1. **瀏覽器端測試後端（Mock Backend）**
-   - 為確保評選時可免伺服器依賴、快速演示「戰鬥陣亡 → 資產掉落 → 共享戰利品池 → 另一玩家取得」之閉環流程，目前採用 `src/demo-backend/` 與 `localStorage` 保存數據。
-   - 尚未具備伺服器端防作弊機制與集中式關聯資料庫。
-2. **Web3 / 區塊鏈資產為架構級模擬（Simulated Web3 Ownership）**
+1. **Web3 / 區塊鏈資產為架構級模擬（Simulated Web3 Ownership）**
    - 每件 NOXCAT 寵物與裝備均具備對應未來 ERC-721 / ERC-1155 的獨立識別 ID、數值結構與持有者轉移介面（如 `TransferUnit`），但當前尚未部署鏈上智能合約，無真實 Gas 消耗與主網交易。
-3. **客戶端物理結算（Client-side Physics Only）**
+2. **客戶端物理結算（Client-side Physics Only）**
    - 彈珠物理碰撞與即時傷害計算完全於前端 Canvas 執行，尚未整合後端確定性物理引擎或重播演算種子比對（`ValidateBattleResult`）。
-4. **戰鬥中裝備耐久扣減暫緩（In-Combat Durability Trigger Deferred）**
+3. **戰鬥中裝備耐久扣減暫緩（In-Combat Durability Trigger Deferred）**
    - 裝備動態數值獲取（Dynamic Getters）、破損狀態（`isBroken`）與最大生命值動態重算機制均已底層完備，但戰鬥過程中單次受擊扣除耐久度與即時碎裂的觸發邏輯因黑客松交付時程暫緩開啟。
-5. **單機 AI 對局模式（Local AI Only）**
+4. **單機 AI 對局模式（Local AI Only）**
    - 目前敵方無人機皆由前端本機 AI 索敵演算法驅動，暫未支援玩家間的即時連線對戰（PvP）與即時好友助戰功能。
 
 ### 未來工作與後續規劃 (Future Work & Roadmap)
