@@ -102,13 +102,16 @@ func run(ctx context.Context, config config, logger *slog.Logger) error {
 }
 
 func startingRoster() []domain.NewUnit {
-	stats := domain.Stats{Attack: 5, Health: 20, Defense: 3, Speed: 4}
+	genericStats := domain.Stats{Attack: 10, Health: 100, Defense: 2, Speed: 100}
+	fireStats := domain.Stats{Attack: 12, Health: 80, Defense: 1, Speed: 100}
+	windStats := domain.Stats{Attack: 8, Health: 100, Defense: 2, Speed: 120}
+	waterStats := domain.Stats{Attack: 10, Health: 130, Defense: 3, Speed: 80}
 	return []domain.NewUnit{
-		{Species: domain.UnitSpeciesGeneric, BaseStats: stats, IsPermanent: true, IsEquipped: true},
-		{Species: domain.UnitSpeciesGeneric, BaseStats: stats, IsPermanent: true, IsEquipped: true},
-		{Species: domain.UnitSpeciesGeneric, BaseStats: stats, IsPermanent: true, IsEquipped: true},
-		{Species: domain.UnitSpeciesFire, BaseStats: stats},
-		{Species: domain.UnitSpeciesWind, BaseStats: stats},
-		{Species: domain.UnitSpeciesWater, BaseStats: stats},
+		{Species: domain.UnitSpeciesGeneric, BaseStats: genericStats, IsPermanent: true, IsEquipped: true},
+		{Species: domain.UnitSpeciesGeneric, BaseStats: genericStats, IsPermanent: true, IsEquipped: true},
+		{Species: domain.UnitSpeciesGeneric, BaseStats: genericStats, IsPermanent: true, IsEquipped: true},
+		{Species: domain.UnitSpeciesFire, BaseStats: fireStats},
+		{Species: domain.UnitSpeciesWind, BaseStats: windStats},
+		{Species: domain.UnitSpeciesWater, BaseStats: waterStats},
 	}
 }

@@ -53,26 +53,44 @@ function userFromPlayer(player) {
   };
 }
 
+const SPECIES_BASE_STATS = {
+  generic: { hp: 100, atk: 10, def: 2, spd: 100, level: 12, quote: 'Feel Nothing. Do Everything.', skill: '初始守護：受到系統最高權限保護，戰鬥中 HP 歸零自動返回背包，不掉落不遺失。' },
+  fire: { hp: 80, atk: 12, def: 1, spd: 100, level: 10, quote: 'Tomorrow already happened.', skill: '時空修復：主動回合每次撞擊隊友為該隊友 +5 HP。' },
+  wind: { hp: 100, atk: 8, def: 2, spd: 120, level: 11, quote: 'No rush. I am the rush.', skill: '疾風推進：碰撞時強力擊退對手。' },
+  water: { hp: 130, atk: 10, def: 3, spd: 80, level: 8, quote: 'Try moving me.', skill: '堅毅立場：被敵人撞擊時，使攻擊者額外減速一次。' },
+};
+
 function petFromUnit(unit, index) {
   const presentation = SPECIES_PRESENTATION[unit.species] || SPECIES_PRESENTATION.generic;
+  const defaults = SPECIES_BASE_STATS[unit.species] || SPECIES_BASE_STATS.generic;
   const baseStats = unit.base_stats || {};
+  const isBrokenPlaceholder = baseStats.hp === 20 && baseStats.atk === 5 && baseStats.def === 3 && baseStats.spd === 4;
+  const hp = (!isBrokenPlaceholder && Number(baseStats.hp) > 0) ? Number(baseStats.hp) : defaults.hp;
+  const atk = (!isBrokenPlaceholder && Number(baseStats.atk) > 0) ? Number(baseStats.atk) : defaults.atk;
+  const def = (!isBrokenPlaceholder && typeof baseStats.def === 'number') ? Number(baseStats.def) : defaults.def;
+  const spd = (!isBrokenPlaceholder && Number(baseStats.spd) > 10) ? Number(baseStats.spd) : defaults.spd;
+
+  const defaultSkill = unit.is_permanent
+    ? '初始守護：受到系統最高權限保護，戰鬥中 HP 歸零自動返回背包，不掉落不遺失。'
+    : (defaults.skill || '常規機甲：戰鬥 HP 歸零時將遺落於地下城中，可由其他通關玩家拯救拾獲。');
+
   return {
     id: unit.id,
     idString: `noxcat_${unit.species}_${unit.id}`,
     code: presentation.code,
     name: index > 0 && unit.species === 'generic' ? `${presentation.name} · ${index + 1}` : presentation.name,
     className: presentation.className,
-    level: 1,
-    hp: baseStats.hp || 0,
-    atk: baseStats.atk || 0,
-    def: baseStats.def || 0,
-    spd: baseStats.spd || 0,
+    level: defaults.level || 1,
+    hp,
+    atk,
+    def,
+    spd,
     protected: Boolean(unit.is_permanent),
     selected: Boolean(unit.is_equipped),
     alive: Boolean(unit.is_alive),
     accent: '#00ff66',
-    quote: 'Feel Nothing. Do Everything.',
-    skill: unit.is_permanent ? '初始守護：戰敗時會返回背包。' : '自動戰鬥單位。',
+    quote: defaults.quote || 'Feel Nothing. Do Everything.',
+    skill: defaultSkill,
     equipped: unit.equipped_treasure_id,
     ownerId: unit.owner_id,
   };

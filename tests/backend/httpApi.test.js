@@ -34,8 +34,8 @@ const unit = {
   id: unitId,
   owner_id: playerId,
   species: 'fire',
-  base_stats: { atk: 5, hp: 20, def: 3, spd: 4 },
-  current_stats: { atk: 7, hp: 25, def: 3, spd: 4 },
+  base_stats: { atk: 12, hp: 80, def: 1, spd: 100 },
+  current_stats: { atk: 14, hp: 85, def: 1, spd: 100 },
   equipped_treasure_id: '44444444-4444-4444-8444-444444444444',
   is_permanent: true,
   is_alive: true,
@@ -117,7 +117,7 @@ describe('httpApi adapter', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(7);
     expect(data.user).toMatchObject({ id: playerId, nox: 125 });
-    expect(data.pets[0]).toMatchObject({ id: unitId, className: 'TECH', atk: 5, hp: 20, equipped: unit.equipped_treasure_id });
+    expect(data.pets[0]).toMatchObject({ id: unitId, className: 'TECH', atk: 12, hp: 80, equipped: unit.equipped_treasure_id });
     expect(data.items[0]).toMatchObject({ name: '回家石', hpBonus: 5, atkBonus: 2, effectCode: 'home_stone' });
     expect(data.loadouts[2]).toEqual([unitId, null, null]);
     expect(data.solvedDungeonIds).toEqual([dungeonId]);
@@ -155,7 +155,7 @@ describe('httpApi adapter', () => {
       owner_id: playerId,
       is_permanent: true,
       is_alive: true,
-      current_stats: { atk: 7, hp: 1, def: 3, spd: 4 },
+      current_stats: { atk: 14, hp: 1, def: 1, spd: 100 },
     });
   });
 

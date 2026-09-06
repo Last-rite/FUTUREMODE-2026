@@ -33,7 +33,16 @@ function readDb() {
               p.spd = 80;
               p.skill = '堅毅立場：被敵人撞擊時，使攻擊者額外減速一次。';
             } else if (p.name === 'FUTURE NOXCAT' || p.idString?.includes('tech')) {
+              p.hp = 80;
+              p.atk = 12;
+              p.def = 1;
+              p.spd = 100;
               p.skill = '時空修復：主動回合每次撞擊隊友為該隊友 +5 HP。';
+            } else {
+              p.hp = 100;
+              p.atk = 10;
+              p.def = 2;
+              p.spd = 100;
             }
           });
         }

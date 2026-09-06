@@ -155,10 +155,10 @@ export class GameEngine {
 
       if (this.playerTeam && this.playerTeam[i]) {
         const pet = this.playerTeam[i];
-        const atk = pet.atk ?? DEFAULT_ATK;
-        const def = pet.def ?? DEFAULT_DEF;
-        const hp = pet.hp ?? DEFAULT_HP;
-        const spd = pet.spd ?? DEFAULT_SPD;
+        const atk = Number(pet.atk) > 0 ? Number(pet.atk) : DEFAULT_ATK;
+        const def = (pet.def !== undefined && pet.def !== null && !isNaN(pet.def)) ? Number(pet.def) : DEFAULT_DEF;
+        const hp = Number(pet.hp) > 0 ? Number(pet.hp) : DEFAULT_HP;
+        const spd = Number(pet.spd) > 0 ? Number(pet.spd) : DEFAULT_SPD;
 
         const options = {
           petId: pet.id,
