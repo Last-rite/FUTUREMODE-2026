@@ -27,7 +27,7 @@
 | **圖示庫** | Lucide React | 提供現代化科技感向量圖示（武器、道具、戰鬥與導覽選單） |
 | **測試後端（Demo）** | Browser Mock Backend (`src/demo-backend/`) | 瀏覽器端非同步 API 替身，支援帳號登入、隊伍編組、地牢共享戰利品池結算與玩家間交易流轉 |
 | **正式後端** | Go (Golang) + PostgreSQL (`pgxpool`) + WebSocket | 已實作 JWT 鑑權、五組編隊、戰鬥工作階段、裝備效果、具 reservation 的原子雙向交易與即時交易通知 |
-| **雲端部署（Sponsor）** | http tunnel | |
+| **雲端部署** | http tunnel | 尚未架設雲端伺服器的暫時解決方案 |
 
 ## 安裝與執行
 
@@ -149,8 +149,8 @@
 曾子齊| **Chief Product Officer (CPO) & Lead Architect** | 主導產品願景與商業邏輯定義（PM），兼任前端架構與高維度技術文件撰寫（FE & Docs），確保專案在時程內精準落地。 |
 劉正惟| **Senior Frontend Engineer & UI/UX Specialist** | 專注於前端互動體驗、高效能狀態管理與極致視覺呈現，打造流暢且極具沉浸感的使用者操作介面。 |
 陳曦| **Lead Backend & Infrastructure Engineer** | 負責高併發後端架構設計、API 核心邏輯及資料庫效能調校，確保系統在高流量下依然具備極高安全性、穩定性與擴充性。 |
-林均彥| **Lead Visual & Concept Artist** | 掌管遊戲/應用的核心美術風格、資產視覺化與場景氛圍塑造，賦予產品頂級的美學靈魂。 |
-方軒岷| **Creative Director & Technical Sound Designer** | 跨領域跨足美術、沉浸式音效設計與專案架構文件梳理，完美融合視聽覺饗宴與技術落地規範。 |
+林均彥| **Lead Visual & Concept Artist** | 掌管遊戲/應用的核心美術風格、資產視覺化與場景氛圍塑造。 |
+方軒岷| **Creative Director & Technical Sound Designer** | 跨領域跨足美術、沉浸式音效設計與專案架構文件梳理。 |
 
 ## License
 
