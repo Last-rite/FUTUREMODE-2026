@@ -147,7 +147,7 @@
 | 姓名 | 職稱與定位 | 核心職責與專業領域 |
 | --- | --- | --- |
 曾子齊| **Chief Product Officer (CPO) & Lead Architect** | 主導產品願景與商業邏輯定義（PM），兼任前端架構與高維度技術文件撰寫（FE & Docs），確保專案在時程內精準落地。 |
-劉正惟| **Senior Frontend Engineer & UI/UX Specialist** | 專注於前端互動體驗、高效能狀態管理與極致視覺呈現，打造流暢且極具沉浸感的使用者操作介面。 |
+劉正惟| **Frontend Engineer & UI/UX Specialist** | 專注於前端互動體驗、高效能狀態管理與極致視覺呈現，打造流暢且極具沉浸感的使用者操作介面。 |
 陳曦| **Lead Backend & Infrastructure Engineer** | 負責高併發後端架構設計、API 核心邏輯及資料庫效能調校，確保系統在高流量下依然具備極高安全性、穩定性與擴充性。 |
 林均彥| **Lead Visual & Concept Artist** | 掌管遊戲/應用的核心美術風格、資產視覺化與場景氛圍塑造。 |
 方軒岷| **Creative Director & Technical Sound Designer** | 跨領域跨足美術、沉浸式音效設計與專案架構文件梳理。 |
